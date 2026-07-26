@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../routes/app_routes.dart';
+import '../../theme/app_motion.dart';
 import '../../widgets/app_bottom_navigation.dart';
 import '../../widgets/app_header.dart';
 import '../appointments/appointments_screen.dart';
@@ -21,10 +22,34 @@ class MainShell extends StatefulWidget {
   State<MainShell> createState() => _MainShellState();
 }
 
-class _MainShellState extends State<MainShell> {
+class _MainShellState extends State<MainShell>
+    with SingleTickerProviderStateMixin {
   late int _selectedIndex = widget.initialIndex.clamp(0, 7);
+  late final AnimationController _contentController = AnimationController(
+    vsync: this,
+    duration: AppMotion.standard,
+    value: 1,
+  );
+  int _transitionDirection = 1;
 
-  void _selectTab(int index) => setState(() => _selectedIndex = index);
+  void _selectTab(int index) {
+    if (index == _selectedIndex) return;
+    setState(() {
+      _transitionDirection = index > _selectedIndex ? 1 : -1;
+      _selectedIndex = index;
+    });
+    if (MediaQuery.maybeOf(context)?.disableAnimations ?? false) {
+      _contentController.value = 1;
+    } else {
+      _contentController.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _contentController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +63,10 @@ class _MainShellState extends State<MainShell> {
         subtitle:
             'Keep track of daily thoughts, feelings, symptoms, and special moments.',
       ),
-      (title: 'Care Book', subtitle: 'Simple guidance for everyday caregiving'),
+      (
+        title: 'Care Book',
+        subtitle: 'NIA handbook reference and simplified caregiving notes',
+      ),
       (
         title: 'Emergency',
         subtitle: 'Contacts and important medical information',
@@ -56,6 +84,10 @@ class _MainShellState extends State<MainShell> {
       const ProfileScreen(),
     ];
     final header = headers[_selectedIndex];
+    final contentAnimation = CurvedAnimation(
+      parent: _contentController,
+      curve: AppMotion.emphasizedCurve,
+    );
 
     return Scaffold(
       body: Column(
@@ -70,7 +102,19 @@ class _MainShellState extends State<MainShell> {
           Expanded(
             child: SafeArea(
               top: false,
-              child: IndexedStack(index: _selectedIndex, children: pages),
+              child: FadeTransition(
+                opacity: Tween<double>(
+                  begin: .68,
+                  end: 1,
+                ).animate(contentAnimation),
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: Offset(.035 * _transitionDirection, 0),
+                    end: Offset.zero,
+                  ).animate(contentAnimation),
+                  child: IndexedStack(index: _selectedIndex, children: pages),
+                ),
+              ),
             ),
           ),
         ],

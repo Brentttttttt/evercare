@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_motion.dart';
 
 class AppBottomNavigation extends StatefulWidget {
   const AppBottomNavigation({
@@ -217,44 +218,50 @@ class _BottomDestination extends StatelessWidget {
     final selectedBackground = item.danger
         ? const Color(0xFFFFE9E5)
         : AppColors.lightGreen;
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: item.label,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 2),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(17),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 6),
-            decoration: BoxDecoration(
-              color: selected ? selectedBackground : Colors.transparent,
-              borderRadius: BorderRadius.circular(17),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  selected ? item.selectedIcon : item.icon,
-                  size: 22,
-                  color: selected ? selectedColor : AppColors.secondaryText,
-                ),
-                const SizedBox(height: 3),
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    item.label,
-                    maxLines: 1,
-                    style: TextStyle(
-                      color: selected ? selectedColor : AppColors.secondaryText,
-                      fontSize: 10.5,
-                      fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+    return PressScale(
+      child: Semantics(
+        button: true,
+        selected: selected,
+        label: item.label,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(17),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 6),
+              decoration: BoxDecoration(
+                color: selected ? selectedBackground : Colors.transparent,
+                borderRadius: BorderRadius.circular(17),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    selected ? item.selectedIcon : item.icon,
+                    size: 22,
+                    color: selected ? selectedColor : AppColors.secondaryText,
+                  ),
+                  const SizedBox(height: 3),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      item.label,
+                      maxLines: 1,
+                      style: TextStyle(
+                        color: selected
+                            ? selectedColor
+                            : AppColors.secondaryText,
+                        fontSize: 10.5,
+                        fontWeight: selected
+                            ? FontWeight.w800
+                            : FontWeight.w600,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -278,18 +285,21 @@ class _PageArrow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
+    return PressScale(
       enabled: enabled,
-      label: label,
-      child: IconButton(
-        onPressed: enabled ? onPressed : null,
-        icon: Icon(icon),
-        iconSize: 25,
-        visualDensity: VisualDensity.compact,
-        color: AppColors.darkGreen,
-        disabledColor: AppColors.border,
-        tooltip: label,
+      child: Semantics(
+        button: true,
+        enabled: enabled,
+        label: label,
+        child: IconButton(
+          onPressed: enabled ? onPressed : null,
+          icon: Icon(icon),
+          iconSize: 25,
+          visualDensity: VisualDensity.compact,
+          color: AppColors.darkGreen,
+          disabledColor: AppColors.border,
+          tooltip: label,
+        ),
       ),
     );
   }

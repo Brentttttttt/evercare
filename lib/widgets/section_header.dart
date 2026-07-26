@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_text_styles.dart';
+import '../theme/app_motion.dart';
 
 class SectionHeader extends StatelessWidget {
   const SectionHeader({
@@ -33,15 +34,18 @@ class SectionHeader extends StatelessWidget {
           ),
         ),
         if (actionLabel != null)
-          TextButton(
-            onPressed: onAction,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(actionLabel!),
-                const SizedBox(width: 2),
-                const Icon(Icons.arrow_forward_rounded, size: 17),
-              ],
+          PressScale(
+            enabled: onAction != null,
+            child: TextButton(
+              onPressed: onAction,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(actionLabel!),
+                  const SizedBox(width: 2),
+                  const Icon(Icons.arrow_forward_rounded, size: 17),
+                ],
+              ),
             ),
           ),
       ],

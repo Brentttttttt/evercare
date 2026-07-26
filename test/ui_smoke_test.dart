@@ -22,9 +22,11 @@ import 'package:evercare/screens/notifications/notifications_screen.dart';
 import 'package:evercare/screens/onboarding/welcome_screen.dart';
 import 'package:evercare/screens/profile/profile_screen.dart';
 import 'package:evercare/theme/app_theme.dart';
+import 'package:evercare/theme/app_motion.dart';
 import 'package:evercare/widgets/app_bottom_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -46,6 +48,21 @@ void main() {
     await tester.pump();
     expect(tester.takeException(), isNull);
   }
+
+  test('all named pages use the shared EverCare transition route', () {
+    final route = AppRoutes.onGenerateRoute(
+      const RouteSettings(name: AppRoutes.login),
+    );
+
+    expect(route, isA<EverCarePageRoute<dynamic>>());
+    final animatedRoute = route as EverCarePageRoute<dynamic>;
+    expect(animatedRoute.transitionDuration, AppMotion.page);
+    expect(animatedRoute.reverseTransitionDuration, AppMotion.standard);
+    expect(
+      AppTheme.light.pageTransitionsTheme.builders.values,
+      everyElement(isA<EverCarePageTransitionsBuilder>()),
+    );
+  });
 
   testWidgets('welcome screen fits a common Android phone', (tester) async {
     await pumpPhoneScreen(tester, const WelcomeScreen());
@@ -155,6 +172,16 @@ void main() {
 
   testWidgets('care book screen renders without overflow', (tester) async {
     await pumpPhoneScreen(tester, const CareBookScreen());
+    expect(find.text('The EverCare\nCare Book'), findsNothing);
+    expect(find.text('Official NIA Reference'), findsOneWidget);
+    expect(find.text('Official Source Website'), findsOneWidget);
+    expect(find.text('Getting Started With Caregiving'), findsOneWidget);
+    expect(find.text('Download Original NIA PDF'), findsOneWidget);
+  });
+
+  test('bundled caregiver handbook is available for download', () async {
+    final pdf = await rootBundle.load('assets/care_book/caregivers-book.pdf');
+    expect(pdf.lengthInBytes, greaterThan(1000));
   });
 
   testWidgets('emergency screen renders without overflow', (tester) async {

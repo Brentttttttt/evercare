@@ -9,11 +9,13 @@ class CareBookCover extends StatelessWidget {
   const CareBookCover({
     required this.onStartReading,
     required this.onDownload,
+    required this.downloading,
     super.key,
   });
 
   final VoidCallback onStartReading;
-  final VoidCallback onDownload;
+  final VoidCallback? onDownload;
+  final bool downloading;
 
   @override
   Widget build(BuildContext context) {
@@ -92,7 +94,7 @@ class CareBookCover extends StatelessWidget {
                     ),
                     const SizedBox(height: 23),
                     Text(
-                      'The EverCare\nCare Book',
+                      'The Caregiver’s\nHandbook',
                       style: AppTextStyles.display.copyWith(
                         color: Colors.white,
                         fontSize: 30,
@@ -100,7 +102,7 @@ class CareBookCover extends StatelessWidget {
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      'Simple guidance for caring for and supporting older adults',
+                      'Official reference publication for family caregivers',
                       style: AppTextStyles.body.copyWith(
                         color: const Color(0xFFD7EADF),
                       ),
@@ -117,7 +119,7 @@ class CareBookCover extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Based on The Caregiver’s Handbook by the National Institute on Aging',
+                            'Published by the National Institute on Aging (NIA)',
                             style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w700,
@@ -126,7 +128,7 @@ class CareBookCover extends StatelessWidget {
                           ),
                           SizedBox(height: 5),
                           Text(
-                            'Adapted into short, easy-to-read caregiving lessons.',
+                            'This PDF is an NIA publication—not an EverCare book. The notes below are simplified EverCare summaries based on this reference.',
                             style: TextStyle(
                               color: Color(0xFFC9DED2),
                               fontSize: 12,
@@ -160,8 +162,20 @@ class CareBookCover extends StatelessWidget {
                           ),
                         ),
                         onPressed: onDownload,
-                        icon: const Icon(Icons.picture_as_pdf_outlined),
-                        label: const Text('Download Original PDF'),
+                        icon: downloading
+                            ? const SizedBox.square(
+                                dimension: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.download_rounded),
+                        label: Text(
+                          downloading
+                              ? 'Preparing PDF…'
+                              : 'Download NIA Handbook PDF',
+                        ),
                       ),
                     ),
                   ],
@@ -439,9 +453,18 @@ class CareBookReader extends StatelessWidget {
 }
 
 class CareBookReferenceCard extends StatelessWidget {
-  const CareBookReferenceCard({required this.onViewSource, super.key});
+  const CareBookReferenceCard({
+    required this.onOpenOfficialSource,
+    required this.onOpenGettingStarted,
+    required this.onDownloadLocal,
+    required this.downloading,
+    super.key,
+  });
 
-  final VoidCallback onViewSource;
+  final VoidCallback onOpenOfficialSource;
+  final VoidCallback onOpenGettingStarted;
+  final VoidCallback? onDownloadLocal;
+  final bool downloading;
 
   @override
   Widget build(BuildContext context) {
@@ -457,7 +480,7 @@ class CareBookReferenceCard extends StatelessWidget {
               SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Primary Reference',
+                  'Official NIA Reference',
                   style: AppTextStyles.sectionTitle,
                 ),
               ),
@@ -470,8 +493,22 @@ class CareBookReferenceCard extends StatelessWidget {
           ),
           const SizedBox(height: 7),
           const Text(
-            'Original PDF included at assets/care_book/caregivers-book.pdf',
+            'The bundled PDF is the original NIA handbook used as a reference. It is not owned or published by EverCare.',
             style: AppTextStyles.bodyMuted,
+          ),
+          const SizedBox(height: 15),
+          _ReferenceLink(
+            icon: Icons.public_rounded,
+            title: 'Official Source Website',
+            url: 'order.nia.nih.gov/publication/caregivers-handbook',
+            onTap: onOpenOfficialSource,
+          ),
+          const SizedBox(height: 9),
+          _ReferenceLink(
+            icon: Icons.health_and_safety_outlined,
+            title: 'Getting Started With Caregiving',
+            url: 'nia.nih.gov/health/caregiving/getting-started-caregiving',
+            onTap: onOpenGettingStarted,
           ),
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 14),
@@ -489,13 +526,85 @@ class CareBookReferenceCard extends StatelessWidget {
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: onViewSource,
-              icon: const Icon(Icons.picture_as_pdf_outlined),
-              label: const Text('View Original Source'),
+            child: FilledButton.icon(
+              onPressed: onDownloadLocal,
+              icon: downloading
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.download_rounded),
+              label: Text(
+                downloading ? 'Preparing PDF…' : 'Download Original NIA PDF',
+              ),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ReferenceLink extends StatelessWidget {
+  const _ReferenceLink({
+    required this.icon,
+    required this.title,
+    required this.url,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String url;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white.withValues(alpha: .72),
+      borderRadius: BorderRadius.circular(17),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(17),
+        child: Padding(
+          padding: const EdgeInsets.all(13),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.lightGreen,
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: Icon(icon, color: AppColors.darkGreen, size: 21),
+              ),
+              const SizedBox(width: 11),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: AppTextStyles.cardTitle),
+                    const SizedBox(height: 3),
+                    Text(url, style: AppTextStyles.small),
+                  ],
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.only(top: 8),
+                child: Icon(
+                  Icons.open_in_new_rounded,
+                  color: AppColors.darkGreen,
+                  size: 19,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

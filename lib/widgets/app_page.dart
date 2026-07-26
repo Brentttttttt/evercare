@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_motion.dart';
 import '../theme/app_text_styles.dart';
 import 'app_header.dart';
 
@@ -65,7 +66,7 @@ class AppCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(24),
       side: BorderSide(color: borderColor ?? AppColors.border),
     );
-    return DecoratedBox(
+    final card = DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         boxShadow: const [
@@ -90,6 +91,7 @@ class AppCard extends StatelessWidget {
               ),
       ),
     );
+    return onTap == null ? card : PressScale(child: card);
   }
 }
 
@@ -146,9 +148,11 @@ Future<void> showMockDialog(
       title: Text(title),
       content: Text(message),
       actions: [
-        FilledButton(
-          onPressed: () => Navigator.pop(dialogContext),
-          child: Text(actionLabel),
+        PressScale(
+          child: FilledButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(actionLabel),
+          ),
         ),
       ],
     ),

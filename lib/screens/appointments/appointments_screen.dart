@@ -176,7 +176,7 @@ class _NextAppointmentCard extends StatelessWidget {
         children: [
           const Positioned.fill(
             child: CareCardArtwork(
-              assetPath: 'assets/images/appointment_clinic.png',
+              assetPath: 'assets/images/appointment_card_v2.png',
               alignment: Alignment.centerRight,
             ),
           ),

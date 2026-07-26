@@ -7,8 +7,11 @@ environment:
   sdk: ^3.11.3
 
 dependencies:
+  file_saver: ^0.4.0
   flutter:
     sdk: flutter
+  path_provider: ^2.1.6
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:

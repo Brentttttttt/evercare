@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_motion.dart';
+
 class PrimaryButton extends StatelessWidget {
   const PrimaryButton({
     required this.label,
@@ -23,17 +25,21 @@ class PrimaryButton extends StatelessWidget {
       foregroundColor: foregroundColor,
     );
     if (icon == null) {
-      return FilledButton(
-        onPressed: onPressed,
-        style: style,
-        child: Text(label),
+      return PressScale(
+        child: FilledButton(
+          onPressed: onPressed,
+          style: style,
+          child: Text(label),
+        ),
       );
     }
-    return FilledButton.icon(
-      onPressed: onPressed,
-      style: style,
-      icon: Icon(icon),
-      label: Text(label),
+    return PressScale(
+      child: FilledButton.icon(
+        onPressed: onPressed,
+        style: style,
+        icon: Icon(icon),
+        label: Text(label),
+      ),
     );
   }
 }

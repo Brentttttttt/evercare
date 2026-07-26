@@ -121,17 +121,15 @@ class CareCardArtwork extends StatelessWidget {
           fit: BoxFit.cover,
           alignment: alignment,
           cacheWidth: 1200,
-          color: AppColors.darkGreen.withValues(alpha: .76),
-          colorBlendMode: BlendMode.multiply,
           filterQuality: FilterQuality.medium,
         ),
         const DecoratedBox(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xE8155E43), Color(0xAD155E43), Color(0xE3155E43)],
-              stops: [0, .56, 1],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+              colors: [Color(0xF0155E43), Color(0xB8155E43), Color(0x6B155E43)],
+              stops: [0, .52, 1],
             ),
           ),
         ),

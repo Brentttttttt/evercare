@@ -136,7 +136,7 @@ class HomeDashboardScreen extends StatelessWidget {
             color: AppColors.primaryGreen,
             title: 'Care Book',
             description:
-                'Read simple, practical lessons for everyday caregiving.',
+                'Read simplified notes and access the official NIA handbook.',
             onTap: () => onSelectTab(5),
           ),
           const SizedBox(height: 11),
@@ -225,7 +225,7 @@ class _BloodPressureSummaryCard extends StatelessWidget {
         children: [
           const Positioned.fill(
             child: CareCardArtwork(
-              assetPath: 'assets/images/bp_monitor_home.png',
+              assetPath: 'assets/images/bp_card_care_v2.png',
               alignment: Alignment.centerRight,
             ),
           ),

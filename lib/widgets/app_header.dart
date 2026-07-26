@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_motion.dart';
 import '../theme/app_text_styles.dart';
 
 class AppHeader extends StatelessWidget {
@@ -79,10 +80,12 @@ class EverCareHeader extends StatelessWidget {
           child: Row(
             children: [
               if (showBack) ...[
-                IconButton(
-                  tooltip: 'Back',
-                  onPressed: onBack ?? () => Navigator.maybePop(context),
-                  icon: const Icon(Icons.arrow_back_rounded),
+                PressScale(
+                  child: IconButton(
+                    tooltip: 'Back',
+                    onPressed: onBack ?? () => Navigator.maybePop(context),
+                    icon: const Icon(Icons.arrow_back_rounded),
+                  ),
                 ),
                 const SizedBox(width: 2),
               ],
@@ -116,12 +119,15 @@ class EverCareHeader extends StatelessWidget {
                 ),
               ),
               if (showNotifications)
-                IconButton(
-                  tooltip: 'Notifications',
-                  onPressed: onNotifications,
-                  icon: const Badge(
-                    smallSize: 8,
-                    child: Icon(Icons.notifications_none_rounded),
+                PressScale(
+                  enabled: onNotifications != null,
+                  child: IconButton(
+                    tooltip: 'Notifications',
+                    onPressed: onNotifications,
+                    icon: const Badge(
+                      smallSize: 8,
+                      child: Icon(Icons.notifications_none_rounded),
+                    ),
                   ),
                 ),
               ...actions,

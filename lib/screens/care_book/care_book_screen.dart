@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../data/care_book_data.dart';
+import '../../services/care_book_service.dart';
 import '../../widgets/app_page.dart';
 import '../../widgets/care_photo_banner.dart';
 import '../../widgets/section_header.dart';
@@ -18,6 +19,7 @@ class _CareBookScreenState extends State<CareBookScreen> {
   final _readerKey = GlobalKey();
   int _selectedChapter = 0;
   bool _bookmarked = false;
+  bool _downloading = false;
   double _textScale = 1;
 
   @override
@@ -46,11 +48,12 @@ class _CareBookScreenState extends State<CareBookScreen> {
           ),
           const SizedBox(height: 20),
           CareBookCover(
+            downloading: _downloading,
             onStartReading: () {
               setState(() => _selectedChapter = 0);
               _scrollToReader();
             },
-            onDownload: () => _showSourcePreview('Download Original PDF'),
+            onDownload: _downloading ? null : _downloadHandbook,
           ),
           const SizedBox(height: 28),
           KeyedSubtree(
@@ -87,8 +90,8 @@ class _CareBookScreenState extends State<CareBookScreen> {
           ),
           const SizedBox(height: 30),
           const SectionHeader(
-            title: 'Book Contents',
-            subtitle: 'Choose one of 12 short caregiving lessons',
+            title: 'Simplified Caregiving Notes',
+            subtitle: 'EverCare summaries based on the official NIA handbook',
           ),
           const SizedBox(height: 13),
           ...chapters.map(
@@ -103,7 +106,16 @@ class _CareBookScreenState extends State<CareBookScreen> {
           ),
           const SizedBox(height: 17),
           CareBookReferenceCard(
-            onViewSource: () => _showSourcePreview('View Original Source'),
+            downloading: _downloading,
+            onDownloadLocal: _downloading ? null : _downloadHandbook,
+            onOpenOfficialSource: () => _openReference(
+              CareBookService.officialSource,
+              'Official Source Website',
+            ),
+            onOpenGettingStarted: () => _openReference(
+              CareBookService.gettingStartedGuide,
+              'Getting Started With Caregiving',
+            ),
           ),
         ],
       ),
@@ -132,12 +144,47 @@ class _CareBookScreenState extends State<CareBookScreen> {
     });
   }
 
-  void _showSourcePreview(String title) {
-    // TODO: Open or download the bundled PDF in a future implementation.
-    _showMockMessage(
-      title,
-      'The original handbook is bundled for a future phase. EverCare does not open, download, or share PDF files in this prototype.',
-    );
+  Future<void> _downloadHandbook() async {
+    setState(() => _downloading = true);
+    try {
+      final savedPath = await CareBookService.saveHandbookCopy();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            savedPath == null
+                ? 'The NIA handbook could not be saved.'
+                : 'Original NIA handbook saved successfully:\n$savedPath',
+          ),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      _showMockMessage(
+        'Could not save the PDF',
+        'Please check that a save location is available, then try again.',
+      );
+    } finally {
+      if (mounted) setState(() => _downloading = false);
+    }
+  }
+
+  Future<void> _openReference(Uri uri, String title) async {
+    try {
+      final opened = await CareBookService.openReference(uri);
+      if (!opened && mounted) {
+        _showMockMessage(
+          'Could not open $title',
+          'Please check your browser connection and try again.',
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      _showMockMessage(
+        'Could not open $title',
+        'Please check your browser connection and try again.',
+      );
+    }
   }
 
   void _showMockMessage(String title, String message) {

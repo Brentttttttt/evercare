@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app_colors.dart';
+import 'app_motion.dart';
 import 'app_text_styles.dart';
 
 abstract final class AppTheme {
@@ -22,6 +23,20 @@ abstract final class AppTheme {
       scaffoldBackgroundColor: AppColors.background,
       fontFamily: 'sans-serif',
       materialTapTargetSize: MaterialTapTargetSize.padded,
+      splashFactory: InkRipple.splashFactory,
+      hoverColor: AppColors.primaryGreen.withValues(alpha: .045),
+      focusColor: AppColors.primaryGreen.withValues(alpha: .09),
+      highlightColor: AppColors.primaryGreen.withValues(alpha: .07),
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: EverCarePageTransitionsBuilder(),
+          TargetPlatform.iOS: EverCarePageTransitionsBuilder(),
+          TargetPlatform.macOS: EverCarePageTransitionsBuilder(),
+          TargetPlatform.windows: EverCarePageTransitionsBuilder(),
+          TargetPlatform.linux: EverCarePageTransitionsBuilder(),
+          TargetPlatform.fuchsia: EverCarePageTransitionsBuilder(),
+        },
+      ),
       textTheme: const TextTheme(
         displayLarge: AppTextStyles.display,
         headlineLarge: AppTextStyles.display,
@@ -106,50 +121,103 @@ abstract final class AppTheme {
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
-        style: FilledButton.styleFrom(
-          backgroundColor: AppColors.primaryGreen,
-          foregroundColor: Colors.white,
-          elevation: 0,
-          minimumSize: const Size.fromHeight(58),
-          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-          ),
-          textStyle: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.1,
-          ),
-        ),
+        style:
+            FilledButton.styleFrom(
+              backgroundColor: AppColors.primaryGreen,
+              foregroundColor: Colors.white,
+              elevation: 1,
+              minimumSize: const Size.fromHeight(58),
+              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+              textStyle: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.1,
+              ),
+            ).copyWith(
+              animationDuration: AppMotion.quick,
+              elevation: WidgetStateProperty.resolveWith(
+                (states) => states.contains(WidgetState.pressed)
+                    ? 0
+                    : states.contains(WidgetState.hovered)
+                    ? 3
+                    : 1,
+              ),
+              overlayColor: WidgetStateProperty.resolveWith(
+                (states) => states.contains(WidgetState.pressed)
+                    ? Colors.white.withValues(alpha: .16)
+                    : states.contains(WidgetState.hovered)
+                    ? Colors.white.withValues(alpha: .08)
+                    : null,
+              ),
+            ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.darkGreen,
-          minimumSize: const Size.fromHeight(56),
-          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 15),
-          side: const BorderSide(color: AppColors.primaryGreen),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-          ),
-          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-        ),
+        style:
+            OutlinedButton.styleFrom(
+              foregroundColor: AppColors.darkGreen,
+              minimumSize: const Size.fromHeight(56),
+              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 15),
+              side: const BorderSide(color: AppColors.primaryGreen),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+              textStyle: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+              ),
+            ).copyWith(
+              animationDuration: AppMotion.quick,
+              backgroundColor: WidgetStateProperty.resolveWith(
+                (states) => states.contains(WidgetState.pressed)
+                    ? AppColors.lightGreen
+                    : states.contains(WidgetState.hovered)
+                    ? AppColors.surfaceMuted
+                    : null,
+              ),
+            ),
       ),
       textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          foregroundColor: AppColors.darkGreen,
-          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
+        style:
+            TextButton.styleFrom(
+              foregroundColor: AppColors.darkGreen,
+              textStyle: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ).copyWith(
+              animationDuration: AppMotion.quick,
+              backgroundColor: WidgetStateProperty.resolveWith(
+                (states) => states.contains(WidgetState.pressed)
+                    ? AppColors.lightGreen
+                    : states.contains(WidgetState.hovered)
+                    ? AppColors.surfaceMuted
+                    : null,
+              ),
+            ),
       ),
       iconButtonTheme: IconButtonThemeData(
-        style: IconButton.styleFrom(
-          minimumSize: const Size(48, 48),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
+        style:
+            IconButton.styleFrom(
+              minimumSize: const Size(48, 48),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ).copyWith(
+              animationDuration: AppMotion.quick,
+              backgroundColor: WidgetStateProperty.resolveWith(
+                (states) => states.contains(WidgetState.pressed)
+                    ? AppColors.lightGreen
+                    : states.contains(WidgetState.hovered)
+                    ? AppColors.surfaceMuted
+                    : null,
+              ),
+            ),
       ),
       chipTheme: ChipThemeData(
         backgroundColor: Colors.white,

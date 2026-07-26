@@ -33,6 +33,7 @@ import '../screens/settings/about_screen.dart';
 import '../screens/settings/help_support_screen.dart';
 import '../screens/settings/settings_screen.dart';
 import '../screens/splash/splash_screen.dart';
+import '../theme/app_motion.dart';
 
 abstract final class AppRoutes {
   static const splash = '/';
@@ -134,7 +135,7 @@ abstract final class AppRoutes {
       _ => const WelcomeScreen(),
     };
 
-    return MaterialPageRoute<dynamic>(
+    return EverCarePageRoute<dynamic>(
       builder: (_) => page,
       settings: routeSettings,
     );
