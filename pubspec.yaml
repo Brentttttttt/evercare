@@ -18,5 +18,6 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/logo/evercare_mark.png
+    - assets/logo/evercare_app_icon.png
     - assets/images/
+    - assets/care_book/caregivers-book.pdf

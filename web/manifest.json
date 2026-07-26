@@ -1,11 +1,11 @@
 {
-    "name": "evercare",
-    "short_name": "evercare",
+    "name": "EverCare",
+    "short_name": "EverCare",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#F5F8F6",
+    "theme_color": "#155E43",
+    "description": "A warm, senior-friendly health and caregiving interface.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

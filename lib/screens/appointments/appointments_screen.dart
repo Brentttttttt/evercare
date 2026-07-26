@@ -174,16 +174,10 @@ class _NextAppointmentCard extends StatelessWidget {
       onTap: onTap,
       child: Stack(
         children: [
-          Positioned(
-            right: -35,
-            top: -50,
-            child: Container(
-              width: 150,
-              height: 150,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: .06),
-              ),
+          const Positioned.fill(
+            child: CareCardArtwork(
+              assetPath: 'assets/images/appointment_clinic.png',
+              alignment: Alignment.centerRight,
             ),
           ),
           Padding(

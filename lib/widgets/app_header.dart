@@ -168,16 +168,19 @@ class _EverCareBrandLockup extends StatelessWidget {
         Container(
           width: markSize,
           height: markSize,
-          padding: EdgeInsets.all(markSize * .08),
           decoration: BoxDecoration(
             color: AppColors.lightGreen,
             borderRadius: BorderRadius.circular(markSize * .28),
           ),
-          child: Image.asset(
-            'assets/logo/evercare_mark.png',
-            fit: BoxFit.contain,
-            filterQuality: FilterQuality.high,
-            semanticLabel: 'EverCare logo',
+          clipBehavior: Clip.antiAlias,
+          child: Transform.scale(
+            scale: 1.08,
+            child: Image.asset(
+              'assets/logo/evercare_app_icon.png',
+              fit: BoxFit.cover,
+              filterQuality: FilterQuality.high,
+              semanticLabel: 'EverCare logo',
+            ),
           ),
         ),
         if (showWordmark) ...[

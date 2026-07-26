@@ -111,12 +111,96 @@ class HomeDashboardScreen extends StatelessWidget {
                     label: 'Emergency',
                     icon: Icons.sos_rounded,
                     color: AppColors.danger,
-                    onTap: () =>
-                        Navigator.pushNamed(context, AppRoutes.emergency),
+                    onTap: () => onSelectTab(6),
                   ),
                 ],
               );
             },
+          ),
+          const SizedBox(height: 28),
+          const SectionHeader(
+            title: 'More Care Services',
+            subtitle: 'Extra support for everyday care',
+          ),
+          const SizedBox(height: 12),
+          _CareServiceCard(
+            icon: Icons.auto_stories_outlined,
+            color: AppColors.purple,
+            title: 'Journals',
+            description: 'Record thoughts, symptoms, moods, and daily moments.',
+            onTap: () => onSelectTab(4),
+          ),
+          const SizedBox(height: 11),
+          _CareServiceCard(
+            icon: Icons.menu_book_outlined,
+            color: AppColors.primaryGreen,
+            title: 'Care Book',
+            description:
+                'Read simple, practical lessons for everyday caregiving.',
+            onTap: () => onSelectTab(5),
+          ),
+          const SizedBox(height: 11),
+          _CareServiceCard(
+            icon: Icons.sos_rounded,
+            color: AppColors.danger,
+            title: 'Emergency',
+            description:
+                'Keep essential contacts and medical details close by.',
+            onTap: () => onSelectTab(6),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CareServiceCard extends StatelessWidget {
+  const _CareServiceCard({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.description,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String description;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      onTap: onTap,
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: .11),
+              borderRadius: BorderRadius.circular(17),
+            ),
+            child: Icon(icon, color: color, size: 25),
+          ),
+          const SizedBox(width: 13),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: AppTextStyles.cardTitle),
+                const SizedBox(height: 4),
+                Text(description, style: AppTextStyles.bodyMuted),
+              ],
+            ),
+          ),
+          const SizedBox(width: 7),
+          const Icon(
+            Icons.arrow_forward_rounded,
+            color: AppColors.secondaryText,
+            size: 20,
           ),
         ],
       ),
@@ -139,16 +223,10 @@ class _BloodPressureSummaryCard extends StatelessWidget {
       padding: EdgeInsets.zero,
       child: Stack(
         children: [
-          Positioned(
-            right: -42,
-            top: -50,
-            child: Container(
-              width: 164,
-              height: 164,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: .055),
-              ),
+          const Positioned.fill(
+            child: CareCardArtwork(
+              assetPath: 'assets/images/bp_monitor_home.png',
+              alignment: Alignment.centerRight,
             ),
           ),
           Padding(

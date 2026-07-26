@@ -14,7 +14,6 @@ import '../screens/caregiver/caregiver_list_screen.dart';
 import '../screens/caregiver/caregiver_profile_screen.dart';
 import '../screens/caregiver/health_report_screen.dart';
 import '../screens/emergency/emergency_contacts_screen.dart';
-import '../screens/emergency/emergency_screen.dart';
 import '../screens/emergency/medical_information_screen.dart';
 import '../screens/health/blood_pressure_history_screen.dart';
 import '../screens/health/blood_pressure_record_screen.dart';
@@ -22,6 +21,7 @@ import '../screens/health/blood_pressure_trend_screen.dart';
 import '../screens/health/device_connection_screen.dart';
 import '../screens/health/manual_health_record_screen.dart';
 import '../screens/home/main_shell.dart';
+import '../screens/journals/add_journal_entry_screen.dart';
 import '../screens/medications/add_medication_screen.dart';
 import '../screens/medications/medication_detail_screen.dart';
 import '../screens/notifications/notifications_screen.dart';
@@ -50,6 +50,9 @@ abstract final class AppRoutes {
   static const medicationDetails = '/medications/details';
   static const addMedication = '/medications/add';
   static const appointments = '/appointments';
+  static const journals = '/journals';
+  static const addJournal = '/journals/add';
+  static const careBook = '/care-book';
   static const appointmentDetails = '/appointments/details';
   static const addAppointment = '/appointments/add';
   static const editAppointment = '/appointments/edit';
@@ -98,6 +101,9 @@ abstract final class AppRoutes {
             routeSettings.arguments is bool && routeSettings.arguments! as bool,
       ),
       appointments => const MainShell(initialIndex: 3),
+      journals => const MainShell(initialIndex: 4),
+      addJournal => const AddJournalEntryScreen(),
+      careBook => const MainShell(initialIndex: 5),
       appointmentDetails => AppointmentDetailScreen(
         appointment: routeSettings.arguments is MockAppointment
             ? routeSettings.arguments! as MockAppointment
@@ -116,7 +122,7 @@ abstract final class AppRoutes {
             : null,
       ),
       healthReport => const HealthReportScreen(),
-      emergency => const EmergencyScreen(),
+      emergency => const MainShell(initialIndex: 6),
       emergencyContacts => const EmergencyContactsScreen(),
       medicalInfo => const MedicalInformationScreen(),
       notifications => const NotificationsScreen(),

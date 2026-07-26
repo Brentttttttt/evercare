@@ -100,3 +100,42 @@ class CarePhotoBanner extends StatelessWidget {
     );
   }
 }
+
+class CareCardArtwork extends StatelessWidget {
+  const CareCardArtwork({
+    required this.assetPath,
+    super.key,
+    this.alignment = Alignment.center,
+  });
+
+  final String assetPath;
+  final Alignment alignment;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Image.asset(
+          assetPath,
+          fit: BoxFit.cover,
+          alignment: alignment,
+          cacheWidth: 1200,
+          color: AppColors.darkGreen.withValues(alpha: .76),
+          colorBlendMode: BlendMode.multiply,
+          filterQuality: FilterQuality.medium,
+        ),
+        const DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xE8155E43), Color(0xAD155E43), Color(0xE3155E43)],
+              stops: [0, .56, 1],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}

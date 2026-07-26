@@ -152,9 +152,22 @@ abstract final class AppTheme {
         ),
       ),
       chipTheme: ChipThemeData(
+        backgroundColor: Colors.white,
+        selectedColor: AppColors.lightGreen,
+        secondarySelectedColor: AppColors.lightGreen,
+        checkmarkColor: AppColors.darkGreen,
         side: const BorderSide(color: AppColors.border),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+        labelStyle: const TextStyle(
+          color: AppColors.primaryText,
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+        ),
+        secondaryLabelStyle: const TextStyle(
+          color: AppColors.darkGreen,
+          fontSize: 13,
+          fontWeight: FontWeight.w800,
+        ),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       ),
       segmentedButtonTheme: SegmentedButtonThemeData(

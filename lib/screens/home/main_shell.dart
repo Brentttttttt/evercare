@@ -4,7 +4,10 @@ import '../../routes/app_routes.dart';
 import '../../widgets/app_bottom_navigation.dart';
 import '../../widgets/app_header.dart';
 import '../appointments/appointments_screen.dart';
+import '../care_book/care_book_screen.dart';
+import '../emergency/emergency_screen.dart';
 import '../health/health_overview_screen.dart';
+import '../journals/journals_screen.dart';
 import '../medications/medication_screen.dart';
 import '../profile/profile_screen.dart';
 import 'home_dashboard_screen.dart';
@@ -19,7 +22,7 @@ class MainShell extends StatefulWidget {
 }
 
 class _MainShellState extends State<MainShell> {
-  late int _selectedIndex = widget.initialIndex.clamp(0, 4);
+  late int _selectedIndex = widget.initialIndex.clamp(0, 7);
 
   void _selectTab(int index) => setState(() => _selectedIndex = index);
 
@@ -30,6 +33,16 @@ class _MainShellState extends State<MainShell> {
       (title: 'My Health', subtitle: 'Blood pressure monitoring'),
       (title: 'Medications', subtitle: 'Your daily medicine schedule'),
       (title: 'Appointments', subtitle: 'Manage your medical visits'),
+      (
+        title: 'Journals',
+        subtitle:
+            'Keep track of daily thoughts, feelings, symptoms, and special moments.',
+      ),
+      (title: 'Care Book', subtitle: 'Simple guidance for everyday caregiving'),
+      (
+        title: 'Emergency',
+        subtitle: 'Contacts and important medical information',
+      ),
       (title: 'Profile', subtitle: 'Personal details and settings'),
     ];
     final pages = [
@@ -37,6 +50,9 @@ class _MainShellState extends State<MainShell> {
       const HealthOverviewScreen(),
       const MedicationScreen(),
       const AppointmentsScreen(),
+      const JournalsScreen(),
+      const CareBookScreen(),
+      const EmergencyScreen(),
       const ProfileScreen(),
     ];
     final header = headers[_selectedIndex];

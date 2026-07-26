@@ -47,6 +47,7 @@ app.*.map.json
 # Local development and temporary tooling
 /.agents/
 /.claude/
+/.vscode/
 /tmp/
 
 # Retained locally but no longer used by the application
