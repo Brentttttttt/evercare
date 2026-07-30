@@ -18,7 +18,7 @@ import '../screens/emergency/medical_information_screen.dart';
 import '../screens/health/blood_pressure_history_screen.dart';
 import '../screens/health/blood_pressure_record_screen.dart';
 import '../screens/health/blood_pressure_trend_screen.dart';
-import '../screens/health/device_connection_screen.dart';
+import '../screens/health/bp_monitor_test_page.dart';
 import '../screens/health/manual_health_record_screen.dart';
 import '../screens/home/main_shell.dart';
 import '../screens/journals/add_journal_entry_screen.dart';
@@ -83,13 +83,14 @@ abstract final class AppRoutes {
             ? routeSettings.arguments! as int
             : 0,
       ),
-      deviceConnection => const DeviceConnectionScreen(),
+      deviceConnection => const BpMonitorTestPage(),
       bloodPressureHistory => const BloodPressureHistoryScreen(),
-      bloodPressureRecord => BloodPressureRecordScreen(
-        record: routeSettings.arguments is MockBloodPressureRecord
-            ? routeSettings.arguments! as MockBloodPressureRecord
-            : MockData.latestBloodPressure,
-      ),
+      bloodPressureRecord =>
+        routeSettings.arguments is MockBloodPressureRecord
+            ? BloodPressureRecordScreen(
+                record: routeSettings.arguments! as MockBloodPressureRecord,
+              )
+            : const BloodPressureHistoryScreen(),
       bloodPressureTrend => const BloodPressureTrendScreen(),
       manualRecord => const ManualHealthRecordScreen(),
       medicationDetails => MedicationDetailScreen(

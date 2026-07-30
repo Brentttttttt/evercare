@@ -1,5 +1,8 @@
 import 'package:evercare/data/mock_data.dart';
+import 'package:evercare/models/bp_monitor_packet.dart';
+import 'package:evercare/routes/app_route_observer.dart';
 import 'package:evercare/routes/app_routes.dart';
+import 'package:evercare/services/bp_monitor_ble_service.dart';
 import 'package:evercare/screens/appointments/add_appointment_screen.dart';
 import 'package:evercare/screens/appointments/appointment_detail_screen.dart';
 import 'package:evercare/screens/appointments/appointments_screen.dart';
@@ -10,7 +13,7 @@ import 'package:evercare/screens/emergency/emergency_screen.dart';
 import 'package:evercare/screens/health/blood_pressure_history_screen.dart';
 import 'package:evercare/screens/health/blood_pressure_record_screen.dart';
 import 'package:evercare/screens/health/blood_pressure_trend_screen.dart';
-import 'package:evercare/screens/health/device_connection_screen.dart';
+import 'package:evercare/screens/health/bp_monitor_test_page.dart';
 import 'package:evercare/screens/health/health_overview_screen.dart';
 import 'package:evercare/screens/health/manual_health_record_screen.dart';
 import 'package:evercare/screens/home/home_dashboard_screen.dart';
@@ -24,25 +27,55 @@ import 'package:evercare/screens/profile/profile_screen.dart';
 import 'package:evercare/theme/app_theme.dart';
 import 'package:evercare/theme/app_motion.dart';
 import 'package:evercare/widgets/app_bottom_navigation.dart';
+import 'package:evercare/widgets/bp_monitor_ble_scope.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+const _confirmedMonitorResult = <int>[
+  0x81,
+  0x46,
+  0x24,
+  0x32,
+  0x00,
+  0x00,
+  0x19,
+  0x03,
+  0x15,
+  0x0A,
+  0x11,
+  0x00,
+  0x00,
+  0x00,
+  0x00,
+];
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  Future<void> pumpPhoneScreen(WidgetTester tester, Widget screen) async {
+  Future<void> pumpPhoneScreen(
+    WidgetTester tester,
+    Widget screen, {
+    BpMonitorBleService? service,
+  }) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
+    final bpMonitorService = service ?? BpMonitorBleService();
+    addTearDown(bpMonitorService.close);
+
     await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.light,
-        onGenerateRoute: AppRoutes.onGenerateRoute,
-        home: Scaffold(body: SafeArea(child: screen)),
+      BpMonitorBleScope(
+        service: bpMonitorService,
+        child: MaterialApp(
+          theme: AppTheme.light,
+          onGenerateRoute: AppRoutes.onGenerateRoute,
+          navigatorObservers: [everCareRouteObserver],
+          home: Scaffold(body: SafeArea(child: screen)),
+        ),
       ),
     );
     await tester.pump();
@@ -64,22 +97,136 @@ void main() {
     );
   });
 
+  test('raw BP monitor packets keep bytes and format uppercase hex', () {
+    final packet = BpMonitorPacket(
+      index: 1,
+      bytes: const [128, 0, 1, 0],
+      receivedAt: DateTime(2026, 7, 30, 10, 15),
+    );
+
+    expect(packet.index, 1);
+    expect(packet.length, 4);
+    expect(packet.decimalString, '[128, 0, 1, 0]');
+    expect(packet.hexadecimalString, '80 00 01 00');
+  });
+
+  test('progress packets share one structure and are not highlighted', () {
+    final first = BpMonitorPacket.fromNotification(
+      index: 1,
+      bytes: const [128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      receivedAt: DateTime(2026, 7, 30, 10, 15),
+      compareAgainstProgressStructure: false,
+    );
+    final next = BpMonitorPacket.fromNotification(
+      index: 2,
+      bytes: const [128, 0, 30, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      receivedAt: DateTime(2026, 7, 30, 10, 15, 1),
+      compareAgainstProgressStructure: true,
+    );
+
+    expect(first.isHighlighted, isFalse);
+    expect(next.isHighlighted, isFalse);
+    expect(first.structureSignature, next.structureSignature);
+  });
+
+  test('unusual packet bytes are highlighted without decoding values', () {
+    final packet = BpMonitorPacket.fromNotification(
+      index: 42,
+      bytes: const [128, 0, 30, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      receivedAt: DateTime(2026, 7, 30, 10, 15),
+      compareAgainstProgressStructure: true,
+    );
+    final json = packet.toJson();
+
+    expect(packet.isHighlighted, isTrue);
+    expect(
+      packet.highlightReasons,
+      contains('A byte after index 2 is nonzero'),
+    );
+    expect(json['index'], 42);
+    expect(json['timestamp'], isA<String>());
+    expect(json['decimalBytes'], packet.bytes);
+    expect(json['hex'], packet.hexadecimalString);
+    expect(json['length'], 15);
+  });
+
   testWidgets('welcome screen fits a common Android phone', (tester) async {
     await pumpPhoneScreen(tester, const WelcomeScreen());
   });
 
   testWidgets('home dashboard renders without overflow', (tester) async {
     await pumpPhoneScreen(tester, HomeDashboardScreen(onSelectTab: (_) {}));
+    expect(find.text('No real reading received yet'), findsOneWidget);
+    expect(find.text('120/80'), findsNothing);
+    expect(find.text('Synced today at 8:45 AM'), findsNothing);
   });
 
   testWidgets('health overview renders without overflow', (tester) async {
     await pumpPhoneScreen(tester, const HealthOverviewScreen());
+    expect(
+      find.text('No blood-pressure measurement received yet.'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('No real monitor readings have been saved yet.'),
+      findsOneWidget,
+    );
+    expect(find.text('Preview device state'), findsNothing);
+    expect(find.text('85%'), findsNothing);
+    expect(find.text('120 / 80'), findsNothing);
   });
 
-  testWidgets('device connection preview renders without overflow', (
+  testWidgets('health overview displays only a real decoded BLE result', (
     tester,
   ) async {
-    await pumpPhoneScreen(tester, const DeviceConnectionScreen());
+    final service = BpMonitorBleService();
+    service.processNotificationForTesting(
+      _confirmedMonitorResult,
+      receivedAt: DateTime(2026, 7, 30, 18, 30),
+    );
+
+    await pumpPhoneScreen(
+      tester,
+      const HealthOverviewScreen(),
+      service: service,
+    );
+
+    expect(find.text('70'), findsOneWidget);
+    expect(find.text('36'), findsOneWidget);
+    expect(find.text('50'), findsOneWidget);
+    expect(find.text('Received directly through BLE'), findsOneWidget);
+    expect(find.text('Normal'), findsNothing);
+  });
+
+  testWidgets('health auto-connect lease pauses under another page', (
+    tester,
+  ) async {
+    final service = BpMonitorBleService();
+    await pumpPhoneScreen(
+      tester,
+      const MainShell(initialIndex: 1),
+      service: service,
+    );
+    await tester.pump();
+    expect(service.hasActiveClient, isTrue);
+
+    final navigator = tester.state<NavigatorState>(find.byType(Navigator));
+    navigator.pushNamed(AppRoutes.manualRecord);
+    await tester.pumpAndSettle();
+    expect(service.hasActiveClient, isFalse);
+
+    navigator.pop();
+    await tester.pumpAndSettle();
+    expect(service.hasActiveClient, isTrue);
+  });
+
+  testWidgets('BLE monitor capture page renders without overflow', (
+    tester,
+  ) async {
+    await pumpPhoneScreen(tester, const BpMonitorTestPage());
+    expect(find.text('Capture session'), findsOneWidget);
+    expect(find.text('Start new capture'), findsOneWidget);
+    expect(find.text('Export / Copy Complete Session'), findsOneWidget);
   });
 
   testWidgets('blood-pressure history renders without overflow', (
@@ -113,6 +260,9 @@ void main() {
 
   testWidgets('focused notifications render without overflow', (tester) async {
     await pumpPhoneScreen(tester, const NotificationsScreen());
+    expect(find.text('Blood pressure reading synchronized'), findsNothing);
+    expect(find.textContaining('120/80'), findsNothing);
+    expect(find.textContaining('YK-BPA1'), findsNothing);
   });
 
   testWidgets('medication screen renders without overflow', (tester) async {

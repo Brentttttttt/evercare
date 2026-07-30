@@ -10,7 +10,9 @@ class NotificationsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const groups = ['Today', 'Yesterday', 'Earlier'];
+    final groups = <String>{
+      for (final item in MockData.notifications) item['group']! as String,
+    };
     return DetailPage(
       title: 'Notifications',
       actions: [

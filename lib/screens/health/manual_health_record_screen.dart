@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../data/mock_data.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_page.dart';
@@ -35,8 +34,8 @@ class _ManualHealthRecordScreenState extends State<ManualHealthRecordScreen> {
                 SizedBox(width: 11),
                 Expanded(
                   child: Text(
-                    'Use this mock form as a fallback when the monitor is '
-                    'unavailable. No value is stored.',
+                    'Use this preview form to enter a reading manually or as a '
+                    'caregiver. No value is stored yet.',
                     style: AppTextStyles.bodyMuted,
                   ),
                 ),
@@ -77,7 +76,7 @@ class _ManualHealthRecordScreenState extends State<ManualHealthRecordScreen> {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: [MockData.deviceName, 'Manual Entry', 'Caregiver Entry']
+            children: const ['Manual Entry', 'Caregiver Entry']
                 .map(
                   (source) => ChoiceChip(
                     label: Text(source),
@@ -105,7 +104,7 @@ class _ManualHealthRecordScreenState extends State<ManualHealthRecordScreen> {
               messenger.showSnackBar(
                 SnackBar(
                   content: Text(
-                    'Mock blood-pressure record accepted as $_source. '
+                    'Blood-pressure record preview accepted as $_source. '
                     'Nothing was stored.',
                   ),
                 ),

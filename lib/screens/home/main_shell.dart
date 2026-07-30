@@ -75,7 +75,7 @@ class _MainShellState extends State<MainShell>
     ];
     final pages = [
       HomeDashboardScreen(onSelectTab: _selectTab),
-      const HealthOverviewScreen(),
+      HealthOverviewScreen(isActive: _selectedIndex == 1),
       const MedicationScreen(),
       const AppointmentsScreen(),
       const JournalsScreen(),

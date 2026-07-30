@@ -236,12 +236,6 @@ abstract final class MockData {
   static const notifications = [
     {
       'group': 'Today',
-      'title': 'Blood pressure reading synchronized',
-      'subtitle': '120/80 mmHg · Pulse 72 BPM · 8:45 AM',
-      'icon': Icons.sync_rounded,
-    },
-    {
-      'group': 'Today',
       'title': 'Time to take Metformin',
       'subtitle': 'One tablet · 12:30 PM',
       'icon': Icons.medication_outlined,
@@ -251,18 +245,6 @@ abstract final class MockData {
       'title': 'Dental appointment tomorrow',
       'subtitle': 'Bright Smile Dental Clinic · 2:00 PM',
       'icon': Icons.calendar_month_outlined,
-    },
-    {
-      'group': 'Yesterday',
-      'title': 'Yongrow/Yonker YK-BPA1 connected',
-      'subtitle': 'Connected-device status updated',
-      'icon': Icons.bluetooth_connected_rounded,
-    },
-    {
-      'group': 'Earlier',
-      'title': 'Weekly blood-pressure report available',
-      'subtitle': 'Your July 14–20 summary is ready',
-      'icon': Icons.assessment_outlined,
     },
   ];
 }

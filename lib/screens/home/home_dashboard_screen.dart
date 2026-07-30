@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../data/mock_data.dart';
 import '../../routes/app_routes.dart';
+import '../../services/bp_monitor_ble_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_page.dart';
-import '../../widgets/blood_pressure_widgets.dart';
+import '../../widgets/bp_monitor_ble_scope.dart';
 import '../../widgets/care_photo_banner.dart';
 import '../../widgets/section_header.dart';
 
@@ -16,6 +17,7 @@ class HomeDashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bpMonitor = BpMonitorBleScope.watch(context);
     return SingleChildScrollView(
       padding: pagePadding,
       child: Column(
@@ -26,7 +28,7 @@ class HomeDashboardScreen extends StatelessWidget {
           const Text('Good morning, Maria', style: AppTextStyles.pageTitle),
           const SizedBox(height: 5),
           const Text(
-            'Your connected health snapshot for today.',
+            'Your caregiving overview for today.',
             style: AppTextStyles.bodyMuted,
           ),
           const SizedBox(height: 18),
@@ -39,7 +41,10 @@ class HomeDashboardScreen extends StatelessWidget {
             height: 180,
           ),
           const SizedBox(height: 20),
-          _BloodPressureSummaryCard(onTap: () => onSelectTab(1)),
+          _BloodPressureSummaryCard(
+            service: bpMonitor,
+            onTap: () => onSelectTab(1),
+          ),
           const SizedBox(height: 28),
           const SectionHeader(title: 'Today’s overview'),
           const SizedBox(height: 12),
@@ -209,13 +214,16 @@ class _CareServiceCard extends StatelessWidget {
 }
 
 class _BloodPressureSummaryCard extends StatelessWidget {
-  const _BloodPressureSummaryCard({required this.onTap});
+  const _BloodPressureSummaryCard({required this.service, required this.onTap});
 
+  final BpMonitorBleService service;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final record = MockData.latestBloodPressure;
+    final result = service.currentResult;
+    final monitorName = _monitorName;
+    final statusLabel = _statusLabel;
     return AppCard(
       color: AppColors.darkGreen,
       borderColor: AppColors.darkGreen,
@@ -236,16 +244,14 @@ class _BloodPressureSummaryCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    const Icon(
-                      Icons.bluetooth_connected_rounded,
-                      color: Color(0xFFBDE7CB),
-                      size: 20,
-                    ),
+                    Icon(_statusIcon, color: const Color(0xFFBDE7CB), size: 20),
                     const SizedBox(width: 7),
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'YK-BPA1 · CONNECTED',
-                        style: TextStyle(
+                        '$monitorName · ${statusLabel.toUpperCase()}',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
                           color: Color(0xFFCFE7D8),
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
@@ -253,71 +259,23 @@ class _BloodPressureSummaryCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    BloodPressureStatusBadge(status: record.status),
+                    const SizedBox(width: 8),
+                    const Icon(
+                      Icons.arrow_forward_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                   ],
                 ),
                 const SizedBox(height: 18),
-                const Text(
-                  'BLOOD PRESSURE',
-                  style: TextStyle(
-                    color: Color(0xFFCFE7D8),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1,
+                if (result == null)
+                  _EmptyBloodPressureSummary(message: _emptyStateMessage)
+                else
+                  _RealBloodPressureSummary(
+                    systolic: result.systolic,
+                    diastolic: result.diastolic,
+                    pulse: result.pulse,
                   ),
-                ),
-                const SizedBox(height: 7),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Expanded(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          '${record.systolic}/${record.diastolic}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 39,
-                            height: .95,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -1.3,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const Padding(
-                      padding: EdgeInsets.only(left: 7, bottom: 3),
-                      child: Text(
-                        'mmHg',
-                        style: TextStyle(
-                          color: Color(0xFFCFE7D8),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 15),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.favorite_rounded,
-                      color: Color(0xFFFFC3BD),
-                      size: 20,
-                    ),
-                    const SizedBox(width: 7),
-                    Text(
-                      'Pulse: ${record.pulse} BPM',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
                 const SizedBox(height: 18),
                 Container(
                   padding: const EdgeInsets.all(14),
@@ -328,25 +286,29 @@ class _BloodPressureSummaryCard extends StatelessWidget {
                       color: Colors.white.withValues(alpha: .08),
                     ),
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
                       Icon(
-                        Icons.sync_rounded,
-                        color: Color(0xFFBDE7CB),
+                        result == null
+                            ? Icons.monitor_heart_outlined
+                            : Icons.bluetooth_connected_rounded,
+                        color: const Color(0xFFBDE7CB),
                         size: 20,
                       ),
-                      SizedBox(width: 9),
+                      const SizedBox(width: 9),
                       Expanded(
                         child: Text(
-                          'Synced today at 8:45 AM',
-                          style: TextStyle(
+                          result == null
+                              ? 'Open My Health to connect and take a real measurement.'
+                              : 'Received through BLE · ${_formatResultTime(result.receivedAt)}',
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 13.5,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
-                      Icon(
+                      const Icon(
                         Icons.arrow_forward_rounded,
                         color: Colors.white,
                         size: 20,
@@ -359,6 +321,209 @@ class _BloodPressureSummaryCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  String get _monitorName {
+    if (service.isConnected) {
+      return service.connectedName ??
+          service.savedName ??
+          BpMonitorBleService.monitorName;
+    }
+    if (service.hasSavedMonitor) {
+      return service.savedName ?? BpMonitorBleService.monitorName;
+    }
+    if (service.matchingDevices.isNotEmpty) {
+      return service.matchingDevices.first.name;
+    }
+    return 'No monitor selected';
+  }
+
+  String get _statusLabel {
+    if (service.stage == BpMonitorBleStage.initializing) {
+      return 'Checking Bluetooth';
+    }
+    if (service.stage == BpMonitorBleStage.unsupported) {
+      return 'Bluetooth unavailable';
+    }
+    if (service.stage == BpMonitorBleStage.bluetoothOff) {
+      return 'Bluetooth off';
+    }
+    if (service.stage == BpMonitorBleStage.permissionRequired) {
+      return 'Permission required';
+    }
+    if (service.isCancellingConnection) return 'Canceling connection';
+    if (service.isScanning) return 'Searching';
+    if (service.isConnecting) return 'Connecting';
+    if (service.isListening) {
+      if (service.isMeasurementInProgress) return 'Measurement in progress';
+      if (service.currentResult != null) return 'Result received';
+      return 'Ready and listening';
+    }
+    if (service.isConnected) return 'Preparing listener';
+    if (!service.hasSavedMonitor) {
+      return service.matchingDevices.isNotEmpty
+          ? 'Monitor detected'
+          : 'Not set up';
+    }
+    if (service.stage == BpMonitorBleStage.monitorNotFound) {
+      return 'Monitor not found';
+    }
+    if (service.lastError != null) return 'Connection issue';
+    return 'Saved monitor disconnected';
+  }
+
+  IconData get _statusIcon {
+    if (service.isListening || service.isConnected) {
+      return Icons.bluetooth_connected_rounded;
+    }
+    if (service.isScanning || service.isConnecting) {
+      return Icons.bluetooth_searching_rounded;
+    }
+    return Icons.bluetooth_disabled_rounded;
+  }
+
+  String get _emptyStateMessage {
+    if (service.isMeasurementInProgress) {
+      return 'A real measurement is in progress on the connected monitor.';
+    }
+    if (service.isListening) {
+      return 'Press Start on the physical monitor when the patient is ready.';
+    }
+    if (service.isScanning || service.isConnecting) {
+      return 'EverCare is working on the real monitor connection.';
+    }
+    if (!service.hasSavedMonitor) {
+      return 'Set up a YK-IBPA1 monitor from My Health to begin.';
+    }
+    return 'Reconnect the saved monitor from My Health to take a measurement.';
+  }
+
+  String _formatResultTime(DateTime value) {
+    final local = value.toLocal();
+    final hour = local.hour == 0
+        ? 12
+        : local.hour > 12
+        ? local.hour - 12
+        : local.hour;
+    final minute = local.minute.toString().padLeft(2, '0');
+    final period = local.hour >= 12 ? 'PM' : 'AM';
+    return '${local.month}/${local.day}/${local.year} · $hour:$minute $period';
+  }
+}
+
+class _EmptyBloodPressureSummary extends StatelessWidget {
+  const _EmptyBloodPressureSummary({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'No real reading received yet',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 23,
+            height: 1.15,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 9),
+        Text(
+          message,
+          style: const TextStyle(
+            color: Color(0xFFD9E9DF),
+            fontSize: 13.5,
+            height: 1.4,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RealBloodPressureSummary extends StatelessWidget {
+  const _RealBloodPressureSummary({
+    required this.systolic,
+    required this.diastolic,
+    required this.pulse,
+  });
+
+  final int systolic;
+  final int diastolic;
+  final int pulse;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'LATEST REAL BLE READING',
+          style: TextStyle(
+            color: Color(0xFFCFE7D8),
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1,
+          ),
+        ),
+        const SizedBox(height: 7),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  '$systolic/$diastolic',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 39,
+                    height: .95,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -1.3,
+                  ),
+                ),
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.only(left: 7, bottom: 3),
+              child: Text(
+                'mmHg',
+                style: TextStyle(
+                  color: Color(0xFFCFE7D8),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 15),
+        Row(
+          children: [
+            const Icon(
+              Icons.favorite_rounded,
+              color: Color(0xFFFFC3BD),
+              size: 20,
+            ),
+            const SizedBox(width: 7),
+            Text(
+              'Pulse: $pulse BPM',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
