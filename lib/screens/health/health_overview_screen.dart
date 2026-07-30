@@ -5,14 +5,17 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart'
 
 import '../../models/bp_monitor_device.dart';
 import '../../models/bp_monitor_result.dart';
+import '../../repositories/blood_pressure_repository.dart';
 import '../../routes/app_route_observer.dart';
 import '../../routes/app_routes.dart';
 import '../../services/bp_monitor_ble_service.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_motion.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_page.dart';
 import '../../widgets/bp_monitor_ble_scope.dart';
 import '../../widgets/care_photo_banner.dart';
+import '../../widgets/evercare_backend_scope.dart';
 import '../../widgets/section_header.dart';
 
 class HealthOverviewScreen extends StatefulWidget {
@@ -124,48 +127,58 @@ class _HealthOverviewScreenState extends State<HealthOverviewScreen>
           const SizedBox(height: 12),
           _LiveMeasurementCard(service: service),
           const SizedBox(height: 24),
-          const SectionHeader(title: 'Completed reading'),
-          const SizedBox(height: 12),
           if (service.currentResult case final result?)
-            _CompletedReadingCard(result: result)
-          else
+            _CompletedReadingSection(result: result)
+          else ...[
+            const SectionHeader(title: 'Completed reading'),
+            const SizedBox(height: 12),
             const _NoResultCard(),
+          ],
           const SizedBox(height: 24),
           const SectionHeader(title: 'Current session'),
           const SizedBox(height: 12),
           _CurrentSessionCard(service: service),
-          const SizedBox(height: 24),
-          const SectionHeader(title: 'Reading history'),
-          const SizedBox(height: 12),
-          const AppCard(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  Icons.history_toggle_off_rounded,
-                  color: AppColors.secondaryText,
-                  size: 27,
-                ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'No real monitor readings have been saved yet.',
-                        style: AppTextStyles.cardTitle,
-                      ),
-                      SizedBox(height: 5),
-                      Text(
-                        'The real BLE reading stays only in the current app session. Database history is not enabled in this phase.',
-                        style: AppTextStyles.bodyMuted,
-                      ),
-                    ],
+          if (service.currentResult == null) ...[
+            const SizedBox(height: 24),
+            const SectionHeader(title: 'Reading history'),
+            const SizedBox(height: 12),
+            AppCard(
+              onTap: () =>
+                  Navigator.pushNamed(context, AppRoutes.bloodPressureHistory),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.history_toggle_off_rounded,
+                    color: AppColors.secondaryText,
+                    size: 27,
                   ),
-                ),
-              ],
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'No BLE reading in this session yet.',
+                          style: AppTextStyles.cardTitle,
+                        ),
+                        SizedBox(height: 5),
+                        const Text(
+                          'Open your secure history to review readings you intentionally saved to your account.',
+                          style: AppTextStyles.bodyMuted,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(
+                    Icons.arrow_forward_rounded,
+                    color: AppColors.secondaryText,
+                  ),
+                ],
+              ),
             ),
-          ),
+          ],
           const SizedBox(height: 18),
           FilledButton.icon(
             onPressed: () =>
@@ -703,108 +716,944 @@ class _NoResultCard extends StatelessWidget {
   }
 }
 
-class _CompletedReadingCard extends StatelessWidget {
-  const _CompletedReadingCard({required this.result});
+class _CompletedReadingSection extends StatelessWidget {
+  const _CompletedReadingSection({required this.result});
+
+  final BpMonitorResult result;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        _BloodPressureResultCard(result: result),
+        const SizedBox(height: 12),
+        _BloodPressureDetailsLayout(result: result),
+        const SizedBox(height: 12),
+        const _BleResultBanner(),
+        const SizedBox(height: 12),
+        const _ReadingInsightCard(),
+        const SizedBox(height: 12),
+        _BloodPressureActionBar(result: result),
+      ],
+    );
+  }
+}
+
+class _BloodPressureResultCard extends StatelessWidget {
+  const _BloodPressureResultCard({required this.result});
 
   final BpMonitorResult result;
 
   @override
   Widget build(BuildContext context) {
     return AppCard(
-      color: AppColors.lightGreen,
+      padding: EdgeInsets.zero,
       borderColor: AppColors.primaryGreen.withValues(alpha: .24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Expanded(
-                child: Text('RESULT RECEIVED', style: AppTextStyles.eyebrow),
-              ),
-              const Icon(
-                Icons.bluetooth_connected_rounded,
-                color: AppColors.primaryGreen,
-              ),
-            ],
-          ),
-          const SizedBox(height: 15),
           LayoutBuilder(
             builder: (context, constraints) {
-              final width = (constraints.maxWidth - 16) / 3;
-              return Wrap(
-                spacing: 8,
-                runSpacing: 8,
+              final textScale = MediaQuery.textScalerOf(context).scale(1);
+              final stackContent =
+                  constraints.maxWidth < 330 || textScale > 1.2;
+              final readingDetails = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _ResultMetric(
-                    width: width,
-                    label: 'SYS',
-                    value: '${result.systolic}',
-                    unit: 'mmHg',
+                  Text(
+                    'Reading received',
+                    style: AppTextStyles.sectionTitle.copyWith(
+                      color: AppColors.darkGreen,
+                      fontSize: 22,
+                    ),
                   ),
-                  _ResultMetric(
-                    width: width,
-                    label: 'DIA',
-                    value: '${result.diastolic}',
-                    unit: 'mmHg',
+                  const SizedBox(height: 7),
+                  Text(
+                    'Your blood pressure reading was received successfully.',
+                    style: AppTextStyles.bodyMuted.copyWith(
+                      color: const Color(0xFF435A4E),
+                    ),
                   ),
-                  _ResultMetric(
-                    width: width,
-                    label: 'Pulse',
-                    value: '${result.pulse}',
-                    unit: 'BPM',
+                  const SizedBox(height: 11),
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 7,
+                    runSpacing: 4,
+                    children: [
+                      const Icon(
+                        Icons.schedule_rounded,
+                        size: 18,
+                        color: AppColors.darkGreen,
+                      ),
+                      Text(
+                        '${_formatMeasurementDate(result.receivedAt)}  ·  ${_formatMeasurementTime(result.receivedAt)}',
+                        style: AppTextStyles.small.copyWith(
+                          color: AppColors.darkGreen,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+
+              return Stack(
+                children: [
+                  Positioned.fill(
+                    child: Image.asset(
+                      'assets/images/bp_result_care_v1.png',
+                      fit: BoxFit.cover,
+                      alignment: Alignment.center,
+                      cacheWidth: 1200,
+                      filterQuality: FilterQuality.medium,
+                      excludeFromSemantics: true,
+                    ),
+                  ),
+                  const Positioned.fill(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                          colors: [
+                            Color(0xFFFFFCF6),
+                            Color(0xFAFFFCF6),
+                            Color(0xCEFFFCF6),
+                            Color(0x32FFFFFF),
+                          ],
+                          stops: [0, .42, .72, 1],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(18),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 11,
+                            vertical: 7,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.lightGreen.withValues(alpha: .94),
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                              color: AppColors.primaryGreen.withValues(
+                                alpha: .13,
+                              ),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.check_circle_rounded,
+                                size: 17,
+                                color: AppColors.primaryGreen,
+                              ),
+                              const SizedBox(width: 7),
+                              Flexible(
+                                child: Text(
+                                  'COMPLETED READING',
+                                  style: AppTextStyles.eyebrow.copyWith(
+                                    color: AppColors.darkGreen,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        if (stackContent) ...[
+                          readingDetails,
+                          const SizedBox(height: 14),
+                          const Align(
+                            alignment: Alignment.centerLeft,
+                            child: _BloodPressureStatusIndicator(),
+                          ),
+                        ] else
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Expanded(child: readingDetails),
+                              const SizedBox(width: 12),
+                              const _BloodPressureStatusIndicator(),
+                            ],
+                          ),
+                      ],
+                    ),
                   ),
                 ],
               );
             },
           ),
-          const SizedBox(height: 17),
-          _ResultDetail(
-            icon: Icons.schedule_rounded,
-            label: 'Time measured',
-            value: _formatDateTime(result.receivedAt),
-          ),
-          _ResultDetail(
-            icon: Icons.monitor_heart_outlined,
-            label: 'Connected monitor',
-            value: result.deviceName,
-          ),
-          const _ResultDetail(
-            icon: Icons.bluetooth_rounded,
-            label: 'Measurement source',
-            value: 'YK-IBPA1 Bluetooth monitor',
-          ),
-          const _ResultDetail(
-            icon: Icons.sensors_rounded,
-            label: 'Status',
-            value: 'Received directly through BLE',
-          ),
-          const SizedBox(height: 9),
           Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: .72),
-              borderRadius: BorderRadius.circular(15),
+            width: double.infinity,
+            color: const Color(0xFFFFFCF6),
+            padding: const EdgeInsets.all(14),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                const gap = 10.0;
+                final threeColumns = constraints.maxWidth >= 390;
+                final twoColumns = !threeColumns && constraints.maxWidth >= 230;
+                final columns = threeColumns ? 3 : (twoColumns ? 2 : 1);
+                final baseWidth =
+                    (constraints.maxWidth - (gap * (columns - 1))) / columns;
+
+                return Wrap(
+                  spacing: gap,
+                  runSpacing: gap,
+                  children: [
+                    _BloodPressureValueTile(
+                      width: baseWidth,
+                      icon: Icons.arrow_upward_rounded,
+                      iconColor: AppColors.primaryGreen,
+                      label: 'SYS',
+                      value: result.systolic.toString(),
+                      unit: 'mmHg',
+                      semanticLabel:
+                          'Systolic pressure, ${result.systolic} millimeters of mercury',
+                    ),
+                    _BloodPressureValueTile(
+                      width: baseWidth,
+                      icon: Icons.arrow_downward_rounded,
+                      iconColor: AppColors.blue,
+                      label: 'DIA',
+                      value: result.diastolic.toString(),
+                      unit: 'mmHg',
+                      semanticLabel:
+                          'Diastolic pressure, ${result.diastolic} millimeters of mercury',
+                    ),
+                    _BloodPressureValueTile(
+                      width: twoColumns ? constraints.maxWidth : baseWidth,
+                      icon: Icons.favorite_rounded,
+                      iconColor: AppColors.danger,
+                      label: 'Pulse',
+                      value: result.pulse.toString(),
+                      unit: 'BPM',
+                      semanticLabel: 'Pulse, ${result.pulse} beats per minute',
+                    ),
+                  ],
+                );
+              },
             ),
-            child: const Row(
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BloodPressureStatusIndicator extends StatelessWidget {
+  const _BloodPressureStatusIndicator();
+
+  @override
+  Widget build(BuildContext context) {
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    final diameter = (114 + ((textScale - 1) * 60)).clamp(114, 170).toDouble();
+    final indicator = Semantics(
+      label: 'Status: Reading received',
+      excludeSemantics: true,
+      child: Container(
+        width: diameter,
+        height: diameter,
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.white.withValues(alpha: .94),
+          border: Border.all(color: AppColors.primaryGreen, width: 5),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x1F17402C),
+              blurRadius: 18,
+              offset: Offset(0, 7),
+            ),
+          ],
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: AppColors.primaryGreen.withValues(alpha: .18),
+            ),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.monitor_heart_rounded,
+                color: AppColors.primaryGreen,
+                size: 28,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Reading\nreceived',
+                textAlign: TextAlign.center,
+                style: AppTextStyles.small.copyWith(
+                  color: AppColors.darkGreen,
+                  fontWeight: FontWeight.w800,
+                  height: 1.1,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    final reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (reduceMotion) return indicator;
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: .94, end: 1),
+      duration: AppMotion.page,
+      curve: AppMotion.emphasizedCurve,
+      child: indicator,
+      builder: (context, value, child) => Opacity(
+        opacity: value,
+        child: Transform.scale(scale: value, child: child),
+      ),
+    );
+  }
+}
+
+class _BloodPressureValueTile extends StatelessWidget {
+  const _BloodPressureValueTile({
+    required this.width,
+    required this.icon,
+    required this.iconColor,
+    required this.label,
+    required this.value,
+    required this.unit,
+    required this.semanticLabel,
+  });
+
+  final double width;
+  final IconData icon;
+  final Color iconColor;
+  final String label;
+  final String value;
+  final String unit;
+  final String semanticLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: semanticLabel,
+      excludeSemantics: true,
+      child: Container(
+        width: width,
+        constraints: const BoxConstraints(minHeight: 112),
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 13),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(19),
+          border: Border.all(color: AppColors.border),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0D173524),
+              blurRadius: 12,
+              offset: Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: iconColor.withValues(alpha: .1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, size: 17, color: iconColor),
+                ),
+                const SizedBox(width: 8),
+                Expanded(child: Text(label, style: AppTextStyles.label)),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(value, style: AppTextStyles.metric),
+                  ),
+                ),
+                const SizedBox(width: 5),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 2),
+                  child: Text(unit, style: AppTextStyles.small),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BloodPressureDetailsLayout extends StatelessWidget {
+  const _BloodPressureDetailsLayout({required this.result});
+
+  final BpMonitorResult result;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final trend = _BloodPressureTrendCard(result: result);
+        final information = _MeasurementInfoCard(result: result);
+        if (constraints.maxWidth < 680) {
+          return Column(
+            children: [trend, const SizedBox(height: 12), information],
+          );
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: trend),
+            const SizedBox(width: 12),
+            Expanded(child: information),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _MeasurementInfoCard extends StatelessWidget {
+  const _MeasurementInfoCard({required this.result});
+
+  final BpMonitorResult result;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = [
+      _MeasurementInfoData(
+        icon: Icons.schedule_rounded,
+        label: 'Time measured',
+        value:
+            '${_formatMeasurementDate(result.receivedAt)}\n${_formatMeasurementTime(result.receivedAt)}',
+      ),
+      _MeasurementInfoData(
+        icon: Icons.monitor_heart_outlined,
+        label: 'Connected monitor',
+        value: result.deviceName,
+      ),
+      const _MeasurementInfoData(
+        icon: Icons.bluetooth_rounded,
+        label: 'Measurement source',
+        value: 'Bluetooth (BLE)',
+      ),
+      const _MeasurementInfoData(
+        icon: Icons.sensors_rounded,
+        label: 'Result status',
+        value: 'Received directly through BLE',
+      ),
+    ];
+
+    return AppCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Measurement information',
+                  style: AppTextStyles.cardTitle,
+                ),
+              ),
+              Icon(
+                Icons.fact_check_outlined,
+                size: 21,
+                color: AppColors.primaryGreen,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: AppColors.border),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                if (constraints.maxWidth < 220) {
+                  return Column(
+                    children: [
+                      for (var index = 0; index < items.length; index++) ...[
+                        _MeasurementInfoItem(data: items[index]),
+                        if (index != items.length - 1) const Divider(height: 1),
+                      ],
+                    ],
+                  );
+                }
+                return Column(
+                  children: [
+                    IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(child: _MeasurementInfoItem(data: items[0])),
+                          const VerticalDivider(width: 1, thickness: 1),
+                          Expanded(child: _MeasurementInfoItem(data: items[1])),
+                        ],
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(child: _MeasurementInfoItem(data: items[2])),
+                          const VerticalDivider(width: 1, thickness: 1),
+                          Expanded(child: _MeasurementInfoItem(data: items[3])),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MeasurementInfoData {
+  const _MeasurementInfoData({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+}
+
+class _MeasurementInfoItem extends StatelessWidget {
+  const _MeasurementInfoItem({required this.data});
+
+  final _MeasurementInfoData data;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: const BoxDecoration(
+              color: AppColors.lightGreen,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(data.icon, size: 18, color: AppColors.primaryGreen),
+          ),
+          const SizedBox(height: 8),
+          Text(data.label, style: AppTextStyles.small),
+          const SizedBox(height: 3),
+          Text(
+            data.value,
+            style: AppTextStyles.body.copyWith(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReadingInsightCard extends StatelessWidget {
+  const _ReadingInsightCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      color: const Color(0xFFFFFAEF),
+      borderColor: const Color(0xFFEDE0BD),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(18),
+            child: SizedBox(
+              width: 64,
+              height: 78,
+              child: Image.asset(
+                'assets/images/bp_result_care_v1.png',
+                fit: BoxFit.cover,
+                alignment: Alignment.centerRight,
+                cacheWidth: 260,
+                filterQuality: FilterQuality.medium,
+                excludeFromSemantics: true,
+              ),
+            ),
+          ),
+          const SizedBox(width: 13),
+          Expanded(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  Icons.science_outlined,
-                  size: 20,
-                  color: AppColors.primaryGreen,
-                ),
-                SizedBox(width: 9),
-                Expanded(
-                  child: Text(
-                    'Decoder is provisional. Raw packet metadata is preserved and available through BLE Diagnostics.',
-                    style: AppTextStyles.small,
-                  ),
+                const Text('Caregiver insight', style: AppTextStyles.cardTitle),
+                const SizedBox(height: 5),
+                Text(
+                  'Review this result together with the patient’s previous readings. Consult a healthcare professional if readings remain unusual or the patient feels unwell.',
+                  style: AppTextStyles.bodyMuted.copyWith(height: 1.38),
                 ),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _BloodPressureTrendCard extends StatelessWidget {
+  const _BloodPressureTrendCard({required this.result});
+
+  final BpMonitorResult result;
+
+  @override
+  Widget build(BuildContext context) {
+    final historyChip = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.lightGreen,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: const Text('Saved history required', style: AppTextStyles.small),
+    );
+    return AppCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LayoutBuilder(
+            builder: (context, constraints) {
+              const title = Text(
+                'Recent trend',
+                style: AppTextStyles.cardTitle,
+              );
+              if (constraints.maxWidth < 330) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [title, const SizedBox(height: 8), historyChip],
+                );
+              }
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const Expanded(child: title),
+                  const SizedBox(width: 8),
+                  historyChip,
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(13),
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _TrendSummaryChip(
+                      icon: Icons.monitor_heart_outlined,
+                      text: '${result.systolic}/${result.diastolic} mmHg',
+                    ),
+                    _TrendSummaryChip(
+                      icon: Icons.favorite_outline_rounded,
+                      text: '${result.pulse} BPM',
+                    ),
+                    _TrendSummaryChip(
+                      icon: Icons.schedule_rounded,
+                      text:
+                          '${_formatMeasurementDate(result.receivedAt)} · ${_formatMeasurementTime(result.receivedAt)}',
+                      fullWidth: true,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                const Divider(height: 1),
+                const SizedBox(height: 12),
+                const Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.insights_outlined,
+                      color: AppColors.primaryGreen,
+                      size: 24,
+                    ),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'More saved readings are needed before a trend can be displayed.',
+                        style: AppTextStyles.bodyMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TrendSummaryChip extends StatelessWidget {
+  const _TrendSummaryChip({
+    required this.icon,
+    required this.text,
+    this.fullWidth = false,
+  });
+
+  final IconData icon;
+  final String text;
+  final bool fullWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: fullWidth ? double.infinity : null,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        mainAxisSize: fullWidth ? MainAxisSize.max : MainAxisSize.min,
+        children: [
+          Icon(icon, size: 17, color: AppColors.primaryGreen),
+          const SizedBox(width: 6),
+          if (fullWidth)
+            Expanded(
+              child: Text(
+                text,
+                style: AppTextStyles.small.copyWith(
+                  color: AppColors.primaryText,
+                ),
+              ),
+            )
+          else
+            Flexible(
+              child: Text(
+                text,
+                style: AppTextStyles.small.copyWith(
+                  color: AppColors.primaryText,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BleResultBanner extends StatelessWidget {
+  const _BleResultBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      color: Color(0xFFF0F6F3),
+      borderColor: Color(0xFFD6E6DD),
+      padding: EdgeInsets.all(15),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: const BoxDecoration(
+              color: AppColors.lightGreen,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.health_and_safety_outlined,
+              size: 22,
+              color: AppColors.primaryGreen,
+            ),
+          ),
+          const SizedBox(width: 11),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Result received directly through BLE.',
+                  style: AppTextStyles.cardTitle,
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  'Decoder is provisional. Raw packet metadata is preserved and available through BLE Diagnostics.',
+                  style: AppTextStyles.small.copyWith(height: 1.35),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          const Icon(
+            Icons.info_outline_rounded,
+            size: 20,
+            color: AppColors.secondaryText,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BloodPressureActionBar extends StatefulWidget {
+  const _BloodPressureActionBar({required this.result});
+
+  final BpMonitorResult result;
+
+  @override
+  State<_BloodPressureActionBar> createState() =>
+      _BloodPressureActionBarState();
+}
+
+class _BloodPressureActionBarState extends State<_BloodPressureActionBar> {
+  bool _saving = false;
+  bool _saved = false;
+
+  Future<void> _save() async {
+    final client = EverCareBackendScope.maybeClient(context);
+    if (client == null || client.auth.currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sign in before saving this result.')),
+      );
+      return;
+    }
+    setState(() => _saving = true);
+    try {
+      await BloodPressureRepository(client).saveBleResult(widget.result);
+      if (!mounted) return;
+      setState(() => _saved = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Result saved. It is not medically verified.'),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not save the result: $error')),
+      );
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final textScale = MediaQuery.textScalerOf(context).scale(1);
+        final stackButtons = constraints.maxWidth < 270 || textScale > 1.15;
+        final saveButton = PressScale(
+          child: OutlinedButton.icon(
+            onPressed: _saving || _saved ? null : _save,
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(0, 50),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+            ),
+            icon: Icon(
+              _saved ? Icons.check_rounded : Icons.bookmark_add_outlined,
+            ),
+            label: Text(
+              _saved
+                  ? 'Saved'
+                  : _saving
+                  ? 'Saving…'
+                  : 'Save Result',
+            ),
+          ),
+        );
+        final historyButton = PressScale(
+          child: FilledButton.icon(
+            onPressed: () =>
+                Navigator.pushNamed(context, AppRoutes.bloodPressureHistory),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size(0, 50),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+            ),
+            icon: const Icon(Icons.history_rounded),
+            label: const Text('View History'),
+          ),
+        );
+        final trendButton = PressScale(
+          child: OutlinedButton.icon(
+            onPressed: () =>
+                Navigator.pushNamed(context, AppRoutes.bloodPressureTrend),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(0, 50),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+            ),
+            icon: const Icon(Icons.show_chart_rounded),
+            label: const Text('View Trend'),
+          ),
+        );
+
+        if (stackButtons) {
+          return Column(
+            children: [
+              SizedBox(width: double.infinity, child: saveButton),
+              const SizedBox(height: 9),
+              SizedBox(width: double.infinity, child: historyButton),
+              const SizedBox(height: 9),
+              SizedBox(width: double.infinity, child: trendButton),
+            ],
+          );
+        }
+        return Column(
+          children: [
+            SizedBox(width: double.infinity, child: saveButton),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(child: historyButton),
+                const SizedBox(width: 10),
+                Expanded(child: trendButton),
+              ],
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -952,82 +1801,6 @@ class _ConnectionDetail extends StatelessWidget {
               style: AppTextStyles.bodyMuted,
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ResultDetail extends StatelessWidget {
-  const _ResultDetail({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 19, color: AppColors.primaryGreen),
-          const SizedBox(width: 9),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: AppTextStyles.small),
-                const SizedBox(height: 1),
-                Text(value, style: AppTextStyles.label),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ResultMetric extends StatelessWidget {
-  const _ResultMetric({
-    required this.width,
-    required this.label,
-    required this.value,
-    required this.unit,
-  });
-
-  final double width;
-  final String label;
-  final String value;
-  final String unit;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: width,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: .82),
-        borderRadius: BorderRadius.circular(17),
-      ),
-      child: Column(
-        children: [
-          Text(label, style: AppTextStyles.small),
-          const SizedBox(height: 3),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              value,
-              style: AppTextStyles.sectionTitle.copyWith(fontSize: 25),
-            ),
-          ),
-          Text(unit, style: AppTextStyles.small),
         ],
       ),
     );
@@ -1336,6 +2109,35 @@ String _formatDateTime(DateTime value) {
   final period = value.hour >= 12 ? 'PM' : 'AM';
   return '${value.year}-${two(value.month)}-${two(value.day)} '
       '${two(hour)}:${two(value.minute)}:${two(value.second)} $period';
+}
+
+String _formatMeasurementDate(DateTime value) {
+  const months = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+  return '${months[value.month - 1]} ${value.day}, ${value.year}';
+}
+
+String _formatMeasurementTime(DateTime value) {
+  final hour = value.hour == 0
+      ? 12
+      : value.hour > 12
+      ? value.hour - 12
+      : value.hour;
+  final minute = value.minute.toString().padLeft(2, '0');
+  final period = value.hour >= 12 ? 'PM' : 'AM';
+  return '${hour.toString().padLeft(2, '0')}:$minute $period';
 }
 
 String _formatDuration(Duration value) {

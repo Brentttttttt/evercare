@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../models/mock_journal_entry.dart';
+import '../../models/journal_entry.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_page.dart';
@@ -12,7 +12,7 @@ class JournalEntryCard extends StatelessWidget {
     super.key,
   });
 
-  final MockJournalEntry entry;
+  final JournalEntry entry;
   final ValueChanged<String> onAction;
 
   @override
@@ -43,7 +43,7 @@ class JournalEntryCard extends StatelessWidget {
                   children: [
                     Text(entry.title, style: AppTextStyles.cardTitle),
                     const SizedBox(height: 3),
-                    Text(entry.dateLabel, style: AppTextStyles.small),
+                    Text(_dateLabel(entry.entryAt), style: AppTextStyles.small),
                   ],
                 ),
               ),
@@ -65,6 +65,8 @@ class JournalEntryCard extends StatelessWidget {
             runSpacing: 7,
             children: [
               _EntryTag(label: 'Mood: ${entry.mood}', emphasized: true),
+              ...entry.symptoms.map((tag) => _EntryTag(label: tag)),
+              ...entry.activities.map((tag) => _EntryTag(label: tag)),
               ...entry.tags.map((tag) => _EntryTag(label: tag)),
             ],
           ),
@@ -92,8 +94,10 @@ class JournalEntryCard extends StatelessWidget {
                 onTap: () => onAction('Delete'),
               ),
               _ActionButton(
-                icon: Icons.bookmark_border_rounded,
-                label: 'Bookmark',
+                icon: entry.bookmarked
+                    ? Icons.bookmark_remove_outlined
+                    : Icons.bookmark_add_outlined,
+                label: entry.bookmarked ? 'Unsave' : 'Save',
                 onTap: () => onAction('Bookmark'),
               ),
             ],
@@ -101,6 +105,29 @@ class JournalEntryCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _dateLabel(DateTime value) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    final hour = value.hour == 0
+        ? 12
+        : (value.hour > 12 ? value.hour - 12 : value.hour);
+    final minute = value.minute.toString().padLeft(2, '0');
+    final period = value.hour >= 12 ? 'PM' : 'AM';
+    return '${months[value.month - 1]} ${value.day}, ${value.year} · $hour:$minute $period';
   }
 }
 

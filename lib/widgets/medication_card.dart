@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../models/mock_medication.dart';
+import '../models/medication.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import 'app_page.dart';
@@ -12,12 +12,12 @@ class MedicationCard extends StatelessWidget {
     super.key,
   });
 
-  final MockMedication medication;
+  final Medication medication;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final taken = medication.status == 'Taken';
+    final active = medication.isActive;
     return AppCard(
       onTap: onTap,
       child: Row(
@@ -27,12 +27,12 @@ class MedicationCard extends StatelessWidget {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: taken ? AppColors.lightGreen : const Color(0xFFFFF4E1),
+              color: active ? AppColors.lightGreen : const Color(0xFFFFF4E1),
               borderRadius: BorderRadius.circular(18),
             ),
             child: Icon(
               Icons.medication_rounded,
-              color: taken ? AppColors.primaryGreen : AppColors.warning,
+              color: active ? AppColors.primaryGreen : AppColors.warning,
               size: 28,
             ),
           ),
@@ -51,13 +51,16 @@ class MedicationCard extends StatelessWidget {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    _Pill(label: medication.time, icon: Icons.schedule_rounded),
                     _Pill(
-                      label: medication.status,
-                      icon: taken
+                      label: medication.scheduleLabel,
+                      icon: Icons.schedule_rounded,
+                    ),
+                    _Pill(
+                      label: medication.statusLabel,
+                      icon: active
                           ? Icons.check_circle
-                          : Icons.timelapse_rounded,
-                      positive: taken,
+                          : Icons.pause_circle_outline_rounded,
+                      positive: active,
                     ),
                   ],
                 ),

@@ -1,12 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'routes/app_route_observer.dart';
 import 'routes/app_routes.dart';
 import 'services/bp_monitor_ble_service.dart';
 import 'theme/app_theme.dart';
 import 'widgets/bp_monitor_ble_scope.dart';
+import 'widgets/evercare_backend_scope.dart';
 
 class EverCareApp extends StatefulWidget {
   const EverCareApp({super.key});
@@ -39,15 +41,18 @@ class _EverCareAppState extends State<EverCareApp> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    return BpMonitorBleScope(
-      service: _bpMonitorService,
-      child: MaterialApp(
-        title: 'EverCare',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.light,
-        initialRoute: AppRoutes.splash,
-        onGenerateRoute: AppRoutes.onGenerateRoute,
-        navigatorObservers: [everCareRouteObserver],
+    return EverCareBackendScope(
+      client: Supabase.instance.client,
+      child: BpMonitorBleScope(
+        service: _bpMonitorService,
+        child: MaterialApp(
+          title: 'EverCare',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.light,
+          initialRoute: AppRoutes.splash,
+          onGenerateRoute: AppRoutes.onGenerateRoute,
+          navigatorObservers: [everCareRouteObserver],
+        ),
       ),
     );
   }

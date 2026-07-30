@@ -1,191 +1,227 @@
 import 'package:flutter/material.dart';
 
-import '../../data/mock_data.dart';
+import '../../models/blood_pressure_reading.dart';
+import '../../repositories/blood_pressure_repository.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_page.dart';
 import '../../widgets/blood_pressure_widgets.dart';
+import '../../widgets/empty_state_card.dart';
+import '../../widgets/evercare_backend_scope.dart';
 import '../../widgets/section_header.dart';
 
-class HealthReportScreen extends StatelessWidget {
+class HealthReportScreen extends StatefulWidget {
   const HealthReportScreen({super.key});
 
   @override
+  State<HealthReportScreen> createState() => _HealthReportScreenState();
+}
+
+class _HealthReportScreenState extends State<HealthReportScreen> {
+  Future<List<BloodPressureReading>>? _readings;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _readings ??= _load();
+  }
+
+  Future<List<BloodPressureReading>> _load() async {
+    final client = EverCareBackendScope.maybeClient(context);
+    if (client == null || client.auth.currentUser == null) return const [];
+    final records = await BloodPressureRepository(client).list(limit: 100);
+    final cutoff = DateTime.now().subtract(const Duration(days: 7));
+    return records
+        .where((record) => !record.measuredAt.isBefore(cutoff))
+        .toList(growable: false);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final signedIn =
+        EverCareBackendScope.maybeClient(context)?.auth.currentUser != null;
     return DetailPage(
       title: 'Blood Pressure Report',
-      actions: [
-        IconButton(
-          tooltip: 'Report information',
-          onPressed: () => showMockDialog(
-            context,
-            title: 'Static blood-pressure report',
-            message:
-                'Every reading, average, and trend on this page is hardcoded '
-                'mock content. No data is loaded, stored, or calculated.',
-            icon: Icons.info_outline_rounded,
+      child: FutureBuilder<List<BloodPressureReading>>(
+        future: _readings,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return EmptyStateCard(
+              title: 'Could not load the report',
+              message:
+                  '${snapshot.error}\n\nCheck your connection and try again.',
+              icon: Icons.cloud_off_rounded,
+            );
+          }
+          final readings = snapshot.data ?? const <BloodPressureReading>[];
+          if (readings.isEmpty) {
+            return EmptyStateCard(
+              title: signedIn
+                  ? 'No readings saved in the last 7 days'
+                  : 'Sign in to view your report',
+              message: signedIn
+                  ? 'The report is created only from real readings you save. EverCare does not insert sample health records.'
+                  : 'Your private health report is available after you sign in.',
+              icon: Icons.monitor_heart_outlined,
+            );
+          }
+          return _ReportContent(readings: readings);
+        },
+      ),
+    );
+  }
+}
+
+class _ReportContent extends StatelessWidget {
+  const _ReportContent({required this.readings});
+
+  final List<BloodPressureReading> readings;
+
+  @override
+  Widget build(BuildContext context) {
+    final chronological = readings.reversed.toList(growable: false);
+    final averageSystolic = _average(readings.map((item) => item.systolic));
+    final averageDiastolic = _average(readings.map((item) => item.diastolic));
+    final averagePulse = _average(readings.map((item) => item.pulse));
+    final newest = readings.first;
+    final bleCount = readings.where((item) => item.source == 'ble').length;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AppCard(
+          color: AppColors.darkGreen,
+          borderColor: AppColors.darkGreen,
+          child: const Row(
+            children: [
+              Icon(Icons.monitor_heart_rounded, color: Colors.white, size: 34),
+              SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'LAST 7 DAYS',
+                      style: TextStyle(
+                        color: Color(0xFFCDE7D1),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: .8,
+                      ),
+                    ),
+                    SizedBox(height: 5),
+                    Text(
+                      'Your saved BP summary',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 19,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          icon: const Icon(Icons.info_outline_rounded),
         ),
-      ],
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const AppCard(
-            color: AppColors.darkGreen,
-            borderColor: AppColors.darkGreen,
-            child: Row(
-              children: [
-                Icon(
-                  Icons.monitor_heart_rounded,
-                  color: Colors.white,
-                  size: 34,
-                ),
-                SizedBox(width: 13),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'JULY 14–20, 2026',
-                        style: TextStyle(
-                          color: Color(0xFFCDE7D1),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: .8,
-                        ),
-                      ),
-                      SizedBox(height: 5),
-                      Text(
-                        'Maria’s weekly BP summary',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 19,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+        const SizedBox(height: 22),
+        const SectionHeader(title: 'Measured summary'),
+        const SizedBox(height: 11),
+        AppCard(
+          child: Column(
+            children: [
+              _ReportValue(
+                icon: Icons.arrow_upward_rounded,
+                label: 'Average systolic pressure',
+                value: '$averageSystolic mmHg',
+                color: AppColors.danger,
+              ),
+              const Divider(),
+              _ReportValue(
+                icon: Icons.arrow_downward_rounded,
+                label: 'Average diastolic pressure',
+                value: '$averageDiastolic mmHg',
+                color: AppColors.blue,
+              ),
+              const Divider(),
+              _ReportValue(
+                icon: Icons.favorite_outline_rounded,
+                label: 'Average recorded pulse',
+                value: '$averagePulse BPM',
+                color: AppColors.warning,
+              ),
+              const Divider(),
+              _ReportValue(
+                icon: Icons.fact_check_outlined,
+                label: 'Saved measurements',
+                value: '${readings.length}',
+                color: AppColors.purple,
+              ),
+            ],
           ),
+        ),
+        if (chronological.length >= 2) ...[
           const SizedBox(height: 22),
-          const SectionHeader(title: 'Weekly summary'),
+          const SectionHeader(title: 'Recorded trend'),
           const SizedBox(height: 11),
-          const AppCard(
-            child: Column(
-              children: [
-                _ReportValue(
-                  icon: Icons.arrow_upward_rounded,
-                  label: 'Average systolic pressure',
-                  value: '120 mmHg',
-                  color: AppColors.danger,
-                ),
-                Divider(),
-                _ReportValue(
-                  icon: Icons.arrow_downward_rounded,
-                  label: 'Average diastolic pressure',
-                  value: '80 mmHg',
-                  color: AppColors.blue,
-                ),
-                Divider(),
-                _ReportValue(
-                  icon: Icons.favorite_outline_rounded,
-                  label: 'Average pulse during BP',
-                  value: '72 BPM',
-                  color: AppColors.warning,
-                ),
-                Divider(),
-                _ReportValue(
-                  icon: Icons.north_east_rounded,
-                  label: 'Highest reading',
-                  value: '126/84',
-                  color: AppColors.danger,
-                ),
-                Divider(),
-                _ReportValue(
-                  icon: Icons.south_east_rounded,
-                  label: 'Lowest reading',
-                  value: '118/78',
-                  color: AppColors.primaryGreen,
-                ),
-                Divider(),
-                _ReportValue(
-                  icon: Icons.fact_check_outlined,
-                  label: 'Measurements this week',
-                  value: '7',
-                  color: AppColors.purple,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 22),
-          const SectionHeader(title: 'Blood pressure trend'),
-          const SizedBox(height: 11),
-          const AppCard(
+          AppCard(
             child: BloodPressureTrendChart(
-              systolic: [126, 121, 124, 118, 120, 119, 120],
-              diastolic: [84, 79, 82, 78, 80, 79, 80],
-              pulse: [75, 71, 74, 70, 72, 71, 72],
-              labels: ['M', 'T', 'W', 'T', 'F', 'S', 'S'],
+              systolic: chronological
+                  .map((item) => item.systolic.toDouble())
+                  .toList(growable: false),
+              diastolic: chronological
+                  .map((item) => item.diastolic.toDouble())
+                  .toList(growable: false),
+              pulse: chronological
+                  .map((item) => item.pulse.toDouble())
+                  .toList(growable: false),
+              labels: chronological
+                  .map(
+                    (item) => '${item.measuredAt.month}/${item.measuredAt.day}',
+                  )
+                  .toList(growable: false),
               height: 175,
             ),
           ),
-          const SizedBox(height: 18),
-          const AppCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.calendar_month_outlined,
-                      color: AppColors.primaryGreen,
-                    ),
-                    SizedBox(width: 9),
-                    Expanded(
-                      child: Text(
-                        'Measurement consistency',
-                        style: AppTextStyles.cardTitle,
-                      ),
-                    ),
-                    Text('7 of 7 days', style: AppTextStyles.label),
-                  ],
-                ),
-                SizedBox(height: 12),
-                LinearProgressIndicator(
-                  value: 1,
-                  minHeight: 9,
-                  borderRadius: BorderRadius.all(Radius.circular(9)),
-                  color: AppColors.primaryGreen,
-                  backgroundColor: AppColors.lightGreen,
-                ),
-                SizedBox(height: 18),
-                Divider(),
-                SizedBox(height: 18),
-                LabeledValue(
-                  label: 'Device',
-                  value: MockData.deviceName,
-                  icon: Icons.monitor_heart_outlined,
-                ),
-                LabeledValue(
-                  label: 'Data source',
-                  value: MockData.syncMethod,
-                  icon: Icons.bluetooth_connected_rounded,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-          const Text(
-            'Static UI classifications and averages only. This report does '
-            'not provide medical advice.',
-            style: AppTextStyles.bodyMuted,
-          ),
         ],
-      ),
+        const SizedBox(height: 18),
+        AppCard(
+          child: Column(
+            children: [
+              LabeledValue(
+                label: 'Latest saved reading',
+                value: '${newest.systolic}/${newest.diastolic} mmHg',
+                icon: Icons.schedule_rounded,
+              ),
+              const Divider(),
+              LabeledValue(
+                label: 'Bluetooth measurements',
+                value: '$bleCount of ${readings.length}',
+                icon: Icons.bluetooth_connected_rounded,
+              ),
+              const Divider(),
+              LabeledValue(
+                label: 'Latest device',
+                value: newest.monitorName ?? newest.sourceLabel,
+                icon: Icons.monitor_heart_outlined,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        const Text(
+          'Calculated only from your saved measurements. These values are not medically verified and this report does not provide medical advice.',
+          style: AppTextStyles.bodyMuted,
+        ),
+      ],
     );
+  }
+
+  int _average(Iterable<int> values) {
+    final list = values.toList(growable: false);
+    return (list.reduce((a, b) => a + b) / list.length).round();
   }
 }
 

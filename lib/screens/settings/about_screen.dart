@@ -18,7 +18,7 @@ class AboutScreen extends StatelessWidget {
           const SizedBox(height: 10),
           const Text('Your Health. Our Care.', style: AppTextStyles.body),
           const SizedBox(height: 6),
-          const Text('Version 1.0.0', style: AppTextStyles.bodyMuted),
+          const Text('Version 0.1.0', style: AppTextStyles.bodyMuted),
           const SizedBox(height: 24),
           const AppCard(
             child: Text(
@@ -53,48 +53,31 @@ class AboutScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 18),
-          AppCard(
-            padding: const EdgeInsets.symmetric(vertical: 7),
-            child: Column(
+          const AppCard(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ListTile(
-                  leading: const Icon(
-                    Icons.privacy_tip_outlined,
-                    color: AppColors.primaryGreen,
-                  ),
-                  title: const Text('Privacy Policy'),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  onTap: () => _legal(context, 'Privacy Policy'),
+                Icon(
+                  Icons.health_and_safety_outlined,
+                  color: AppColors.primaryGreen,
+                  size: 28,
                 ),
-                ListTile(
-                  leading: const Icon(
-                    Icons.gavel_outlined,
-                    color: AppColors.primaryGreen,
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'EverCare helps organize personal care information. It does '
+                    'not provide medical diagnoses, verify readings, or replace '
+                    'advice from qualified healthcare professionals.',
+                    style: AppTextStyles.body,
                   ),
-                  title: const Text('Terms and Conditions'),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  onTap: () => _legal(context, 'Terms and Conditions'),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 18),
-          const Text(
-            '© 2026 EverCare UI Prototype',
-            style: AppTextStyles.small,
-          ),
+          const Text('© 2026 EverCare', style: AppTextStyles.small),
         ],
       ),
-    );
-  }
-
-  void _legal(BuildContext context, String title) {
-    showMockDialog(
-      context,
-      title: title,
-      message:
-          'This is placeholder legal content for the EverCare interface prototype.',
-      icon: Icons.description_outlined,
     );
   }
 }

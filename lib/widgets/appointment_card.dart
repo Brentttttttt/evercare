@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../models/mock_appointment.dart';
+import '../models/appointment.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import 'app_page.dart';
@@ -12,7 +12,7 @@ class AppointmentCard extends StatelessWidget {
     super.key,
   });
 
-  final MockAppointment appointment;
+  final Appointment appointment;
   final VoidCallback onTap;
 
   @override
@@ -120,29 +120,29 @@ class AppointmentCard extends StatelessWidget {
 }
 
 ({Color background, Color foreground}) appointmentStatusColors(
-  MockAppointmentStatus status,
+  AppointmentStatus status,
 ) {
   return switch (status) {
-    MockAppointmentStatus.upcoming => (
+    AppointmentStatus.upcoming => (
       background: AppColors.paleBlue,
       foreground: AppColors.blue,
     ),
-    MockAppointmentStatus.completed => (
+    AppointmentStatus.completed => (
       background: AppColors.lightGreen,
       foreground: AppColors.darkGreen,
     ),
-    MockAppointmentStatus.cancelled => (
+    AppointmentStatus.cancelled => (
       background: const Color(0xFFFFECEA),
       foreground: AppColors.danger,
     ),
   };
 }
 
-IconData _statusIcon(MockAppointmentStatus status) {
+IconData _statusIcon(AppointmentStatus status) {
   return switch (status) {
-    MockAppointmentStatus.upcoming => Icons.calendar_month_rounded,
-    MockAppointmentStatus.completed => Icons.event_available_rounded,
-    MockAppointmentStatus.cancelled => Icons.event_busy_rounded,
+    AppointmentStatus.upcoming => Icons.calendar_month_rounded,
+    AppointmentStatus.completed => Icons.event_available_rounded,
+    AppointmentStatus.cancelled => Icons.event_busy_rounded,
   };
 }
 

@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 
-import '../models/mock_blood_pressure_record.dart';
+import '../models/blood_pressure_reading.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import 'app_page.dart';
 
 Color bloodPressureStatusColor(String status) {
   return switch (status) {
-    'Normal' => AppColors.primaryGreen,
-    'Slightly Elevated' => AppColors.warning,
-    'Elevated' => AppColors.danger,
+    'Clinician verified' => AppColors.primaryGreen,
     _ => AppColors.secondaryText,
   };
 }
@@ -51,7 +49,7 @@ class BloodPressureRecordCard extends StatelessWidget {
     super.key,
   });
 
-  final MockBloodPressureRecord record;
+  final BloodPressureReading record;
   final VoidCallback onTap;
 
   @override
@@ -97,7 +95,7 @@ class BloodPressureRecordCard extends StatelessWidget {
           const SizedBox(height: 13),
           Row(
             children: [
-              BloodPressureStatusBadge(status: record.status),
+              BloodPressureStatusBadge(status: record.statusLabel),
               const Spacer(),
               const Icon(
                 Icons.arrow_forward_rounded,
@@ -113,15 +111,17 @@ class BloodPressureRecordCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(
-                Icons.bluetooth_connected_rounded,
+              Icon(
+                record.source == 'ble'
+                    ? Icons.bluetooth_connected_rounded
+                    : Icons.edit_note_rounded,
                 color: AppColors.primaryGreen,
                 size: 18,
               ),
               const SizedBox(width: 7),
               Expanded(
                 child: Text(
-                  'Source: ${record.deviceName}',
+                  'Source: ${record.monitorName ?? record.sourceLabel}',
                   style: AppTextStyles.small,
                 ),
               ),

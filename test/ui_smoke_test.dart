@@ -1,4 +1,5 @@
-import 'package:evercare/data/mock_data.dart';
+import 'package:evercare/models/appointment.dart';
+import 'package:evercare/models/blood_pressure_reading.dart';
 import 'package:evercare/models/bp_monitor_packet.dart';
 import 'package:evercare/routes/app_route_observer.dart';
 import 'package:evercare/routes/app_routes.dart';
@@ -51,6 +52,32 @@ const _confirmedMonitorResult = <int>[
   0x00,
 ];
 
+final _testReading = BloodPressureReading(
+  id: 'reading-test-id',
+  userId: 'user-test-id',
+  systolic: 120,
+  diastolic: 80,
+  pulse: 72,
+  measuredAt: DateTime(2026, 7, 30, 9, 15),
+  source: 'ble',
+  monitorName: 'YK-IBPA1',
+  notes: 'Widget test fixture',
+  isMedicallyVerified: false,
+);
+
+final _testAppointment = Appointment(
+  id: 'appointment-test-id',
+  userId: 'user-test-id',
+  title: 'Clinic visit',
+  doctorName: 'Test clinician',
+  specialty: 'General practice',
+  startsAt: DateTime(2026, 8, 4, 9, 30),
+  clinic: 'Test clinic',
+  address: 'Test address',
+  notes: 'Widget test fixture',
+  status: AppointmentStatus.upcoming,
+);
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -58,8 +85,10 @@ void main() {
     WidgetTester tester,
     Widget screen, {
     BpMonitorBleService? service,
+    Size size = const Size(390, 844),
+    double textScaleFactor = 1,
   }) async {
-    tester.view.physicalSize = const Size(390, 844);
+    tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -74,6 +103,12 @@ void main() {
           theme: AppTheme.light,
           onGenerateRoute: AppRoutes.onGenerateRoute,
           navigatorObservers: [everCareRouteObserver],
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: TextScaler.linear(textScaleFactor)),
+            child: child!,
+          ),
           home: Scaffold(body: SafeArea(child: screen)),
         ),
       ),
@@ -168,7 +203,7 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.text('No real monitor readings have been saved yet.'),
+      find.text('No BLE reading in this session yet.'),
       findsOneWidget,
     );
     expect(find.text('Preview device state'), findsNothing);
@@ -195,7 +230,133 @@ void main() {
     expect(find.text('36'), findsOneWidget);
     expect(find.text('50'), findsOneWidget);
     expect(find.text('Received directly through BLE'), findsOneWidget);
+    expect(find.text('Reading received'), findsOneWidget);
+    expect(find.text('Bluetooth (BLE)'), findsOneWidget);
+    expect(find.text(service.currentResult!.deviceName), findsWidgets);
+    expect(
+      find.text(
+        'More saved readings are needed before a trend can be displayed.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('July 30, 2026'), findsWidgets);
+    expect(find.textContaining('06:30 PM'), findsWidgets);
+    expect(
+      find.byWidgetPredicate((widget) {
+        if (widget is! Image) return false;
+        final provider = widget.image;
+        final asset = provider is ResizeImage
+            ? provider.imageProvider
+            : provider;
+        return asset is AssetImage &&
+            asset.assetName == 'assets/images/bp_result_care_v1.png';
+      }),
+      findsNWidgets(2),
+    );
+    expect(find.text('144'), findsNothing);
+    expect(find.text('106'), findsNothing);
+    expect(find.text('85'), findsNothing);
     expect(find.text('Normal'), findsNothing);
+    expect(find.text('Elevated'), findsNothing);
+    expect(find.text('High'), findsNothing);
+    expect(find.text('Save Result'), findsOneWidget);
+    expect(find.text('Share'), findsNothing);
+
+    final historyRect = tester.getRect(find.text('View History'));
+    final trendRect = tester.getRect(find.text('View Trend'));
+    expect((historyRect.top - trendRect.top).abs(), lessThan(2));
+  });
+
+  testWidgets('completed reading cards fit a narrow scaled phone', (
+    tester,
+  ) async {
+    final service = BpMonitorBleService();
+    service.processNotificationForTesting(
+      _confirmedMonitorResult,
+      receivedAt: DateTime(2026, 7, 30, 18, 30),
+    );
+
+    await pumpPhoneScreen(
+      tester,
+      const HealthOverviewScreen(),
+      service: service,
+      size: const Size(320, 700),
+      textScaleFactor: 1.3,
+    );
+
+    expect(find.text('Measurement information'), findsOneWidget);
+    expect(find.text('Recent trend'), findsOneWidget);
+    expect(find.text('View History'), findsOneWidget);
+    expect(find.text('View Trend'), findsOneWidget);
+    expect(find.text('COMPLETED READING'), findsOneWidget);
+    expect(
+      find.text(
+        'Decoder is provisional. Raw packet metadata is preserved and available through BLE Diagnostics.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Open BLE Diagnostics'), findsOneWidget);
+    expect(find.textContaining('July 30, 2026'), findsWidgets);
+    expect(find.textContaining('06:30 PM'), findsWidgets);
+    expect(tester.takeException(), isNull);
+
+    final sysRect = tester.getRect(find.text('SYS'));
+    final diaRect = tester.getRect(find.text('DIA'));
+    final pulseRect = tester.getRect(find.text('Pulse'));
+    expect((sysRect.top - diaRect.top).abs(), lessThan(2));
+    expect(diaRect.left, greaterThan(sysRect.left));
+    expect(pulseRect.top, greaterThan(sysRect.bottom));
+    expect((pulseRect.left - sysRect.left).abs(), lessThan(2));
+
+    final timeRect = tester.getRect(find.text('Time measured'));
+    final monitorRect = tester.getRect(find.text('Connected monitor'));
+    final sourceRect = tester.getRect(find.text('Measurement source'));
+    final statusRect = tester.getRect(find.text('Result status'));
+    expect((timeRect.top - monitorRect.top).abs(), lessThan(2));
+    expect(monitorRect.left, greaterThan(timeRect.left));
+    expect((sourceRect.top - statusRect.top).abs(), lessThan(2));
+    expect(sourceRect.top, greaterThan(timeRect.bottom));
+    expect(statusRect.left, greaterThan(sourceRect.left));
+
+    await tester.pump(AppMotion.page);
+    expect(tester.takeException(), isNull);
+
+    await tester.scrollUntilVisible(
+      find.text('View History'),
+      420,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('View History'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Blood Pressure History'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('completed reading metrics use three columns on a wide phone', (
+    tester,
+  ) async {
+    final service = BpMonitorBleService();
+    service.processNotificationForTesting(
+      _confirmedMonitorResult,
+      receivedAt: DateTime(2026, 7, 30, 18, 30),
+    );
+
+    await pumpPhoneScreen(
+      tester,
+      const HealthOverviewScreen(),
+      service: service,
+      size: const Size(600, 900),
+    );
+
+    final sysRect = tester.getRect(find.text('SYS'));
+    final diaRect = tester.getRect(find.text('DIA'));
+    final pulseRect = tester.getRect(find.text('Pulse'));
+    expect((sysRect.top - diaRect.top).abs(), lessThan(2));
+    expect((sysRect.top - pulseRect.top).abs(), lessThan(2));
+    expect(sysRect.left, lessThan(diaRect.left));
+    expect(diaRect.left, lessThan(pulseRect.left));
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('health auto-connect lease pauses under another page', (
@@ -240,7 +401,7 @@ void main() {
   ) async {
     await pumpPhoneScreen(
       tester,
-      BloodPressureRecordScreen(record: MockData.latestBloodPressure),
+      BloodPressureRecordScreen(record: _testReading),
     );
   });
 
@@ -371,7 +532,7 @@ void main() {
   testWidgets('appointment details render without overflow', (tester) async {
     await pumpPhoneScreen(
       tester,
-      AppointmentDetailScreen(appointment: MockData.upcomingAppointments.first),
+      AppointmentDetailScreen(appointment: _testAppointment),
     );
   });
 
@@ -382,7 +543,7 @@ void main() {
   testWidgets('edit appointment form renders without overflow', (tester) async {
     await pumpPhoneScreen(
       tester,
-      EditAppointmentScreen(appointment: MockData.upcomingAppointments.first),
+      EditAppointmentScreen(appointment: _testAppointment),
     );
   });
 }

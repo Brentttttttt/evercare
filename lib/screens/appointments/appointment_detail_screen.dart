@@ -1,23 +1,53 @@
 import 'package:flutter/material.dart';
 
-import '../../models/mock_appointment.dart';
-import '../../routes/app_routes.dart';
+import '../../models/appointment.dart';
+import '../../repositories/appointment_repository.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_page.dart';
 import '../../widgets/appointment_card.dart';
-import '../authentication/auth_widgets.dart';
+import '../../widgets/evercare_backend_scope.dart';
+import 'edit_appointment_screen.dart';
 
-class AppointmentDetailScreen extends StatelessWidget {
+class AppointmentDetailScreen extends StatefulWidget {
   const AppointmentDetailScreen({required this.appointment, super.key});
 
-  final MockAppointment appointment;
+  final Object appointment;
+
+  @override
+  State<AppointmentDetailScreen> createState() =>
+      _AppointmentDetailScreenState();
+}
+
+class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
+  Appointment? _appointment;
+  bool _updating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final raw = widget.appointment;
+    if (raw is Appointment) _appointment = raw;
+  }
 
   @override
   Widget build(BuildContext context) {
+    final appointment = _appointment;
+    if (appointment == null) {
+      return const DetailPage(
+        title: 'Appointment Details',
+        child: AppCard(
+          child: Text(
+            'This appointment is not a saved account record. Return to Appointments to choose an available visit.',
+            style: AppTextStyles.bodyMuted,
+          ),
+        ),
+      );
+    }
+
     final statusColors = appointmentStatusColors(appointment.status);
-    final isUpcoming = appointment.status == MockAppointmentStatus.upcoming;
-    final isCompleted = appointment.status == MockAppointmentStatus.completed;
+    final isUpcoming = appointment.status == AppointmentStatus.upcoming;
+    final isCompleted = appointment.status == AppointmentStatus.completed;
 
     return DetailPage(
       title: 'Appointment Details',
@@ -39,7 +69,7 @@ class AppointmentDetailScreen extends StatelessWidget {
                   child: Icon(
                     isCompleted
                         ? Icons.event_available_rounded
-                        : appointment.status == MockAppointmentStatus.cancelled
+                        : appointment.status == AppointmentStatus.cancelled
                         ? Icons.event_busy_rounded
                         : Icons.calendar_month_rounded,
                     size: 34,
@@ -60,12 +90,14 @@ class AppointmentDetailScreen extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  appointment.specialty,
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.bodyMuted,
-                ),
+                if (appointment.specialty.isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    appointment.specialty,
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.bodyMuted,
+                  ),
+                ],
                 const SizedBox(height: 14),
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -110,67 +142,38 @@ class AppointmentDetailScreen extends StatelessWidget {
                   value: appointment.clinic,
                   icon: Icons.local_hospital_outlined,
                 ),
-                const Divider(),
-                LabeledValue(
-                  label: 'Address',
-                  value: appointment.address,
-                  icon: Icons.location_on_outlined,
-                ),
-                const Divider(),
-                LabeledValue(
-                  label: isCompleted ? 'Visit notes' : 'Notes',
-                  value: appointment.notes,
-                  icon: Icons.notes_rounded,
-                ),
+                if (appointment.address.isNotEmpty) ...[
+                  const Divider(),
+                  LabeledValue(
+                    label: 'Address',
+                    value: appointment.address,
+                    icon: Icons.location_on_outlined,
+                  ),
+                ],
+                if (appointment.notes.isNotEmpty) ...[
+                  const Divider(),
+                  LabeledValue(
+                    label: 'Notes',
+                    value: appointment.notes,
+                    icon: Icons.notes_rounded,
+                  ),
+                ],
               ],
             ),
           ),
-          if (isCompleted) ...[
+          if (appointment.status == AppointmentStatus.cancelled) ...[
             const SizedBox(height: 19),
-            AppCard(
-              color: AppColors.lightGreen,
-              borderColor: AppColors.lightGreen,
-              child: const Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    Icons.assignment_turned_in_outlined,
-                    color: AppColors.darkGreen,
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Follow-up reminder',
-                          style: AppTextStyles.cardTitle,
-                        ),
-                        SizedBox(height: 5),
-                        Text(
-                          'Continue following the printed instructions from the clinic and bring this visit summary to your next consultation.',
-                          style: AppTextStyles.bodyMuted,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-          if (appointment.status == MockAppointmentStatus.cancelled) ...[
-            const SizedBox(height: 19),
-            AppCard(
-              color: const Color(0xFFFFF5F3),
-              borderColor: const Color(0xFFF6D5D1),
-              child: const Row(
+            const AppCard(
+              color: Color(0xFFFFF5F3),
+              borderColor: Color(0xFFF6D5D1),
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Icon(Icons.info_outline_rounded, color: AppColors.danger),
                   SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'This appointment is shown as cancelled in the hardcoded sample schedule.',
+                      'This appointment has been cancelled.',
                       style: AppTextStyles.body,
                     ),
                   ),
@@ -183,11 +186,7 @@ class AppointmentDetailScreen extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
-                onPressed: () => Navigator.pushNamed(
-                  context,
-                  AppRoutes.editAppointment,
-                  arguments: appointment,
-                ),
+                onPressed: _updating ? null : () => _edit(appointment),
                 icon: const Icon(Icons.edit_outlined),
                 label: const Text('Edit Appointment'),
               ),
@@ -196,7 +195,7 @@ class AppointmentDetailScreen extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
-                onPressed: () => _showRescheduleSheet(context),
+                onPressed: _updating ? null : () => _reschedule(appointment),
                 icon: const Icon(Icons.edit_calendar_outlined),
                 label: const Text('Reschedule'),
               ),
@@ -209,9 +208,14 @@ class AppointmentDetailScreen extends StatelessWidget {
                   foregroundColor: AppColors.danger,
                   side: const BorderSide(color: AppColors.danger),
                 ),
-                onPressed: () => _confirmCancellation(context),
-                icon: const Icon(Icons.event_busy_outlined),
-                label: const Text('Cancel Appointment'),
+                onPressed: _updating ? null : () => _cancel(appointment),
+                icon: _updating
+                    ? const SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.event_busy_outlined),
+                label: Text(_updating ? 'Updating…' : 'Cancel Appointment'),
               ),
             ),
           ],
@@ -220,85 +224,75 @@ class AppointmentDetailScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _showRescheduleSheet(BuildContext context) async {
-    final confirmed = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      showDragHandle: true,
-      builder: (sheetContext) => SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(
-          22,
-          4,
-          22,
-          22 + MediaQuery.viewInsetsOf(sheetContext).bottom,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Reschedule appointment', style: AppTextStyles.sectionTitle),
-            const SizedBox(height: 5),
-            const Text(
-              'Preview a new date and time. Nothing will be changed or saved.',
-              style: AppTextStyles.bodyMuted,
-            ),
-            const SizedBox(height: 20),
-            MockTextField(
-              label: 'Current date',
-              icon: Icons.event_outlined,
-              initialValue: appointment.dateLabel,
-              readOnly: true,
-            ),
-            MockTextField(
-              label: 'Current time',
-              icon: Icons.schedule_rounded,
-              initialValue: appointment.timeLabel,
-              readOnly: true,
-            ),
-            const MockTextField(
-              label: 'New date',
-              hint: 'Select a new date',
-              icon: Icons.calendar_today_outlined,
-              readOnly: true,
-            ),
-            const MockTextField(
-              label: 'New time',
-              hint: 'Select a new time',
-              icon: Icons.access_time_rounded,
-              readOnly: true,
-            ),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: () => Navigator.pop(sheetContext, true),
-                icon: const Icon(Icons.check_rounded),
-                label: const Text('Confirm New Schedule'),
-              ),
-            ),
-            const SizedBox(height: 9),
-            SizedBox(
-              width: double.infinity,
-              child: TextButton(
-                onPressed: () => Navigator.pop(sheetContext, false),
-                child: const Text('Keep Current Schedule'),
-              ),
-            ),
-          ],
-        ),
+  Future<void> _edit(Appointment appointment) async {
+    final changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => EditAppointmentScreen(appointment: appointment),
       ),
     );
-    if (confirmed == true && context.mounted) {
-      await showMockDialog(
-        context,
-        title: 'Schedule preview complete',
-        message:
-            'The reschedule flow is complete. No appointment information was changed or saved.',
-        icon: Icons.event_available_outlined,
-      );
-    }
+    if (changed == true && mounted) Navigator.pop(context, true);
   }
 
-  Future<void> _confirmCancellation(BuildContext context) async {
+  Future<void> _reschedule(Appointment appointment) async {
+    final date = await showDatePicker(
+      context: context,
+      initialDate: appointment.startsAt,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (date == null || !mounted) return;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(appointment.startsAt),
+    );
+    if (time == null || !mounted) return;
+    final newStart = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      time.hour,
+      time.minute,
+    );
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        icon: const Icon(
+          Icons.edit_calendar_outlined,
+          color: AppColors.primaryGreen,
+        ),
+        title: const Text('Save new schedule?'),
+        content: Text('Move this appointment to ${_dateTimeLabel(newStart)}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Keep Current Time'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Save Schedule'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await _performUpdate(
+      () => AppointmentRepository(EverCareBackendScope.read(context)).update(
+        appointment.id,
+        title: appointment.title,
+        doctorName: appointment.doctorName,
+        specialty: appointment.specialty,
+        startsAt: newStart,
+        clinic: appointment.clinic,
+        address: appointment.address,
+        notes: appointment.notes,
+        status: appointment.status,
+      ),
+      updated: appointment.copyWith(startsAt: newStart),
+      successMessage: 'Appointment rescheduled.',
+    );
+  }
+
+  Future<void> _cancel(Appointment appointment) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -309,7 +303,7 @@ class AppointmentDetailScreen extends StatelessWidget {
         ),
         title: const Text('Cancel appointment?'),
         content: Text(
-          'Are you sure you want to cancel the ${appointment.title} with ${appointment.doctorName}? This is a UI preview only.',
+          'Cancel ${appointment.title} with ${appointment.doctorName}?',
         ),
         actions: [
           TextButton(
@@ -319,19 +313,70 @@ class AppointmentDetailScreen extends StatelessWidget {
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Confirm Cancellation'),
+            child: const Text('Cancel Appointment'),
           ),
         ],
       ),
     );
-    if (confirmed == true && context.mounted) {
+    if (confirmed != true || !mounted) return;
+    final client = EverCareBackendScope.maybeClient(context);
+    if (client?.auth.currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sign in again before updating.')),
+      );
+      return;
+    }
+    await _performUpdate(
+      () => AppointmentRepository(
+        client!,
+      ).setStatus(appointment.id, AppointmentStatus.cancelled),
+      updated: appointment.copyWith(status: AppointmentStatus.cancelled),
+      successMessage: 'Appointment cancelled.',
+    );
+  }
+
+  Future<void> _performUpdate(
+    Future<void> Function() action, {
+    required Appointment updated,
+    required String successMessage,
+  }) async {
+    final client = EverCareBackendScope.maybeClient(context);
+    if (client?.auth.currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sign in again before updating.')),
+      );
+      return;
+    }
+    setState(() => _updating = true);
+    try {
+      await action();
+      if (!mounted) return;
+      setState(() {
+        _appointment = updated;
+        _updating = false;
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(successMessage)));
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _updating = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'Cancellation preview complete. No appointment was changed.',
-          ),
+          content: Text('Could not update the appointment. Please try again.'),
         ),
       );
     }
   }
+}
+
+String _dateTimeLabel(DateTime value) {
+  final hour = value.hour == 0
+      ? 12
+      : value.hour > 12
+      ? value.hour - 12
+      : value.hour;
+  final minute = value.minute.toString().padLeft(2, '0');
+  return '${value.month}/${value.day}/${value.year} at '
+      '$hour:$minute ${value.hour >= 12 ? 'PM' : 'AM'}';
 }

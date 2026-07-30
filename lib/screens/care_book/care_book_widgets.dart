@@ -249,11 +249,8 @@ class CareBookReader extends StatelessWidget {
     required this.chapter,
     required this.totalChapters,
     required this.textScale,
-    required this.bookmarked,
     required this.onPrevious,
     required this.onNext,
-    required this.onBookmark,
-    required this.onListen,
     required this.onTextSmaller,
     required this.onTextLarger,
     super.key,
@@ -262,11 +259,8 @@ class CareBookReader extends StatelessWidget {
   final CareBookChapter chapter;
   final int totalChapters;
   final double textScale;
-  final bool bookmarked;
   final VoidCallback? onPrevious;
   final VoidCallback? onNext;
-  final VoidCallback onBookmark;
-  final VoidCallback onListen;
   final VoidCallback onTextSmaller;
   final VoidCallback onTextLarger;
 
@@ -308,27 +302,9 @@ class CareBookReader extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'CHAPTER ${chapter.number} · ${chapter.readingTime}',
-                            style: AppTextStyles.eyebrow,
-                          ),
-                        ),
-                        IconButton(
-                          tooltip: 'Bookmark chapter',
-                          onPressed: onBookmark,
-                          icon: Icon(
-                            bookmarked
-                                ? Icons.bookmark_rounded
-                                : Icons.bookmark_border_rounded,
-                            color: bookmarked
-                                ? AppColors.warning
-                                : AppColors.darkGreen,
-                          ),
-                        ),
-                      ],
+                    Text(
+                      'CHAPTER ${chapter.number} · ${chapter.readingTime}',
+                      style: AppTextStyles.eyebrow,
                     ),
                     const SizedBox(height: 4),
                     Text(chapter.title, style: AppTextStyles.pageTitle),
@@ -398,11 +374,6 @@ class CareBookReader extends StatelessWidget {
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        _ReaderControl(
-                          icon: Icons.volume_up_outlined,
-                          label: 'Listen',
-                          onTap: onListen,
-                        ),
                         _ReaderControl(
                           icon: Icons.text_decrease_rounded,
                           label: 'Smaller',

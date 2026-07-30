@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../data/mock_data.dart';
-import '../models/mock_appointment.dart';
-import '../models/mock_blood_pressure_record.dart';
-import '../models/mock_medication.dart';
+import '../models/appointment.dart';
+import '../models/blood_pressure_reading.dart';
+import '../models/medication.dart';
 import '../screens/appointments/add_appointment_screen.dart';
 import '../screens/appointments/appointment_detail_screen.dart';
 import '../screens/appointments/edit_appointment_screen.dart';
@@ -86,37 +85,38 @@ abstract final class AppRoutes {
       deviceConnection => const BpMonitorTestPage(),
       bloodPressureHistory => const BloodPressureHistoryScreen(),
       bloodPressureRecord =>
-        routeSettings.arguments is MockBloodPressureRecord
+        routeSettings.arguments is BloodPressureReading
             ? BloodPressureRecordScreen(
-                record: routeSettings.arguments! as MockBloodPressureRecord,
+                record: routeSettings.arguments! as BloodPressureReading,
               )
             : const BloodPressureHistoryScreen(),
       bloodPressureTrend => const BloodPressureTrendScreen(),
       manualRecord => const ManualHealthRecordScreen(),
-      medicationDetails => MedicationDetailScreen(
-        medication: routeSettings.arguments is MockMedication
-            ? routeSettings.arguments! as MockMedication
-            : MockData.medications.first,
-      ),
+      medicationDetails => routeSettings.arguments is Medication
+          ? MedicationDetailScreen(
+              medication: routeSettings.arguments! as Medication,
+            )
+          : const MainShell(initialIndex: 2),
       addMedication => AddMedicationScreen(
-        isEditing:
-            routeSettings.arguments is bool && routeSettings.arguments! as bool,
+        medication: routeSettings.arguments is Medication
+            ? routeSettings.arguments! as Medication
+            : null,
       ),
       appointments => const MainShell(initialIndex: 3),
       journals => const MainShell(initialIndex: 4),
       addJournal => const AddJournalEntryScreen(),
       careBook => const MainShell(initialIndex: 5),
-      appointmentDetails => AppointmentDetailScreen(
-        appointment: routeSettings.arguments is MockAppointment
-            ? routeSettings.arguments! as MockAppointment
-            : MockData.upcomingAppointments.first,
-      ),
+      appointmentDetails => routeSettings.arguments is Appointment
+          ? AppointmentDetailScreen(
+              appointment: routeSettings.arguments! as Appointment,
+            )
+          : const MainShell(initialIndex: 3),
       addAppointment => const AddAppointmentScreen(),
-      editAppointment => EditAppointmentScreen(
-        appointment: routeSettings.arguments is MockAppointment
-            ? routeSettings.arguments! as MockAppointment
-            : MockData.upcomingAppointments.first,
-      ),
+      editAppointment => routeSettings.arguments is Appointment
+          ? EditAppointmentScreen(
+              appointment: routeSettings.arguments! as Appointment,
+            )
+          : const MainShell(initialIndex: 3),
       caregiverList => const CaregiverListScreen(),
       caregiverProfile => CaregiverProfileScreen(
         caregiver: routeSettings.arguments is Map<String, String>

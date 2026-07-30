@@ -1,51 +1,92 @@
 import 'package:flutter/material.dart';
 
-import '../../models/mock_appointment.dart';
+import '../../models/appointment.dart';
 import '../../theme/app_colors.dart';
-import '../authentication/auth_widgets.dart';
 
-class AppointmentFormFields extends StatefulWidget {
-  const AppointmentFormFields({super.key, this.appointment});
+class AppointmentFormController {
+  AppointmentFormController([Appointment? appointment])
+    : title = TextEditingController(text: appointment?.title),
+      doctorName = TextEditingController(text: appointment?.doctorName),
+      clinic = TextEditingController(text: appointment?.clinic),
+      address = TextEditingController(text: appointment?.address),
+      notes = TextEditingController(text: appointment?.notes),
+      specialty = appointment?.specialty ?? specialties.first,
+      date = appointment == null
+          ? DateUtils.dateOnly(DateTime.now())
+          : DateUtils.dateOnly(appointment.startsAt),
+      time = appointment == null
+          ? TimeOfDay.now()
+          : TimeOfDay.fromDateTime(appointment.startsAt);
 
-  final MockAppointment? appointment;
-
-  @override
-  State<AppointmentFormFields> createState() => _AppointmentFormFieldsState();
-}
-
-class _AppointmentFormFieldsState extends State<AppointmentFormFields> {
-  static const _specialties = [
+  static const specialties = [
     'General Physician',
     'Internal Medicine',
     'Dentist',
     'Endocrinologist',
     'Ophthalmologist',
     'Cardiologist',
+    'Other',
   ];
 
-  late String _specialty = widget.appointment?.specialty ?? _specialties.first;
+  final TextEditingController title;
+  final TextEditingController doctorName;
+  final TextEditingController clinic;
+  final TextEditingController address;
+  final TextEditingController notes;
+  String specialty;
+  DateTime date;
+  TimeOfDay time;
+
+  DateTime get startsAt =>
+      DateTime(date.year, date.month, date.day, time.hour, time.minute);
+
+  void dispose() {
+    title.dispose();
+    doctorName.dispose();
+    clinic.dispose();
+    address.dispose();
+    notes.dispose();
+  }
+}
+
+class AppointmentFormFields extends StatefulWidget {
+  const AppointmentFormFields({required this.controller, super.key});
+
+  final AppointmentFormController controller;
 
   @override
+  State<AppointmentFormFields> createState() => _AppointmentFormFieldsState();
+}
+
+class _AppointmentFormFieldsState extends State<AppointmentFormFields> {
+  @override
   Widget build(BuildContext context) {
-    final appointment = widget.appointment;
+    final controller = widget.controller;
+    final specialties =
+        AppointmentFormController.specialties.contains(controller.specialty)
+        ? AppointmentFormController.specialties
+        : [controller.specialty, ...AppointmentFormController.specialties];
+
     return Column(
       children: [
-        MockTextField(
+        _field(
+          controller: controller.title,
           label: 'Appointment title',
-          hint: 'e.g. General Check-up',
+          hint: 'e.g. General check-up',
           icon: Icons.event_note_outlined,
-          initialValue: appointment?.title,
+          required: true,
         ),
-        MockTextField(
-          label: 'Doctor name',
-          hint: 'e.g. Dr. Maria Reyes',
+        _field(
+          controller: controller.doctorName,
+          label: 'Doctor or provider name',
+          hint: 'Enter the provider name',
           icon: Icons.person_outline_rounded,
-          initialValue: appointment?.doctorName,
+          required: true,
         ),
         Padding(
           padding: const EdgeInsets.only(bottom: 16),
           child: DropdownButtonFormField<String>(
-            initialValue: _specialty,
+            initialValue: controller.specialty,
             isExpanded: true,
             decoration: const InputDecoration(
               labelText: 'Specialty',
@@ -54,7 +95,7 @@ class _AppointmentFormFieldsState extends State<AppointmentFormFields> {
                 color: AppColors.primaryGreen,
               ),
             ),
-            items: _specialties
+            items: specialties
                 .map(
                   (specialty) => DropdownMenuItem(
                     value: specialty,
@@ -63,68 +104,147 @@ class _AppointmentFormFieldsState extends State<AppointmentFormFields> {
                 )
                 .toList(growable: false),
             onChanged: (value) {
-              if (value != null) setState(() => _specialty = value);
+              if (value != null) controller.specialty = value;
             },
           ),
         ),
-        MockTextField(
+        _field(
+          controller: controller.clinic,
           label: 'Clinic or hospital',
           hint: 'Enter the clinic name',
           icon: Icons.local_hospital_outlined,
-          initialValue: appointment?.clinic,
+          required: true,
         ),
-        MockTextField(
+        _PickerField(
           label: 'Date',
-          hint: 'August 4, 2026',
+          value: _dateLabel(controller.date),
           icon: Icons.calendar_today_outlined,
-          initialValue: appointment?.dateLabel,
-          readOnly: true,
-          onTap: () => _showPickerPreview(context, 'Date picker'),
+          onTap: _pickDate,
         ),
-        MockTextField(
+        _PickerField(
           label: 'Time',
-          hint: '9:30 AM',
+          value: controller.time.format(context),
           icon: Icons.schedule_rounded,
-          initialValue: appointment?.timeLabel,
-          readOnly: true,
-          onTap: () => _showPickerPreview(context, 'Time picker'),
+          onTap: _pickTime,
         ),
-        MockTextField(
+        _field(
+          controller: controller.address,
           label: 'Address',
           hint: 'Clinic address',
           icon: Icons.location_on_outlined,
-          initialValue: appointment?.address,
         ),
-        MockTextField(
+        _field(
+          controller: controller.notes,
           label: 'Notes',
           hint: 'Optional reminders for this visit',
           icon: Icons.notes_rounded,
-          initialValue: appointment?.notes,
           maxLines: 4,
         ),
       ],
     );
   }
 
-  void _showPickerPreview(BuildContext context, String title) {
-    showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        icon: const Icon(
-          Icons.touch_app_outlined,
-          color: AppColors.primaryGreen,
+  Widget _field({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData icon,
+    bool required = false,
+    int maxLines = 1,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: TextFormField(
+        controller: controller,
+        maxLines: maxLines,
+        textInputAction: maxLines == 1
+            ? TextInputAction.next
+            : TextInputAction.newline,
+        decoration: InputDecoration(
+          labelText: label,
+          hintText: hint,
+          prefixIcon: Icon(icon, color: AppColors.primaryGreen),
+          alignLabelWithHint: maxLines > 1,
         ),
-        title: Text(title),
-        content: const Text(
-          'A date or time picker would open here in the complete application. This UI prototype does not change any information.',
-        ),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Got it'),
-          ),
-        ],
+        validator: required
+            ? (value) => value == null || value.trim().isEmpty
+                  ? '$label is required.'
+                  : null
+            : null,
       ),
     );
   }
+
+  Future<void> _pickDate() async {
+    final selected = await showDatePicker(
+      context: context,
+      initialDate: widget.controller.date,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (selected != null && mounted) {
+      setState(() => widget.controller.date = selected);
+    }
+  }
+
+  Future<void> _pickTime() async {
+    final selected = await showTimePicker(
+      context: context,
+      initialTime: widget.controller.time,
+    );
+    if (selected != null && mounted) {
+      setState(() => widget.controller.time = selected);
+    }
+  }
+}
+
+class _PickerField extends StatelessWidget {
+  const _PickerField({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: InputDecorator(
+          decoration: InputDecoration(
+            labelText: label,
+            prefixIcon: Icon(icon, color: AppColors.primaryGreen),
+            suffixIcon: const Icon(Icons.chevron_right_rounded),
+          ),
+          child: Text(value),
+        ),
+      ),
+    );
+  }
+}
+
+String _dateLabel(DateTime date) {
+  const months = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+  return '${months[date.month - 1]} ${date.day}, ${date.year}';
 }

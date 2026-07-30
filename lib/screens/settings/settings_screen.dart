@@ -11,73 +11,77 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return DetailPage(
       title: 'Settings',
-      child: AppCard(
-        padding: const EdgeInsets.symmetric(vertical: 7),
-        child: Column(
-          children: [
-            _SettingsItem(
-              icon: Icons.manage_accounts_outlined,
-              title: 'Account',
-              subtitle: 'Profile and account preferences',
-              onTap: () => Navigator.pushNamed(context, AppRoutes.editProfile),
+      child: Column(
+        children: [
+          AppCard(
+            padding: const EdgeInsets.symmetric(vertical: 7),
+            child: Column(
+              children: [
+                _SettingsItem(
+                  icon: Icons.manage_accounts_outlined,
+                  title: 'Account',
+                  subtitle: 'Review and update your profile',
+                  onTap: () =>
+                      Navigator.pushNamed(context, AppRoutes.editProfile),
+                ),
+                _SettingsItem(
+                  icon: Icons.share_outlined,
+                  title: 'Trusted caregivers',
+                  subtitle: 'Manage people connected to your care',
+                  onTap: () =>
+                      Navigator.pushNamed(context, AppRoutes.caregiverList),
+                ),
+                _SettingsItem(
+                  icon: Icons.notifications_outlined,
+                  title: 'Notifications',
+                  subtitle: 'View your account notifications',
+                  onTap: () =>
+                      Navigator.pushNamed(context, AppRoutes.notifications),
+                ),
+              ],
             ),
-            _SettingsItem(
-              icon: Icons.lock_outline_rounded,
-              title: 'Privacy',
-              subtitle: 'Privacy controls and information',
-              onTap: () => _preview(context, 'Privacy'),
+          ),
+          const SizedBox(height: 14),
+          AppCard(
+            padding: const EdgeInsets.symmetric(vertical: 7),
+            child: Column(
+              children: [
+                _SettingsItem(
+                  icon: Icons.help_outline_rounded,
+                  title: 'Help and support',
+                  subtitle: 'Read guides and troubleshooting tips',
+                  onTap: () =>
+                      Navigator.pushNamed(context, AppRoutes.helpSupport),
+                ),
+                _SettingsItem(
+                  icon: Icons.info_outline_rounded,
+                  title: 'About EverCare',
+                  subtitle: 'App information and health-use notice',
+                  onTap: () => Navigator.pushNamed(context, AppRoutes.about),
+                ),
+              ],
             ),
-            _SettingsItem(
-              icon: Icons.share_outlined,
-              title: 'Shared health information',
-              subtitle: 'Manage trusted people',
-              onTap: () =>
-                  Navigator.pushNamed(context, AppRoutes.caregiverList),
+          ),
+          const SizedBox(height: 14),
+          const AppCard(
+            color: AppColors.lightGreen,
+            borderColor: AppColors.lightGreen,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.tune_rounded, color: AppColors.darkGreen),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Language, theme, permission controls, and legal documents '
+                    'are not available in this version of EverCare.',
+                  ),
+                ),
+              ],
             ),
-            _SettingsItem(
-              icon: Icons.notifications_outlined,
-              title: 'Notification preferences',
-              subtitle: 'Static notification settings',
-              onTap: () =>
-                  Navigator.pushNamed(context, AppRoutes.notifications),
-            ),
-            _SettingsItem(
-              icon: Icons.language_rounded,
-              title: 'Language',
-              subtitle: 'English',
-              onTap: () => _preview(context, 'Language'),
-            ),
-            _SettingsItem(
-              icon: Icons.palette_outlined,
-              title: 'Theme',
-              subtitle: 'Light',
-              onTap: () => _preview(context, 'Theme'),
-            ),
-            _SettingsItem(
-              icon: Icons.policy_outlined,
-              title: 'Data permissions',
-              subtitle: 'Review sample permissions',
-              onTap: () => _preview(context, 'Data permissions'),
-            ),
-            _SettingsItem(
-              icon: Icons.gavel_outlined,
-              title: 'Terms and conditions',
-              subtitle: 'Read the placeholder terms',
-              onTap: () => _preview(context, 'Terms and conditions'),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
-    );
-  }
-
-  void _preview(BuildContext context, String title) {
-    showMockDialog(
-      context,
-      title: title,
-      message:
-          'This setting is included as a static interface preview. No preference or permission has been changed.',
-      icon: Icons.tune_rounded,
     );
   }
 }

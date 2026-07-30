@@ -1,0 +1,2 @@
+-- EverCare intentionally has no production or local sample patient data.
+-- Create test users and records manually in a disposable local environment.

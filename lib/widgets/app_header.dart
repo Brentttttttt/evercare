@@ -124,10 +124,7 @@ class EverCareHeader extends StatelessWidget {
                   child: IconButton(
                     tooltip: 'Notifications',
                     onPressed: onNotifications,
-                    icon: const Badge(
-                      smallSize: 8,
-                      child: Icon(Icons.notifications_none_rounded),
-                    ),
+                    icon: const Icon(Icons.notifications_none_rounded),
                   ),
                 ),
               ...actions,

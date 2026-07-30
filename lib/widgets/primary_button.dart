@@ -13,7 +13,7 @@ class PrimaryButton extends StatelessWidget {
   });
 
   final String label;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final IconData? icon;
   final Color? backgroundColor;
   final Color? foregroundColor;

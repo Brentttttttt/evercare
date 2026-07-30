@@ -133,28 +133,3 @@ class LabeledValue extends StatelessWidget {
     );
   }
 }
-
-Future<void> showMockDialog(
-  BuildContext context, {
-  required String title,
-  required String message,
-  String actionLabel = 'Got it',
-  IconData icon = Icons.info_outline_rounded,
-}) {
-  return showDialog<void>(
-    context: context,
-    builder: (dialogContext) => AlertDialog(
-      icon: Icon(icon, color: AppColors.primaryGreen, size: 34),
-      title: Text(title),
-      content: Text(message),
-      actions: [
-        PressScale(
-          child: FilledButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text(actionLabel),
-          ),
-        ),
-      ],
-    ),
-  );
-}

@@ -1,53 +1,46 @@
 import 'package:flutter/material.dart';
 
-import '../../models/mock_medication.dart';
-import '../../routes/app_routes.dart';
+import '../../models/medication.dart';
+import '../../repositories/medication_repository.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_page.dart';
-import '../../widgets/section_header.dart';
+import '../../widgets/evercare_backend_scope.dart';
+import 'add_medication_screen.dart';
 
-class MedicationDetailScreen extends StatelessWidget {
+class MedicationDetailScreen extends StatefulWidget {
   const MedicationDetailScreen({required this.medication, super.key});
 
-  final MockMedication medication;
+  final Object medication;
 
-  Future<void> _confirmDelete(BuildContext context) {
-    return showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        icon: const Icon(Icons.delete_outline_rounded, color: AppColors.danger),
-        title: const Text('Delete medication?'),
-        content: Text(
-          '${medication.name} will remain visible because this is a UI-only prototype.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Confirm'),
-          ),
-        ],
-      ),
-    );
-  }
+  @override
+  State<MedicationDetailScreen> createState() => _MedicationDetailScreenState();
+}
+
+class _MedicationDetailScreenState extends State<MedicationDetailScreen> {
+  bool _deleting = false;
 
   @override
   Widget build(BuildContext context) {
+    final raw = widget.medication;
+    if (raw is! Medication) {
+      return const DetailPage(
+        title: 'Medication Details',
+        child: AppCard(
+          child: Text(
+            'This medication is not a saved account record. Return to Medications to choose an available item.',
+            style: AppTextStyles.bodyMuted,
+          ),
+        ),
+      );
+    }
+    final medication = raw;
     return DetailPage(
       title: 'Medication Details',
       actions: [
         IconButton(
           tooltip: 'Edit medication',
-          onPressed: () => Navigator.pushNamed(
-            context,
-            AppRoutes.addMedication,
-            arguments: true,
-          ),
+          onPressed: () => _edit(medication),
           icon: const Icon(Icons.edit_outlined),
         ),
       ],
@@ -80,8 +73,13 @@ class MedicationDetailScreen extends StatelessWidget {
                       Text(medication.name, style: AppTextStyles.pageTitle),
                       const SizedBox(height: 5),
                       Text(medication.dosage, style: AppTextStyles.body),
-                      const SizedBox(height: 4),
-                      Text(medication.purpose, style: AppTextStyles.bodyMuted),
+                      if (medication.purpose.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          medication.purpose,
+                          style: AppTextStyles.bodyMuted,
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -93,145 +91,132 @@ class MedicationDetailScreen extends StatelessWidget {
             child: Column(
               children: [
                 LabeledValue(
-                  label: 'Schedule',
-                  value: 'Every day at ${medication.time}',
+                  label: 'Status',
+                  value: medication.statusLabel,
+                  icon: medication.isActive
+                      ? Icons.check_circle_outline_rounded
+                      : Icons.pause_circle_outline_rounded,
+                ),
+                const Divider(),
+                LabeledValue(
+                  label: 'Frequency',
+                  value: medication.frequency.isEmpty
+                      ? 'Not provided'
+                      : medication.frequency,
+                  icon: Icons.repeat_rounded,
+                ),
+                const Divider(),
+                LabeledValue(
+                  label: 'Reminder time',
+                  value: medication.scheduleLabel,
                   icon: Icons.schedule_rounded,
                 ),
                 const Divider(),
                 LabeledValue(
                   label: 'Start date',
-                  value: medication.startDate,
+                  value: medication.startDateLabel,
                   icon: Icons.event_outlined,
                 ),
                 const Divider(),
                 LabeledValue(
                   label: 'End date',
-                  value: medication.endDate,
+                  value: medication.endDateLabel,
                   icon: Icons.event_available_outlined,
                 ),
                 const Divider(),
                 LabeledValue(
                   label: 'Instructions',
-                  value: medication.instructions,
+                  value: medication.instructions.isEmpty
+                      ? 'No instructions saved'
+                      : medication.instructions,
                   icon: Icons.description_outlined,
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 22),
-          const SectionHeader(title: 'Adherence'),
-          const SizedBox(height: 10),
-          const AppCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      '96%',
-                      style: TextStyle(
-                        fontSize: 27,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.darkGreen,
-                      ),
-                    ),
-                    SizedBox(width: 9),
-                    Expanded(
-                      child: Text(
-                        'Taken as planned this month',
-                        style: AppTextStyles.bodyMuted,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 13),
-                LinearProgressIndicator(
-                  value: .96,
-                  minHeight: 9,
-                  borderRadius: BorderRadius.all(Radius.circular(9)),
-                  color: AppColors.primaryGreen,
-                  backgroundColor: AppColors.lightGreen,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 22),
-          const SectionHeader(title: 'Recent Intake'),
-          const SizedBox(height: 10),
-          const AppCard(
-            child: Column(
-              children: [
-                _IntakeRow(date: 'July 18', status: 'Taken', time: '8:03 AM'),
-                Divider(),
-                _IntakeRow(date: 'July 17', status: 'Taken', time: '8:08 AM'),
-                Divider(),
-                _IntakeRow(date: 'July 16', status: 'Taken', time: '8:01 AM'),
-                Divider(),
-                _IntakeRow(date: 'July 15', status: 'Missed', time: '—'),
-              ],
-            ),
-          ),
           const SizedBox(height: 18),
-          OutlinedButton.icon(
-            onPressed: () => Navigator.pushNamed(
-              context,
-              AppRoutes.addMedication,
-              arguments: true,
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: () => _edit(medication),
+              icon: const Icon(Icons.edit_outlined),
+              label: const Text('Edit Medication'),
             ),
-            icon: const Icon(Icons.edit_outlined),
-            label: const Text('Edit Medication'),
           ),
           const SizedBox(height: 10),
-          OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.danger,
-              side: const BorderSide(color: AppColors.danger),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.danger,
+                side: const BorderSide(color: AppColors.danger),
+              ),
+              onPressed: _deleting ? null : () => _confirmDelete(medication),
+              icon: _deleting
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.delete_outline_rounded),
+              label: Text(_deleting ? 'Deleting…' : 'Delete Medication'),
             ),
-            onPressed: () => _confirmDelete(context),
-            icon: const Icon(Icons.delete_outline_rounded),
-            label: const Text('Delete Medication'),
           ),
         ],
       ),
     );
   }
-}
 
-class _IntakeRow extends StatelessWidget {
-  const _IntakeRow({
-    required this.date,
-    required this.status,
-    required this.time,
-  });
+  Future<void> _edit(Medication medication) async {
+    final changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => AddMedicationScreen(medication: medication),
+      ),
+    );
+    if (changed == true && mounted) Navigator.pop(context, true);
+  }
 
-  final String date;
-  final String status;
-  final String time;
-
-  @override
-  Widget build(BuildContext context) {
-    final taken = status == 'Taken';
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 9),
-      child: Row(
-        children: [
-          Icon(
-            taken ? Icons.check_circle_rounded : Icons.cancel_outlined,
-            color: taken ? AppColors.primaryGreen : AppColors.danger,
+  Future<void> _confirmDelete(Medication medication) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        icon: const Icon(Icons.delete_outline_rounded, color: AppColors.danger),
+        title: const Text('Delete medication?'),
+        content: Text(
+          '${medication.name} will be permanently removed from your account.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Keep Medication'),
           ),
-          const SizedBox(width: 12),
-          Expanded(child: Text(date, style: AppTextStyles.body)),
-          Text(time, style: AppTextStyles.bodyMuted),
-          const SizedBox(width: 12),
-          Text(
-            status,
-            style: TextStyle(
-              color: taken ? AppColors.darkGreen : AppColors.danger,
-              fontWeight: FontWeight.w700,
-            ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Delete'),
           ),
         ],
       ),
     );
+    if (confirmed != true || !mounted) return;
+    final client = EverCareBackendScope.maybeClient(context);
+    if (client?.auth.currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sign in again before deleting.')),
+      );
+      return;
+    }
+    setState(() => _deleting = true);
+    try {
+      await MedicationRepository(client!).delete(medication.id);
+      if (mounted) Navigator.pop(context, true);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _deleting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not delete the medication. Please try again.'),
+        ),
+      );
+    }
   }
 }

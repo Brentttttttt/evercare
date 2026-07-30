@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../data/mock_data.dart';
+import '../../repositories/dashboard_repository.dart';
 import '../../routes/app_routes.dart';
 import '../../services/bp_monitor_ble_service.dart';
 import '../../theme/app_colors.dart';
@@ -8,12 +8,34 @@ import '../../theme/app_text_styles.dart';
 import '../../widgets/app_page.dart';
 import '../../widgets/bp_monitor_ble_scope.dart';
 import '../../widgets/care_photo_banner.dart';
+import '../../widgets/evercare_backend_scope.dart';
 import '../../widgets/section_header.dart';
 
-class HomeDashboardScreen extends StatelessWidget {
+class HomeDashboardScreen extends StatefulWidget {
   const HomeDashboardScreen({required this.onSelectTab, super.key});
 
   final ValueChanged<int> onSelectTab;
+
+  @override
+  State<HomeDashboardScreen> createState() => _HomeDashboardScreenState();
+}
+
+class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
+  Future<DashboardSummary>? _summary;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _summary ??= _loadSummary();
+  }
+
+  Future<DashboardSummary> _loadSummary() async {
+    final client = EverCareBackendScope.maybeClient(context);
+    if (client == null || client.auth.currentUser == null) {
+      return const DashboardSummary();
+    }
+    return DashboardRepository(client).load();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,9 +45,18 @@ class HomeDashboardScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('MONDAY, JULY 20', style: AppTextStyles.eyebrow),
+          Text(_todayLabel(), style: AppTextStyles.eyebrow),
           const SizedBox(height: 7),
-          const Text('Good morning, Maria', style: AppTextStyles.pageTitle),
+          FutureBuilder<DashboardSummary>(
+            future: _summary,
+            builder: (context, snapshot) {
+              final name = snapshot.data?.fullName;
+              return Text(
+                name == null ? 'Welcome to EverCare' : '${_greeting()}, $name',
+                style: AppTextStyles.pageTitle,
+              );
+            },
+          ),
           const SizedBox(height: 5),
           const Text(
             'Your caregiving overview for today.',
@@ -43,44 +74,20 @@ class HomeDashboardScreen extends StatelessWidget {
           const SizedBox(height: 20),
           _BloodPressureSummaryCard(
             service: bpMonitor,
-            onTap: () => onSelectTab(1),
+            onTap: () => widget.onSelectTab(1),
           ),
           const SizedBox(height: 28),
           const SectionHeader(title: 'Today’s overview'),
           const SizedBox(height: 12),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final width = (constraints.maxWidth - 12) / 2;
-              return Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  _OverviewTile(
-                    width: width,
-                    icon: Icons.medication_outlined,
-                    color: AppColors.primaryGreen,
-                    label: 'Medication',
-                    value: '2 remaining',
-                    detail: 'Next · 12:30 PM',
-                    onTap: () => onSelectTab(2),
-                  ),
-                  _OverviewTile(
-                    width: width,
-                    icon: Icons.calendar_month_outlined,
-                    color: AppColors.blue,
-                    label: 'Appointment',
-                    value: MockData.upcomingAppointments.first.title,
-                    detail:
-                        '${MockData.upcomingAppointments.first.dateLabel} · ${MockData.upcomingAppointments.first.timeLabel}',
-                    onTap: () => Navigator.pushNamed(
-                      context,
-                      AppRoutes.appointmentDetails,
-                      arguments: MockData.upcomingAppointments.first,
-                    ),
-                  ),
-                ],
-              );
-            },
+          FutureBuilder<DashboardSummary>(
+            future: _summary,
+            builder: (context, snapshot) => _DashboardOverview(
+              summary: snapshot.data ?? const DashboardSummary(),
+              loading: snapshot.connectionState != ConnectionState.done,
+              hasError: snapshot.hasError,
+              onMedication: () => widget.onSelectTab(2),
+              onAppointment: () => widget.onSelectTab(3),
+            ),
           ),
           const SizedBox(height: 28),
           const SectionHeader(title: 'Quick actions'),
@@ -103,20 +110,20 @@ class HomeDashboardScreen extends StatelessWidget {
                     width: width,
                     label: 'Medications',
                     icon: Icons.medication_outlined,
-                    onTap: () => onSelectTab(2),
+                    onTap: () => widget.onSelectTab(2),
                   ),
                   _QuickAction(
                     width: width,
                     label: 'Appointments',
                     icon: Icons.event_available_outlined,
-                    onTap: () => onSelectTab(3),
+                    onTap: () => widget.onSelectTab(3),
                   ),
                   _QuickAction(
                     width: width,
                     label: 'Emergency',
                     icon: Icons.sos_rounded,
                     color: AppColors.danger,
-                    onTap: () => onSelectTab(6),
+                    onTap: () => widget.onSelectTab(6),
                   ),
                 ],
               );
@@ -133,7 +140,7 @@ class HomeDashboardScreen extends StatelessWidget {
             color: AppColors.purple,
             title: 'Journals',
             description: 'Record thoughts, symptoms, moods, and daily moments.',
-            onTap: () => onSelectTab(4),
+            onTap: () => widget.onSelectTab(4),
           ),
           const SizedBox(height: 11),
           _CareServiceCard(
@@ -142,7 +149,7 @@ class HomeDashboardScreen extends StatelessWidget {
             title: 'Care Book',
             description:
                 'Read simplified notes and access the official NIA handbook.',
-            onTap: () => onSelectTab(5),
+            onTap: () => widget.onSelectTab(5),
           ),
           const SizedBox(height: 11),
           _CareServiceCard(
@@ -151,11 +158,118 @@ class HomeDashboardScreen extends StatelessWidget {
             title: 'Emergency',
             description:
                 'Keep essential contacts and medical details close by.',
-            onTap: () => onSelectTab(6),
+            onTap: () => widget.onSelectTab(6),
           ),
         ],
       ),
     );
+  }
+
+  String _greeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  }
+
+  String _todayLabel() {
+    const weekdays = [
+      'MONDAY',
+      'TUESDAY',
+      'WEDNESDAY',
+      'THURSDAY',
+      'FRIDAY',
+      'SATURDAY',
+      'SUNDAY',
+    ];
+    const months = [
+      'JANUARY',
+      'FEBRUARY',
+      'MARCH',
+      'APRIL',
+      'MAY',
+      'JUNE',
+      'JULY',
+      'AUGUST',
+      'SEPTEMBER',
+      'OCTOBER',
+      'NOVEMBER',
+      'DECEMBER',
+    ];
+    final now = DateTime.now();
+    return '${weekdays[now.weekday - 1]}, ${months[now.month - 1]} ${now.day}';
+  }
+}
+
+class _DashboardOverview extends StatelessWidget {
+  const _DashboardOverview({
+    required this.summary,
+    required this.loading,
+    required this.hasError,
+    required this.onMedication,
+    required this.onAppointment,
+  });
+
+  final DashboardSummary summary;
+  final bool loading;
+  final bool hasError;
+  final VoidCallback onMedication;
+  final VoidCallback onAppointment;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = (constraints.maxWidth - 12) / 2;
+        final medicationValue = loading
+            ? 'Loading…'
+            : hasError
+            ? 'Unavailable'
+            : summary.nextMedicationName ?? 'No medicine scheduled';
+        final appointmentValue = loading
+            ? 'Loading…'
+            : hasError
+            ? 'Unavailable'
+            : summary.nextAppointmentTitle ?? 'No upcoming visit';
+        return Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            _OverviewTile(
+              width: width,
+              icon: Icons.medication_outlined,
+              color: AppColors.primaryGreen,
+              label: 'Medication',
+              value: medicationValue,
+              detail: summary.nextMedicationTime == null
+                  ? 'Open medications'
+                  : 'Scheduled · ${summary.nextMedicationTime}',
+              onTap: onMedication,
+            ),
+            _OverviewTile(
+              width: width,
+              icon: Icons.calendar_month_outlined,
+              color: AppColors.blue,
+              label: 'Appointment',
+              value: appointmentValue,
+              detail: _appointmentLabel(summary.nextAppointmentAt),
+              onTap: onAppointment,
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  String _appointmentLabel(DateTime? value) {
+    if (value == null) return 'Open appointments';
+    final hour = value.hour == 0
+        ? 12
+        : value.hour > 12
+        ? value.hour - 12
+        : value.hour;
+    final minute = value.minute.toString().padLeft(2, '0');
+    return '${value.month}/${value.day}/${value.year} · $hour:$minute ${value.hour >= 12 ? 'PM' : 'AM'}';
   }
 }
 

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../models/mock_emergency_contact.dart';
+import '../../models/emergency_contact.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_page.dart';
@@ -8,38 +8,38 @@ import '../../widgets/app_page.dart';
 class EmergencyContactCard extends StatelessWidget {
   const EmergencyContactCard({
     required this.contact,
-    required this.onCall,
-    required this.onMessage,
+    required this.onCopyNumber,
     required this.onDetails,
     super.key,
   });
 
-  final MockEmergencyContact contact;
-  final VoidCallback onCall;
-  final VoidCallback onMessage;
+  final EmergencyContact contact;
+  final VoidCallback onCopyNumber;
   final VoidCallback onDetails;
 
   @override
   Widget build(BuildContext context) {
-    final accent = contact.primary ? AppColors.danger : AppColors.primaryGreen;
+    final accent = contact.isPrimary
+        ? AppColors.danger
+        : AppColors.primaryGreen;
     return AppCard(
-      borderColor: contact.primary
+      borderColor: contact.isPrimary
           ? AppColors.danger.withValues(alpha: .28)
           : AppColors.border,
-      color: contact.primary ? const Color(0xFFFFFBF7) : Colors.white,
+      color: contact.isPrimary ? const Color(0xFFFFFBF7) : Colors.white,
       child: Column(
         children: [
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               CircleAvatar(
-                radius: contact.primary ? 29 : 25,
+                radius: contact.isPrimary ? 29 : 25,
                 backgroundColor: accent.withValues(alpha: .12),
                 foregroundColor: accent,
                 child: Text(
                   contact.initials,
                   style: TextStyle(
-                    fontSize: contact.primary ? 17 : 15,
+                    fontSize: contact.isPrimary ? 17 : 15,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -57,7 +57,7 @@ class EmergencyContactCard extends StatelessWidget {
                             style: AppTextStyles.cardTitle,
                           ),
                         ),
-                        if (contact.primary)
+                        if (contact.isPrimary)
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 9,
@@ -87,23 +87,11 @@ class EmergencyContactCard extends StatelessWidget {
                         Icon(Icons.phone_outlined, size: 16, color: accent),
                         const SizedBox(width: 6),
                         Text(
-                          contact.phone,
+                          contact.phoneNumber,
                           style: AppTextStyles.body.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.schedule_rounded,
-                          size: 15,
-                          color: AppColors.secondaryText,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(contact.availability, style: AppTextStyles.small),
                       ],
                     ),
                   ],
@@ -112,66 +100,34 @@ class EmergencyContactCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 17),
-          if (contact.primary) ...[
+          if (contact.isPrimary) ...[
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
-                onPressed: onCall,
+                onPressed: onCopyNumber,
                 style: FilledButton.styleFrom(
                   backgroundColor: accent,
                   padding: const EdgeInsets.symmetric(vertical: 13),
                 ),
-                icon: const Icon(Icons.call_outlined, size: 18),
-                label: const Text('Call Anna'),
-              ),
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: onMessage,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: accent,
-                  side: BorderSide(color: accent.withValues(alpha: .35)),
-                  padding: const EdgeInsets.symmetric(vertical: 13),
-                ),
-                icon: const Icon(Icons.chat_bubble_outline_rounded, size: 17),
-                label: const Text('Send Emergency Message'),
+                icon: const Icon(Icons.copy_rounded, size: 18),
+                label: const Text('Copy Contact Number'),
               ),
             ),
           ] else
-            Row(
-              children: [
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed: onCall,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: accent,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                    icon: const Icon(Icons.call_outlined, size: 18),
-                    label: const Text('Call'),
-                  ),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: onCopyNumber,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: accent,
+                  side: BorderSide(color: accent.withValues(alpha: .35)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: onMessage,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: accent,
-                      side: BorderSide(color: accent.withValues(alpha: .35)),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                    icon: const Icon(
-                      Icons.chat_bubble_outline_rounded,
-                      size: 17,
-                    ),
-                    label: const Text('Message'),
-                  ),
-                ),
-              ],
+                icon: const Icon(Icons.copy_rounded, size: 17),
+                label: const Text('Copy Number'),
+              ),
             ),
-          if (contact.primary) ...[
+          if (contact.isPrimary) ...[
             const SizedBox(height: 7),
             TextButton.icon(
               onPressed: onDetails,
@@ -187,11 +143,15 @@ class EmergencyContactCard extends StatelessWidget {
 
 class EmergencyInformationCard extends StatelessWidget {
   const EmergencyInformationCard({
+    required this.title,
+    required this.subtitle,
     required this.items,
     required this.onShowFullId,
     super.key,
   });
 
+  final String title;
+  final String subtitle;
   final List<(String, String)> items;
   final VoidCallback onShowFullId;
 
@@ -215,17 +175,14 @@ class EmergencyInformationCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 11),
-          const Text(
-            'Maria’s Emergency Medical ID',
-            style: AppTextStyles.cardTitle,
-          ),
+          Text(title, style: AppTextStyles.cardTitle),
           const SizedBox(height: 4),
-          const Text(
-            'Important sample information for a care emergency',
+          Text(
+            subtitle,
             textAlign: TextAlign.center,
             style: AppTextStyles.bodyMuted,
           ),
-          const SizedBox(height: 16),
+          if (items.isNotEmpty) const SizedBox(height: 16),
           ...items.map(
             (item) => Container(
               padding: const EdgeInsets.symmetric(vertical: 10),

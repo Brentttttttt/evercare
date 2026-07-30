@@ -18,7 +18,6 @@ class _CareBookScreenState extends State<CareBookScreen> {
   final _scrollController = ScrollController();
   final _readerKey = GlobalKey();
   int _selectedChapter = 0;
-  bool _bookmarked = false;
   bool _downloading = false;
   double _textScale = 1;
 
@@ -62,24 +61,12 @@ class _CareBookScreenState extends State<CareBookScreen> {
               chapter: chapter,
               totalChapters: chapters.length,
               textScale: _textScale,
-              bookmarked: _bookmarked,
               onPrevious: _selectedChapter == 0
                   ? null
                   : () => _selectChapter(_selectedChapter - 1),
               onNext: _selectedChapter == chapters.length - 1
                   ? null
                   : () => _selectChapter(_selectedChapter + 1),
-              onBookmark: () {
-                // TODO: Persist chapter bookmarks in a future implementation.
-                setState(() => _bookmarked = !_bookmarked);
-              },
-              onListen: () {
-                // TODO: Add text-to-speech in a future implementation.
-                _showMockMessage(
-                  'Listen preview',
-                  'EverCare is not playing audio in this prototype.',
-                );
-              },
               onTextSmaller: () => setState(
                 () => _textScale = (_textScale - .1).clamp(.9, 1.2).toDouble(),
               ),
@@ -123,10 +110,7 @@ class _CareBookScreenState extends State<CareBookScreen> {
   }
 
   void _selectChapter(int index) {
-    setState(() {
-      _selectedChapter = index;
-      _bookmarked = false;
-    });
+    setState(() => _selectedChapter = index);
     _scrollToReader();
   }
 
@@ -160,7 +144,7 @@ class _CareBookScreenState extends State<CareBookScreen> {
       );
     } catch (_) {
       if (!mounted) return;
-      _showMockMessage(
+      _showMessage(
         'Could not save the PDF',
         'Please check that a save location is available, then try again.',
       );
@@ -173,26 +157,34 @@ class _CareBookScreenState extends State<CareBookScreen> {
     try {
       final opened = await CareBookService.openReference(uri);
       if (!opened && mounted) {
-        _showMockMessage(
+        _showMessage(
           'Could not open $title',
           'Please check your browser connection and try again.',
         );
       }
     } catch (_) {
       if (!mounted) return;
-      _showMockMessage(
+      _showMessage(
         'Could not open $title',
         'Please check your browser connection and try again.',
       );
     }
   }
 
-  void _showMockMessage(String title, String message) {
-    showMockDialog(
-      context,
-      title: title,
-      message: message,
-      icon: Icons.menu_book_outlined,
+  Future<void> _showMessage(String title, String message) {
+    return showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        icon: const Icon(Icons.menu_book_outlined),
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
     );
   }
 }

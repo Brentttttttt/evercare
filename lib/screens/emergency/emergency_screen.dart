@@ -1,21 +1,59 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
-import '../../data/emergency_mock_data.dart';
-import '../../models/mock_emergency_contact.dart';
+import '../../data/emergency_guidance.dart';
+import '../../models/emergency_contact.dart';
+import '../../repositories/emergency_repository.dart';
 import '../../routes/app_routes.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_page.dart';
 import '../../widgets/care_photo_banner.dart';
+import '../../widgets/empty_state_card.dart';
+import '../../widgets/evercare_backend_scope.dart';
 import '../../widgets/section_header.dart';
 import 'emergency_widgets.dart';
 
-class EmergencyScreen extends StatelessWidget {
+class EmergencyScreen extends StatefulWidget {
   const EmergencyScreen({super.key});
 
   @override
+  State<EmergencyScreen> createState() => _EmergencyScreenState();
+}
+
+class _EmergencyScreenState extends State<EmergencyScreen> {
+  EmergencyRepository? _repository;
+  List<EmergencyContact> _contacts = const [];
+  EmergencyMedicalProfile? _medicalProfile;
+  bool _initialized = false;
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_initialized) return;
+    _initialized = true;
+    final client = EverCareBackendScope.maybeClient(context);
+    if (client?.auth.currentUser == null) {
+      _loading = false;
+      return;
+    }
+    _repository = EmergencyRepository(client!);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final contacts = EmergencyMockData.contacts;
+    final primary = _contacts.cast<EmergencyContact?>().firstWhere(
+      (contact) => contact?.isPrimary == true,
+      orElse: () => null,
+    );
+    final otherContacts = _contacts
+        .where((contact) => contact.id != primary?.id)
+        .toList(growable: false);
+    final medicalItems = _medicalItems(_medicalProfile);
+
     return SingleChildScrollView(
       padding: pagePadding,
       child: Column(
@@ -30,118 +68,77 @@ class EmergencyScreen extends StatelessWidget {
             height: 168,
           ),
           const SizedBox(height: 20),
-          AppCard(
-            color: const Color(0xFFFFF8F4),
-            borderColor: const Color(0xFFF5D8D3),
-            child: Column(
-              children: [
-                Container(
-                  width: 58,
-                  height: 58,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFE5E1),
-                    borderRadius: BorderRadius.circular(19),
-                  ),
-                  child: const Icon(
-                    Icons.sos_rounded,
-                    color: AppColors.danger,
-                    size: 32,
-                  ),
-                ),
-                const SizedBox(height: 13),
-                const Text(
-                  'Do you need immediate help?',
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.sectionTitle,
-                ),
-                const SizedBox(height: 7),
-                const Text(
-                  'Choose an emergency contact below. EverCare will help you prepare the call.',
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.bodyMuted,
-                ),
-                const SizedBox(height: 17),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: () => _showCallPreview(
-                      context,
-                      name: 'Emergency Services',
-                      phone: '911',
-                    ),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.danger,
-                      padding: const EdgeInsets.symmetric(vertical: 15),
-                    ),
-                    icon: const Icon(Icons.call_rounded),
-                    label: const Text('Call Emergency Services'),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Emergency Hotline: 911',
-                  style: AppTextStyles.small,
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'If the person is unconscious, having difficulty breathing, experiencing severe chest pain, or facing an immediate danger, contact emergency services.',
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.bodyMuted,
-                ),
-              ],
-            ),
-          ),
+          _EmergencyHotlineCard(onCopy: () => _copyNumber('911')),
           const SizedBox(height: 27),
-          const SectionHeader(
-            title: 'Primary Emergency Contact',
-            subtitle: 'A trusted person to contact first',
-          ),
-          const SizedBox(height: 12),
-          EmergencyContactCard(
-            contact: contacts.first,
-            onCall: () => _showCallPreview(
-              context,
-              name: contacts.first.name,
-              phone: contacts.first.phone,
+          if (_loading)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(36),
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else if (_repository == null)
+            const EmptyStateCard(
+              title: 'Sign in to prepare emergency details',
+              message:
+                  'Your trusted contacts and medical information will appear here after you sign in.',
+              icon: Icons.lock_outline_rounded,
+            )
+          else if (_error != null)
+            _EmergencyLoadError(message: _error!, onRetry: _load)
+          else ...[
+            const SectionHeader(
+              title: 'Primary Emergency Contact',
+              subtitle: 'The trusted person you chose to contact first',
             ),
-            onMessage: () => _showMessagePreview(context, contacts.first),
-            onDetails: () =>
-                Navigator.pushNamed(context, AppRoutes.emergencyContacts),
-          ),
-          const SizedBox(height: 27),
-          const SectionHeader(
-            title: 'Other Emergency Contacts',
-            subtitle: 'Family and healthcare support',
-          ),
-          const SizedBox(height: 12),
-          ...contacts
-              .skip(1)
-              .map(
+            const SizedBox(height: 12),
+            if (primary == null)
+              EmptyStateCard(
+                title: 'No primary contact yet',
+                message: 'Add a trusted contact and mark them as primary.',
+                icon: Icons.contact_emergency_outlined,
+              )
+            else
+              EmergencyContactCard(
+                contact: primary,
+                onCopyNumber: () => _copyNumber(primary.phoneNumber),
+                onDetails: _openContacts,
+              ),
+            if (otherContacts.isNotEmpty) ...[
+              const SizedBox(height: 27),
+              const SectionHeader(
+                title: 'Other Emergency Contacts',
+                subtitle: 'Your additional trusted contacts',
+              ),
+              const SizedBox(height: 12),
+              ...otherContacts.map(
                 (contact) => Padding(
                   padding: const EdgeInsets.only(bottom: 11),
                   child: EmergencyContactCard(
                     contact: contact,
-                    onCall: () => _showCallPreview(
-                      context,
-                      name: contact.name,
-                      phone: contact.phone,
-                    ),
-                    onMessage: () => _showMessagePreview(context, contact),
-                    onDetails: () {},
+                    onCopyNumber: () => _copyNumber(contact.phoneNumber),
+                    onDetails: _openContacts,
                   ),
                 ),
               ),
-          const SizedBox(height: 16),
-          const SectionHeader(
-            title: 'Emergency Medical Information',
-            subtitle: 'Hardcoded details for this UI prototype',
-          ),
-          const SizedBox(height: 12),
-          EmergencyInformationCard(
-            items: EmergencyMockData.medicalInformation,
-            onShowFullId: () =>
-                Navigator.pushNamed(context, AppRoutes.medicalInfo),
-          ),
+            ],
+            const SizedBox(height: 16),
+            const SectionHeader(
+              title: 'Emergency Medical Information',
+              subtitle: 'Details saved to your private EverCare account',
+            ),
+            const SizedBox(height: 12),
+            EmergencyInformationCard(
+              title: _medicalProfile?.fullName.isNotEmpty == true
+                  ? '${_medicalProfile!.fullName}’s Medical ID'
+                  : 'Emergency Medical ID',
+              subtitle: medicalItems.isEmpty
+                  ? 'Add health details that may help during an emergency.'
+                  : 'Review these details regularly and keep them accurate.',
+              items: medicalItems,
+              onShowFullId: _openMedicalInformation,
+            ),
+          ],
           const SizedBox(height: 27),
           const SectionHeader(
             title: 'While Waiting for Help',
@@ -149,11 +146,11 @@ class EmergencyScreen extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           const EmergencyChecklistCard(
-            items: EmergencyMockData.waitingChecklist,
+            items: EmergencyGuidance.waitingChecklist,
           ),
           const SizedBox(height: 8),
           const Text(
-            'This prototype provides general sample information only. Always follow instructions from qualified emergency personnel.',
+            'These are general safety reminders, not medical advice. Always follow instructions from qualified emergency personnel.',
             textAlign: TextAlign.center,
             style: AppTextStyles.small,
           ),
@@ -162,86 +159,155 @@ class EmergencyScreen extends StatelessWidget {
     );
   }
 
-  void _showMessagePreview(BuildContext context, MockEmergencyContact contact) {
-    // TODO: Open the device messaging app in a future implementation.
-    showMockDialog(
-      context,
-      title: 'Message ${contact.name}?',
-      message:
-          'No message was created or sent. Messaging is shown as a mock interface only.',
-      icon: Icons.chat_bubble_outline_rounded,
+  Future<void> _load() async {
+    final repository = _repository;
+    if (repository == null) return;
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final values = await Future.wait<Object>([
+        repository.fetchContacts(),
+        repository.fetchMedicalProfile(),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _contacts = values[0] as List<EmergencyContact>;
+        _medicalProfile = values[1] as EmergencyMedicalProfile;
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error =
+            'EverCare could not load your emergency details. Please try again.';
+      });
+    }
+  }
+
+  Future<void> _copyNumber(String phoneNumber) async {
+    await Clipboard.setData(ClipboardData(text: phoneNumber));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$phoneNumber copied. Open your Phone app to call.'),
+      ),
     );
   }
 
-  void _showCallPreview(
-    BuildContext context, {
-    required String name,
-    required String phone,
-  }) {
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      useSafeArea: true,
-      builder: (sheetContext) => Padding(
-        padding: const EdgeInsets.fromLTRB(22, 2, 22, 22),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 54,
-              height: 54,
-              decoration: const BoxDecoration(
-                color: Color(0xFFFFE8E4),
-                shape: BoxShape.circle,
+  Future<void> _openContacts() async {
+    await Navigator.pushNamed(context, AppRoutes.emergencyContacts);
+    if (mounted) await _load();
+  }
+
+  Future<void> _openMedicalInformation() async {
+    await Navigator.pushNamed(context, AppRoutes.medicalInfo);
+    if (mounted) await _load();
+  }
+
+  List<(String, String)> _medicalItems(EmergencyMedicalProfile? profile) {
+    if (profile == null) return const [];
+    return [
+      if (profile.bloodType.isNotEmpty) ('Blood type', profile.bloodType),
+      if (profile.allergies.isNotEmpty)
+        ('Allergies', profile.allergies.join(', ')),
+      if (profile.conditions.isNotEmpty)
+        ('Conditions', profile.conditions.join(', ')),
+      if (profile.preferredHospital.isNotEmpty)
+        ('Preferred hospital', profile.preferredHospital),
+    ];
+  }
+}
+
+class _EmergencyHotlineCard extends StatelessWidget {
+  const _EmergencyHotlineCard({required this.onCopy});
+
+  final VoidCallback onCopy;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      color: const Color(0xFFFFF8F4),
+      borderColor: const Color(0xFFF5D8D3),
+      child: Column(
+        children: [
+          Container(
+            width: 58,
+            height: 58,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFE5E1),
+              borderRadius: BorderRadius.circular(19),
+            ),
+            child: const Icon(
+              Icons.sos_rounded,
+              color: AppColors.danger,
+              size: 32,
+            ),
+          ),
+          const SizedBox(height: 13),
+          const Text(
+            'Do you need immediate help?',
+            textAlign: TextAlign.center,
+            style: AppTextStyles.sectionTitle,
+          ),
+          const SizedBox(height: 7),
+          const Text(
+            'Use your Phone app to call the emergency hotline. EverCare does not place calls itself.',
+            textAlign: TextAlign.center,
+            style: AppTextStyles.bodyMuted,
+          ),
+          const SizedBox(height: 17),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: onCopy,
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.danger,
+                padding: const EdgeInsets.symmetric(vertical: 15),
               ),
-              child: const Icon(
-                Icons.phone_in_talk_outlined,
-                color: AppColors.danger,
-              ),
+              icon: const Icon(Icons.copy_rounded),
+              label: const Text('Copy Emergency Hotline 911'),
             ),
-            const SizedBox(height: 13),
-            Text('Call $name?', style: AppTextStyles.sectionTitle),
-            const SizedBox(height: 7),
-            Text(phone, style: AppTextStyles.cardTitle),
-            const SizedBox(height: 7),
-            const Text(
-              'This will open your phone application with the contact number ready.',
-              textAlign: TextAlign.center,
-              style: AppTextStyles.bodyMuted,
-            ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(sheetContext),
-                    child: const Text('Cancel'),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: FilledButton(
-                    onPressed: () {
-                      // TODO: Launch the device phone dialer in a future implementation.
-                      Navigator.pop(sheetContext);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Phone preview only — no call was started.',
-                          ),
-                        ),
-                      );
-                    },
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.danger,
-                    ),
-                    child: const Text('Continue to Phone'),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'If the person is unconscious, has difficulty breathing, severe chest pain, or faces immediate danger, contact emergency services now.',
+            textAlign: TextAlign.center,
+            style: AppTextStyles.bodyMuted,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmergencyLoadError extends StatelessWidget {
+  const _EmergencyLoadError({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      child: Column(
+        children: [
+          const Icon(
+            Icons.cloud_off_outlined,
+            size: 42,
+            color: AppColors.danger,
+          ),
+          const SizedBox(height: 10),
+          Text(message, textAlign: TextAlign.center),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('Try Again'),
+          ),
+        ],
       ),
     );
   }

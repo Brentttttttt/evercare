@@ -1,10 +1,9 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 
 import '../../routes/app_routes.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/app_header.dart';
+import '../../widgets/evercare_backend_scope.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -14,22 +13,24 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
-  Timer? _timer;
+  bool _hasStarted = false;
 
   @override
-  void initState() {
-    super.initState();
-    _timer = Timer(const Duration(milliseconds: 1400), () {
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, AppRoutes.welcome);
-      }
-    });
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_hasStarted) return;
+    _hasStarted = true;
+    _continueFromSession();
   }
 
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
+  Future<void> _continueFromSession() async {
+    final client = EverCareBackendScope.maybeClient(context);
+    await Future<void>.delayed(const Duration(milliseconds: 900));
+    if (!mounted) return;
+    final destination = client?.auth.currentSession == null
+        ? AppRoutes.welcome
+        : AppRoutes.home;
+    Navigator.pushReplacementNamed(context, destination);
   }
 
   @override
