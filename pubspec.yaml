@@ -11,6 +11,11 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_blue_plus: 2.3.11
+  flutter_google_places_sdk_android: ^0.3.0
+  flutter_google_places_sdk_platform_interface: ^0.4.0
+  geolocator: ^14.0.3
+  google_maps_flutter: ^2.18.0
+  image_picker: ^1.2.2
   path_provider: ^2.1.6
   permission_handler: 12.0.3
   shared_preferences: 2.5.5

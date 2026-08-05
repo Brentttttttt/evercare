@@ -50,5 +50,10 @@ app.*.map.json
 /.vscode/
 /tmp/
 
+# Microsoft Office temporary lock files
+~$*.docx
+~$*.pptx
+~$*.xlsx
+
 # Retained locally but no longer used by the application
 /assets/logo/logo1.png

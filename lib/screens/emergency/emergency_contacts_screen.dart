@@ -112,7 +112,7 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
                       Text('Emergency hotline', style: AppTextStyles.cardTitle),
                       SizedBox(height: 4),
                       Text(
-                        'Use your Phone app to dial 911 for an immediate emergency.',
+                        'Use your Phone app to dial the Philippine Red Cross emergency hotline 143.',
                         style: AppTextStyles.bodyMuted,
                       ),
                     ],

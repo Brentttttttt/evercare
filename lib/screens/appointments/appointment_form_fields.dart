@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
 
 import '../../models/appointment.dart';
+import '../../models/hospital_location.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_motion.dart';
+import '../../theme/app_text_styles.dart';
+import '../../widgets/app_page.dart';
+import '../hospitals/hospital_finder_screen.dart';
+
+enum _LocationEntryMode { manual, googleMaps }
 
 class AppointmentFormController {
   AppointmentFormController([Appointment? appointment])
@@ -59,6 +66,9 @@ class AppointmentFormFields extends StatefulWidget {
 }
 
 class _AppointmentFormFieldsState extends State<AppointmentFormFields> {
+  _LocationEntryMode _locationMode = _LocationEntryMode.manual;
+  HospitalLocation? _selectedHospital;
+
   @override
   Widget build(BuildContext context) {
     final controller = widget.controller;
@@ -108,12 +118,28 @@ class _AppointmentFormFieldsState extends State<AppointmentFormFields> {
             },
           ),
         ),
+        _HospitalEntryChoice(
+          selected: _locationMode,
+          onChanged: (mode) => setState(() => _locationMode = mode),
+        ),
+        const SizedBox(height: 14),
+        if (_locationMode == _LocationEntryMode.googleMaps) ...[
+          _GoogleHospitalPicker(
+            selectedHospital: _selectedHospital,
+            existingHospitalName: controller.clinic.text,
+            onPick: _pickHospital,
+          ),
+          const SizedBox(height: 16),
+        ],
         _field(
           controller: controller.clinic,
           label: 'Clinic or hospital',
-          hint: 'Enter the clinic name',
+          hint: _locationMode == _LocationEntryMode.manual
+              ? 'Enter the clinic name'
+              : 'Choose a hospital from Google Maps',
           icon: Icons.local_hospital_outlined,
           required: true,
+          readOnly: _locationMode == _LocationEntryMode.googleMaps,
         ),
         _PickerField(
           label: 'Date',
@@ -130,8 +156,11 @@ class _AppointmentFormFieldsState extends State<AppointmentFormFields> {
         _field(
           controller: controller.address,
           label: 'Address',
-          hint: 'Clinic address',
+          hint: _locationMode == _LocationEntryMode.manual
+              ? 'Clinic address'
+              : 'Filled from your Google Maps selection',
           icon: Icons.location_on_outlined,
+          readOnly: _locationMode == _LocationEntryMode.googleMaps,
         ),
         _field(
           controller: controller.notes,
@@ -151,12 +180,14 @@ class _AppointmentFormFieldsState extends State<AppointmentFormFields> {
     required IconData icon,
     bool required = false,
     int maxLines = 1,
+    bool readOnly = false,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: TextFormField(
         controller: controller,
         maxLines: maxLines,
+        readOnly: readOnly,
         textInputAction: maxLines == 1
             ? TextInputAction.next
             : TextInputAction.newline,
@@ -173,6 +204,21 @@ class _AppointmentFormFieldsState extends State<AppointmentFormFields> {
             : null,
       ),
     );
+  }
+
+  Future<void> _pickHospital() async {
+    final hospital = await Navigator.push<HospitalLocation>(
+      context,
+      EverCarePageRoute(
+        builder: (_) => const HospitalFinderScreen(allowSelection: true),
+      ),
+    );
+    if (hospital == null || !mounted) return;
+    setState(() {
+      _selectedHospital = hospital;
+      widget.controller.clinic.text = hospital.name;
+      widget.controller.address.text = hospital.address;
+    });
   }
 
   Future<void> _pickDate() async {
@@ -195,6 +241,136 @@ class _AppointmentFormFieldsState extends State<AppointmentFormFields> {
     if (selected != null && mounted) {
       setState(() => widget.controller.time = selected);
     }
+  }
+}
+
+class _HospitalEntryChoice extends StatelessWidget {
+  const _HospitalEntryChoice({required this.selected, required this.onChanged});
+
+  final _LocationEntryMode selected;
+  final ValueChanged<_LocationEntryMode> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      padding: const EdgeInsets.all(15),
+      color: AppColors.lightGreen,
+      borderColor: const Color(0xFFC8E3D5),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'How would you like to add the hospital?',
+            style: AppTextStyles.cardTitle,
+          ),
+          const SizedBox(height: 5),
+          const Text(
+            'Type the details yourself or find a hospital with Google Maps.',
+            style: AppTextStyles.bodyMuted,
+          ),
+          const SizedBox(height: 13),
+          SizedBox(
+            width: double.infinity,
+            child: SegmentedButton<_LocationEntryMode>(
+              showSelectedIcon: true,
+              selected: {selected},
+              onSelectionChanged: (selection) => onChanged(selection.first),
+              segments: const [
+                ButtonSegment(
+                  value: _LocationEntryMode.manual,
+                  icon: Icon(Icons.edit_location_alt_outlined),
+                  label: Text('Type manually'),
+                ),
+                ButtonSegment(
+                  value: _LocationEntryMode.googleMaps,
+                  icon: Icon(Icons.map_outlined),
+                  label: Text('Google Maps'),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GoogleHospitalPicker extends StatelessWidget {
+  const _GoogleHospitalPicker({
+    required this.selectedHospital,
+    required this.existingHospitalName,
+    required this.onPick,
+  });
+
+  final HospitalLocation? selectedHospital;
+  final String existingHospitalName;
+  final VoidCallback onPick;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasExistingName = existingHospitalName.trim().isNotEmpty;
+    return AppCard(
+      padding: const EdgeInsets.all(16),
+      borderColor: selectedHospital == null
+          ? AppColors.border
+          : AppColors.primaryGreen,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 43,
+                height: 43,
+                decoration: BoxDecoration(
+                  color: AppColors.lightGreen,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.local_hospital_rounded,
+                  color: AppColors.primaryGreen,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      selectedHospital?.name ??
+                          (hasExistingName
+                              ? existingHospitalName
+                              : 'No hospital selected'),
+                      style: AppTextStyles.cardTitle,
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      selectedHospital?.address.isNotEmpty == true
+                          ? selectedHospital!.address
+                          : 'Search nearby hospitals or look up a hospital by name.',
+                      style: AppTextStyles.bodyMuted,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 13),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: onPick,
+              icon: const Icon(Icons.map_rounded),
+              label: Text(
+                selectedHospital == null
+                    ? 'Find a Hospital on Google Maps'
+                    : 'Change Hospital',
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

@@ -6,12 +6,14 @@ import '../../models/emergency_contact.dart';
 import '../../repositories/emergency_repository.dart';
 import '../../routes/app_routes.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_motion.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_page.dart';
 import '../../widgets/care_photo_banner.dart';
 import '../../widgets/empty_state_card.dart';
 import '../../widgets/evercare_backend_scope.dart';
 import '../../widgets/section_header.dart';
+import '../hospitals/hospital_finder_screen.dart';
 import 'emergency_widgets.dart';
 
 class EmergencyScreen extends StatefulWidget {
@@ -68,7 +70,9 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
             height: 168,
           ),
           const SizedBox(height: 20),
-          _EmergencyHotlineCard(onCopy: () => _copyNumber('911')),
+          _EmergencyHotlineCard(onCopy: () => _copyNumber('143')),
+          const SizedBox(height: 14),
+          _EmergencyHospitalFinderCard(onOpen: _openHospitalFinder),
           const SizedBox(height: 27),
           if (_loading)
             const Center(
@@ -207,6 +211,13 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
     if (mounted) await _load();
   }
 
+  Future<void> _openHospitalFinder() async {
+    await Navigator.push<void>(
+      context,
+      EverCarePageRoute(builder: (_) => const HospitalFinderScreen()),
+    );
+  }
+
   List<(String, String)> _medicalItems(EmergencyMedicalProfile? profile) {
     if (profile == null) return const [];
     return [
@@ -254,7 +265,7 @@ class _EmergencyHotlineCard extends StatelessWidget {
           ),
           const SizedBox(height: 7),
           const Text(
-            'Use your Phone app to call the emergency hotline. EverCare does not place calls itself.',
+            'Use your Phone app to call the Philippine Red Cross emergency hotline. EverCare does not place calls itself.',
             textAlign: TextAlign.center,
             style: AppTextStyles.bodyMuted,
           ),
@@ -268,7 +279,7 @@ class _EmergencyHotlineCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 15),
               ),
               icon: const Icon(Icons.copy_rounded),
-              label: const Text('Copy Emergency Hotline 911'),
+              label: const Text('Copy Philippine Red Cross Hotline 143'),
             ),
           ),
           const SizedBox(height: 12),
@@ -276,6 +287,74 @@ class _EmergencyHotlineCard extends StatelessWidget {
             'If the person is unconscious, has difficulty breathing, severe chest pain, or faces immediate danger, contact emergency services now.',
             textAlign: TextAlign.center,
             style: AppTextStyles.bodyMuted,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmergencyHospitalFinderCard extends StatelessWidget {
+  const _EmergencyHospitalFinderCard({required this.onOpen});
+
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      color: const Color(0xFFEAF5EF),
+      borderColor: const Color(0xFFC8E3D5),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(17),
+                ),
+                child: const Icon(
+                  Icons.local_hospital_rounded,
+                  color: AppColors.primaryGreen,
+                  size: 29,
+                ),
+              ),
+              const SizedBox(width: 13),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Find Nearby Emergency Hospitals',
+                      style: AppTextStyles.cardTitle,
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Use your location to see hospitals and open driving directions.',
+                      style: AppTextStyles.bodyMuted,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 15),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: onOpen,
+              icon: const Icon(Icons.map_rounded),
+              label: const Text('Open Google Hospital Map'),
+            ),
+          ),
+          const SizedBox(height: 9),
+          const Text(
+            'Hospital availability and travel conditions can change. Call ahead when possible.',
+            textAlign: TextAlign.center,
+            style: AppTextStyles.small,
           ),
         ],
       ),

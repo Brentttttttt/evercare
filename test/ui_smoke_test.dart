@@ -1,6 +1,8 @@
 import 'package:evercare/models/appointment.dart';
 import 'package:evercare/models/blood_pressure_reading.dart';
 import 'package:evercare/models/bp_monitor_packet.dart';
+import 'package:evercare/models/journal_entry.dart';
+import 'package:evercare/models/journal_photo.dart';
 import 'package:evercare/routes/app_route_observer.dart';
 import 'package:evercare/routes/app_routes.dart';
 import 'package:evercare/services/bp_monitor_ble_service.dart';
@@ -11,6 +13,7 @@ import 'package:evercare/screens/appointments/edit_appointment_screen.dart';
 import 'package:evercare/screens/caregiver/health_report_screen.dart';
 import 'package:evercare/screens/care_book/care_book_screen.dart';
 import 'package:evercare/screens/emergency/emergency_screen.dart';
+import 'package:evercare/screens/hospitals/hospital_finder_screen.dart';
 import 'package:evercare/screens/health/blood_pressure_history_screen.dart';
 import 'package:evercare/screens/health/blood_pressure_record_screen.dart';
 import 'package:evercare/screens/health/blood_pressure_trend_screen.dart';
@@ -20,6 +23,8 @@ import 'package:evercare/screens/health/manual_health_record_screen.dart';
 import 'package:evercare/screens/home/home_dashboard_screen.dart';
 import 'package:evercare/screens/home/main_shell.dart';
 import 'package:evercare/screens/journals/add_journal_entry_screen.dart';
+import 'package:evercare/screens/journals/journal_entry_card.dart';
+import 'package:evercare/screens/journals/journal_entry_reader.dart';
 import 'package:evercare/screens/journals/journals_screen.dart';
 import 'package:evercare/screens/medications/medication_screen.dart';
 import 'package:evercare/screens/notifications/notifications_screen.dart';
@@ -202,10 +207,7 @@ void main() {
       find.text('No blood-pressure measurement received yet.'),
       findsOneWidget,
     );
-    expect(
-      find.text('No BLE reading in this session yet.'),
-      findsOneWidget,
-    );
+    expect(find.text('No BLE reading in this session yet.'), findsOneWidget);
     expect(find.text('Preview device state'), findsNothing);
     expect(find.text('85%'), findsNothing);
     expect(find.text('120 / 80'), findsNothing);
@@ -481,6 +483,152 @@ void main() {
     expect(calmParagraph.text.style?.color, isNot(Colors.white));
   });
 
+  testWidgets('journal editor protects unsaved writing', (tester) async {
+    await pumpPhoneScreen(tester, const JournalsScreen());
+    await tester.tap(find.text('Add Journal Entry'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Give this memory a title…'),
+      'A meaningful afternoon',
+    );
+    await tester.pump();
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Discard this journal entry?'), findsOneWidget);
+    expect(find.text('Keep Writing'), findsOneWidget);
+    expect(find.text('Discard'), findsOneWidget);
+  });
+
+  testWidgets('no symptoms remains mutually exclusive', (tester) async {
+    await pumpPhoneScreen(tester, const AddJournalEntryScreen());
+    await tester.ensureVisible(find.text('Add details to this memory'));
+    await tester.tap(find.text('Add details to this memory'));
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Headache'));
+    await tester.tap(find.text('Headache'));
+    await tester.tap(find.text('No symptoms'));
+    await tester.pump();
+
+    FilterChip chip(String label) => tester.widget<FilterChip>(
+      find.ancestor(of: find.text(label), matching: find.byType(FilterChip)),
+    );
+
+    expect(chip('Headache').selected, isFalse);
+    expect(chip('No symptoms').selected, isTrue);
+
+    await tester.tap(find.text('Poor sleep'));
+    await tester.pump();
+    expect(chip('Poor sleep').selected, isTrue);
+    expect(chip('No symptoms').selected, isFalse);
+  });
+
+  testWidgets('custom journal details are trimmed and reject duplicates', (
+    tester,
+  ) async {
+    await pumpPhoneScreen(tester, const AddJournalEntryScreen());
+    await tester.ensureVisible(find.text('Add details to this memory'));
+    await tester.tap(find.text('Add details to this memory'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Add your own'));
+
+    await tester.tap(find.text('Add your own'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Journal detail'),
+      '  Doctor visit  ',
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Add'));
+    await tester.pumpAndSettle();
+    expect(find.text('Doctor visit'), findsOneWidget);
+
+    await tester.tap(find.text('Add your own'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Journal detail'),
+      'doctor visit',
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Add'));
+    await tester.pump();
+    expect(find.text('That detail is already added.'), findsOneWidget);
+  });
+
+  testWidgets('journal cards show a compact photo count preview', (
+    tester,
+  ) async {
+    final entry = JournalEntry(
+      id: 'entry-1',
+      entryAt: DateTime(2026, 8, 5, 9, 15),
+      title: 'Morning walk',
+      body: 'We spent some time outside in the garden.',
+      mood: 'Happy',
+      symptoms: const ['No symptoms'],
+      activities: const ['Walking'],
+      tags: const ['Walked outside'],
+      bookmarked: true,
+      photos: [
+        for (var index = 0; index < 2; index++)
+          JournalPhoto(
+            id: 'photo-$index',
+            journalEntryId: 'entry-1',
+            storagePath: 'user-1/entry-1/photo-$index.jpg',
+            displayOrder: index,
+            createdAt: DateTime(2026, 8, 5, 9, 16),
+          ),
+      ],
+    );
+
+    await pumpPhoneScreen(
+      tester,
+      JournalEntryCard(entry: entry, onAction: (_) {}),
+    );
+    expect(find.text('+1'), findsOneWidget);
+    expect(find.text('Walked outside'), findsOneWidget);
+    expect(find.text('Photo unavailable'), findsOneWidget);
+  });
+
+  testWidgets('journal reader shows the complete diary details', (
+    tester,
+  ) async {
+    final entry = JournalEntry(
+      id: 'entry-1',
+      entryAt: DateTime(2026, 8, 5, 9, 15),
+      title: 'Morning walk',
+      body: 'We spent some time outside in the garden.',
+      mood: 'Happy',
+      symptoms: const ['No symptoms'],
+      activities: const ['Walking'],
+      tags: const ['Walked outside'],
+      bookmarked: true,
+    );
+    await pumpPhoneScreen(
+      tester,
+      Builder(
+        builder: (context) => Center(
+          child: FilledButton(
+            onPressed: () => showJournalEntryReader(context, entry),
+            child: const Text('Open diary'),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Open diary'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Morning walk'), findsOneWidget);
+    expect(find.text('Feeling happy'), findsOneWidget);
+    expect(
+      find.text('We spent some time outside in the garden.'),
+      findsOneWidget,
+    );
+    expect(find.text('Symptoms'), findsOneWidget);
+    expect(find.text('Walking'), findsOneWidget);
+    expect(find.text('Walked outside'), findsOneWidget);
+    expect(find.byTooltip('Close journal entry'), findsOneWidget);
+  });
+
   testWidgets('care book screen renders without overflow', (tester) async {
     await pumpPhoneScreen(tester, const CareBookScreen());
     expect(find.text('The EverCare\nCare Book'), findsNothing);
@@ -497,6 +645,16 @@ void main() {
 
   testWidgets('emergency screen renders without overflow', (tester) async {
     await pumpPhoneScreen(tester, const EmergencyScreen());
+    expect(find.textContaining('143'), findsOneWidget);
+    expect(find.textContaining('911'), findsNothing);
+    expect(find.text('Find Nearby Emergency Hospitals'), findsOneWidget);
+  });
+
+  testWidgets('hospital finder handles an unconfigured maps build', (
+    tester,
+  ) async {
+    await pumpPhoneScreen(tester, const HospitalFinderScreen());
+    expect(find.text('Google Maps setup required'), findsOneWidget);
   });
 
   testWidgets('main shell opens the new care destinations', (tester) async {
@@ -538,6 +696,13 @@ void main() {
 
   testWidgets('add appointment form renders without overflow', (tester) async {
     await pumpPhoneScreen(tester, const AddAppointmentScreen());
+    expect(find.text('Type manually'), findsOneWidget);
+    expect(find.text('Google Maps'), findsOneWidget);
+
+    await tester.tap(find.text('Google Maps'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Find a Hospital on Google Maps'), findsOneWidget);
   });
 
   testWidgets('edit appointment form renders without overflow', (tester) async {

@@ -1,3 +1,5 @@
+import 'journal_photo.dart';
+
 class JournalEntry {
   const JournalEntry({
     required this.id,
@@ -9,9 +11,13 @@ class JournalEntry {
     required this.activities,
     required this.tags,
     required this.bookmarked,
+    this.photos = const <JournalPhoto>[],
   });
 
-  factory JournalEntry.fromMap(Map<String, dynamic> map) {
+  factory JournalEntry.fromMap(
+    Map<String, dynamic> map, {
+    List<JournalPhoto> photos = const <JournalPhoto>[],
+  }) {
     return JournalEntry(
       id: map['id'] as String,
       entryAt: DateTime.parse(map['entry_at'] as String).toLocal(),
@@ -22,6 +28,7 @@ class JournalEntry {
       activities: _strings(map['activities']),
       tags: _strings(map['tags']),
       bookmarked: map['bookmarked'] as bool? ?? false,
+      photos: photos,
     );
   }
 
@@ -34,8 +41,9 @@ class JournalEntry {
   final List<String> activities;
   final List<String> tags;
   final bool bookmarked;
+  final List<JournalPhoto> photos;
 
-  JournalEntry copyWith({bool? bookmarked}) {
+  JournalEntry copyWith({bool? bookmarked, List<JournalPhoto>? photos}) {
     return JournalEntry(
       id: id,
       entryAt: entryAt,
@@ -46,6 +54,7 @@ class JournalEntry {
       activities: activities,
       tags: tags,
       bookmarked: bookmarked ?? this.bookmarked,
+      photos: photos ?? this.photos,
     );
   }
 }

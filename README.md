@@ -18,6 +18,7 @@ medically verified.
 - Intentional saving of completed BLE or manually entered BP readings
 - Saved BP history, trend, and seven-day summary
 - Emergency medical information and caregiver connections
+- Google Maps hospital search for appointments and emergency directions
 - The official NIA Caregiver's Handbook reference and download
 - Responsive, elderly-friendly Flutter UI with local healthcare artwork
 
@@ -70,6 +71,24 @@ flutter run `
   --dart-define=SUPABASE_URL=https://your-project.supabase.co `
   --dart-define=SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 ```
+
+## Google Maps Hospital Finder
+
+The hospital finder uses the native Google Maps and Places SDKs. In Google
+Cloud, enable **Maps SDK for Android** and **Places API (New)**, then create an
+API key restricted to Android app package `com.example.evercare` and the SHA-1
+fingerprint of the signing certificate. Do not commit the key.
+
+Pass the restricted key when running or building:
+
+```powershell
+flutter run --dart-define=GOOGLE_MAPS_API_KEY=your-restricted-key
+```
+
+The same build-time value configures the Android map and the native Places
+client. A build without the key remains usable and shows a setup message only
+when the hospital map is opened. Location access is requested at that time and
+is used to perform the nearby-hospital search; no background location is used.
 
 ## Run and Verify
 

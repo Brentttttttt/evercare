@@ -5,7 +5,6 @@ import '../../models/journal_entry.dart';
 import '../../repositories/journal_repository.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_motion.dart';
-import '../../theme/app_text_styles.dart';
 import '../../widgets/app_page.dart';
 import '../../widgets/care_photo_banner.dart';
 import '../../widgets/empty_state_card.dart';
@@ -13,6 +12,7 @@ import '../../widgets/evercare_backend_scope.dart';
 import '../../widgets/section_header.dart';
 import 'add_journal_entry_screen.dart';
 import 'journal_entry_card.dart';
+import 'journal_entry_reader.dart';
 
 class JournalsScreen extends StatefulWidget {
   const JournalsScreen({super.key});
@@ -185,21 +185,8 @@ class _JournalsScreenState extends State<JournalsScreen> {
   Future<void> _handleAction(JournalEntry entry, String action) async {
     switch (action) {
       case 'View':
-        await showDialog<void>(
-          context: context,
-          builder: (dialogContext) => AlertDialog(
-            title: Text(entry.title),
-            content: SingleChildScrollView(
-              child: Text(entry.body, style: AppTextStyles.body),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: const Text('Close'),
-              ),
-            ],
-          ),
-        );
+        await showJournalEntryReader(context, entry);
+        return;
       case 'Edit':
         final changed = await Navigator.of(context).push<bool>(
           EverCarePageRoute(
@@ -207,12 +194,15 @@ class _JournalsScreenState extends State<JournalsScreen> {
           ),
         );
         if (changed == true) await _load();
+        return;
       case 'Delete':
         final confirmed = await showDialog<bool>(
           context: context,
           builder: (dialogContext) => AlertDialog(
             title: const Text('Delete this entry?'),
-            content: const Text('This permanently removes the journal entry.'),
+            content: const Text(
+              'This permanently removes the journal entry and its attached photos.',
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(dialogContext, false),
@@ -236,6 +226,7 @@ class _JournalsScreenState extends State<JournalsScreen> {
           if (!mounted) return;
           _showError('EverCare could not delete this entry.');
         }
+        return;
       case 'Bookmark':
         try {
           await _repository!.setBookmarked(
@@ -256,6 +247,7 @@ class _JournalsScreenState extends State<JournalsScreen> {
           if (!mounted) return;
           _showError('EverCare could not update this entry.');
         }
+        return;
     }
   }
 
