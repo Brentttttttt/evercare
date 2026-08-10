@@ -1,11 +1,15 @@
+import 'dart:convert';
+
 import 'package:evercare/models/appointment.dart';
 import 'package:evercare/models/blood_pressure_reading.dart';
 import 'package:evercare/models/bp_monitor_packet.dart';
+import 'package:evercare/models/hospital_location.dart';
 import 'package:evercare/models/journal_entry.dart';
 import 'package:evercare/models/journal_photo.dart';
 import 'package:evercare/routes/app_route_observer.dart';
 import 'package:evercare/routes/app_routes.dart';
 import 'package:evercare/services/bp_monitor_ble_service.dart';
+import 'package:evercare/services/hospital_finder_service.dart';
 import 'package:evercare/screens/appointments/add_appointment_screen.dart';
 import 'package:evercare/screens/appointments/appointment_detail_screen.dart';
 import 'package:evercare/screens/appointments/appointments_screen.dart';
@@ -38,6 +42,30 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+
+HospitalFinderService _hospitalFinderFixture() => HospitalFinderService(
+  client: MockClient(
+    (_) async => http.Response(
+      jsonEncode([
+        {
+          'place_id': 10,
+          'osm_type': 'node',
+          'osm_id': 501,
+          'lat': '14.8300',
+          'lon': '120.8800',
+          'name': 'Guiguinto Community Hospital',
+          'display_name':
+              'Guiguinto Community Hospital, Guiguinto, Bulacan, Philippines',
+          'address': {'amenity': 'Guiguinto Community Hospital'},
+        },
+      ]),
+      200,
+    ),
+  ),
+  nominatimEndpoint: Uri.parse('https://example.test/search'),
+);
 
 const _confirmedMonitorResult = <int>[
   0x81,
@@ -650,11 +678,92 @@ void main() {
     expect(find.text('Find Nearby Emergency Hospitals'), findsOneWidget);
   });
 
-  testWidgets('hospital finder handles an unconfigured maps build', (
+  testWidgets('hospital finder renders without a provider API key', (
     tester,
   ) async {
-    await pumpPhoneScreen(tester, const HospitalFinderScreen());
-    expect(find.text('Google Maps setup required'), findsOneWidget);
+    await pumpPhoneScreen(
+      tester,
+      const HospitalFinderScreen(autoLocate: false, showMapTiles: false),
+    );
+    expect(find.text('Find nearby hospitals'), findsOneWidget);
+    expect(find.textContaining('OpenStreetMap'), findsWidgets);
+  });
+
+  testWidgets('appointment hospital result returns when its card is tapped', (
+    tester,
+  ) async {
+    final service = _hospitalFinderFixture();
+    addTearDown(service.close);
+    HospitalLocation? selectedHospital;
+
+    await pumpPhoneScreen(
+      tester,
+      Builder(
+        builder: (context) => Center(
+          child: FilledButton(
+            onPressed: () async {
+              selectedHospital = await Navigator.push<HospitalLocation>(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => HospitalFinderScreen(
+                    allowSelection: true,
+                    autoLocate: false,
+                    showMapTiles: false,
+                    service: service,
+                  ),
+                ),
+              );
+            },
+            child: const Text('Open hospital picker'),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open hospital picker'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Search hospitals'),
+      'Guiguinto',
+    );
+    await tester.tap(find.byTooltip('Search hospitals'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Guiguinto Community Hospital'));
+    await tester.pumpAndSettle();
+
+    expect(selectedHospital?.name, 'Guiguinto Community Hospital');
+    expect(find.text('Open hospital picker'), findsOneWidget);
+  });
+
+  testWidgets('emergency hospital selection shows directions and contacts', (
+    tester,
+  ) async {
+    final service = _hospitalFinderFixture();
+    addTearDown(service.close);
+    await pumpPhoneScreen(
+      tester,
+      HospitalFinderScreen(
+        autoLocate: false,
+        showMapTiles: false,
+        service: service,
+      ),
+    );
+
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Search hospitals'),
+      'Guiguinto',
+    );
+    await tester.tap(find.byTooltip('Search hospitals'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Guiguinto Community Hospital'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Get Directions in Google Maps'), findsOneWidget);
+    expect(find.text('Find Contact Number & Details'), findsOneWidget);
+    expect(
+      find.textContaining('Verify the hospital\'s contact details'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('main shell opens the new care destinations', (tester) async {
@@ -697,12 +806,12 @@ void main() {
   testWidgets('add appointment form renders without overflow', (tester) async {
     await pumpPhoneScreen(tester, const AddAppointmentScreen());
     expect(find.text('Type manually'), findsOneWidget);
-    expect(find.text('Google Maps'), findsOneWidget);
+    expect(find.text('OpenStreetMap'), findsOneWidget);
 
-    await tester.tap(find.text('Google Maps'));
+    await tester.tap(find.text('OpenStreetMap'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Find a Hospital on Google Maps'), findsOneWidget);
+    expect(find.text('Find a Hospital on OpenStreetMap'), findsOneWidget);
   });
 
   testWidgets('edit appointment form renders without overflow', (tester) async {

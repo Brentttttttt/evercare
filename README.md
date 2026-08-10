@@ -18,7 +18,7 @@ medically verified.
 - Intentional saving of completed BLE or manually entered BP readings
 - Saved BP history, trend, and seven-day summary
 - Emergency medical information and caregiver connections
-- Google Maps hospital search for appointments and emergency directions
+- OpenStreetMap hospital search for appointments and emergency directions
 - The official NIA Caregiver's Handbook reference and download
 - Responsive, elderly-friendly Flutter UI with local healthcare artwork
 
@@ -72,23 +72,30 @@ flutter run `
   --dart-define=SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 ```
 
-## Google Maps Hospital Finder
+## OpenStreetMap Hospital Finder
 
-The hospital finder uses the native Google Maps and Places SDKs. In Google
-Cloud, enable **Maps SDK for Android** and **Places API (New)**, then create an
-API key restricted to Android app package `com.example.evercare` and the SHA-1
-fingerprint of the signing certificate. Do not commit the key.
+The hospital finder uses `flutter_map` with OpenStreetMap tiles, Overpass for
+nearby hospital data, and Nominatim for an explicitly submitted name or city
+search. It does not need a map-provider account, billing setup, or API key.
+Location access is requested only when the user asks EverCare to find nearby
+hospitals; no background location is used.
 
-Pass the restricted key when running or building:
+EverCare identifies its network requests, displays OpenStreetMap attribution,
+caches repeated lookups, limits nearby results, automatically tries additional
+public Overpass instances after a timeout or temporary server error, and
+rate-limits Nominatim searches. Search happens only after submission, never on
+each keystroke. The public OpenStreetMap, Nominatim, and Overpass services have
+usage policies and no availability guarantee, so this configuration is
+intended for low-volume development and classroom demonstration. A production
+deployment should use a provider or hosted infrastructure with an appropriate
+service agreement.
 
-```powershell
-flutter run --dart-define=GOOGLE_MAPS_API_KEY=your-restricted-key
-```
+Emergency hospital results can open directions or a hospital-details search
+using external Google Maps URLs. Maps URLs do not require an embedded Google
+SDK or API key; the OpenStreetMap map remains inside EverCare.
 
-The same build-time value configures the Android map and the native Places
-client. A build without the key remains usable and shows a setup message only
-when the hospital map is opened. Location access is requested at that time and
-is used to perform the nearby-hospital search; no background location is used.
+OpenStreetMap data can be incomplete or outdated. Nearby results do not imply
+that a hospital is open, has emergency capacity, or is the best medical option.
 
 ## Run and Verify
 

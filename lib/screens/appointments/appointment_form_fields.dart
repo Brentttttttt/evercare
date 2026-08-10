@@ -8,7 +8,7 @@ import '../../theme/app_text_styles.dart';
 import '../../widgets/app_page.dart';
 import '../hospitals/hospital_finder_screen.dart';
 
-enum _LocationEntryMode { manual, googleMaps }
+enum _LocationEntryMode { manual, openStreetMap }
 
 class AppointmentFormController {
   AppointmentFormController([Appointment? appointment])
@@ -123,8 +123,8 @@ class _AppointmentFormFieldsState extends State<AppointmentFormFields> {
           onChanged: (mode) => setState(() => _locationMode = mode),
         ),
         const SizedBox(height: 14),
-        if (_locationMode == _LocationEntryMode.googleMaps) ...[
-          _GoogleHospitalPicker(
+        if (_locationMode == _LocationEntryMode.openStreetMap) ...[
+          _MapHospitalPicker(
             selectedHospital: _selectedHospital,
             existingHospitalName: controller.clinic.text,
             onPick: _pickHospital,
@@ -136,10 +136,10 @@ class _AppointmentFormFieldsState extends State<AppointmentFormFields> {
           label: 'Clinic or hospital',
           hint: _locationMode == _LocationEntryMode.manual
               ? 'Enter the clinic name'
-              : 'Choose a hospital from Google Maps',
+              : 'Choose a hospital from OpenStreetMap',
           icon: Icons.local_hospital_outlined,
           required: true,
-          readOnly: _locationMode == _LocationEntryMode.googleMaps,
+          readOnly: _locationMode == _LocationEntryMode.openStreetMap,
         ),
         _PickerField(
           label: 'Date',
@@ -158,9 +158,9 @@ class _AppointmentFormFieldsState extends State<AppointmentFormFields> {
           label: 'Address',
           hint: _locationMode == _LocationEntryMode.manual
               ? 'Clinic address'
-              : 'Filled from your Google Maps selection',
+              : 'Filled from your map selection',
           icon: Icons.location_on_outlined,
-          readOnly: _locationMode == _LocationEntryMode.googleMaps,
+          readOnly: _locationMode == _LocationEntryMode.openStreetMap,
         ),
         _field(
           controller: controller.notes,
@@ -265,7 +265,7 @@ class _HospitalEntryChoice extends StatelessWidget {
           ),
           const SizedBox(height: 5),
           const Text(
-            'Type the details yourself or find a hospital with Google Maps.',
+            'Type the details yourself or find a hospital on OpenStreetMap.',
             style: AppTextStyles.bodyMuted,
           ),
           const SizedBox(height: 13),
@@ -282,9 +282,9 @@ class _HospitalEntryChoice extends StatelessWidget {
                   label: Text('Type manually'),
                 ),
                 ButtonSegment(
-                  value: _LocationEntryMode.googleMaps,
+                  value: _LocationEntryMode.openStreetMap,
                   icon: Icon(Icons.map_outlined),
-                  label: Text('Google Maps'),
+                  label: Text('OpenStreetMap'),
                 ),
               ],
             ),
@@ -295,8 +295,8 @@ class _HospitalEntryChoice extends StatelessWidget {
   }
 }
 
-class _GoogleHospitalPicker extends StatelessWidget {
-  const _GoogleHospitalPicker({
+class _MapHospitalPicker extends StatelessWidget {
+  const _MapHospitalPicker({
     required this.selectedHospital,
     required this.existingHospitalName,
     required this.onPick,
@@ -363,7 +363,7 @@ class _GoogleHospitalPicker extends StatelessWidget {
               icon: const Icon(Icons.map_rounded),
               label: Text(
                 selectedHospital == null
-                    ? 'Find a Hospital on Google Maps'
+                    ? 'Find a Hospital on OpenStreetMap'
                     : 'Change Hospital',
               ),
             ),

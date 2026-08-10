@@ -347,7 +347,7 @@ class _EmergencyHospitalFinderCard extends StatelessWidget {
             child: FilledButton.icon(
               onPressed: onOpen,
               icon: const Icon(Icons.map_rounded),
-              label: const Text('Open Google Hospital Map'),
+              label: const Text('Open Emergency Hospital Map'),
             ),
           ),
           const SizedBox(height: 9),
