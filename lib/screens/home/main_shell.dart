@@ -67,10 +67,7 @@ class _MainShellState extends State<MainShell>
         title: 'Care Book',
         subtitle: 'NIA handbook reference and simplified caregiving notes',
       ),
-      (
-        title: 'Emergency',
-        subtitle: 'Contacts and important medical information',
-      ),
+      (title: 'Emergency', subtitle: 'Urgent help and trusted contacts'),
       (title: 'Profile', subtitle: 'Personal details and settings'),
     ];
     final pages = [
