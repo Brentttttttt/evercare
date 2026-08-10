@@ -5,7 +5,12 @@ import '../theme/app_motion.dart';
 import '../theme/app_text_styles.dart';
 import 'app_header.dart';
 
-const pagePadding = EdgeInsets.fromLTRB(20, 18, 20, 32);
+const pagePadding = EdgeInsets.fromLTRB(20, 20, 20, 36);
+
+/// Extra scroll clearance for pages shown behind the floating main navigation.
+const mainPagePadding = EdgeInsets.fromLTRB(20, 20, 20, 128);
+
+const _cardRadius = 20.0;
 
 class DetailPage extends StatelessWidget {
   const DetailPage({
@@ -24,6 +29,7 @@ class DetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       body: Column(
         children: [
           EverCareHeader(
@@ -63,17 +69,22 @@ class AppCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final shape = RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(24),
-      side: BorderSide(color: borderColor ?? AppColors.border),
+      borderRadius: BorderRadius.circular(_cardRadius),
+      side: borderColor == null
+          ? BorderSide(
+              color: AppColors.border.withValues(alpha: .38),
+              width: .6,
+            )
+          : BorderSide(color: borderColor!),
     );
     final card = DecoratedBox(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: const [
+        borderRadius: BorderRadius.circular(_cardRadius),
+        boxShadow: [
           BoxShadow(
-            color: AppColors.shadow,
-            blurRadius: 18,
-            offset: Offset(0, 7),
+            color: AppColors.shadow.withValues(alpha: .38),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -85,8 +96,9 @@ class AppCard extends StatelessWidget {
             ? Padding(padding: padding, child: child)
             : InkWell(
                 onTap: onTap,
-                splashColor: AppColors.primaryGreen.withValues(alpha: .08),
-                highlightColor: AppColors.primaryGreen.withValues(alpha: .035),
+                borderRadius: BorderRadius.circular(_cardRadius),
+                splashColor: AppColors.primaryGreen.withValues(alpha: .055),
+                highlightColor: AppColors.primaryGreen.withValues(alpha: .025),
                 child: Padding(padding: padding, child: child),
               ),
       ),
@@ -110,12 +122,20 @@ class LabeledValue extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.symmetric(vertical: 9),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 22, color: AppColors.primaryGreen),
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: AppColors.lightGreen,
+                borderRadius: BorderRadius.circular(11),
+              ),
+              child: Icon(icon, size: 19, color: AppColors.darkGreen),
+            ),
             const SizedBox(width: 12),
           ],
           Expanded(

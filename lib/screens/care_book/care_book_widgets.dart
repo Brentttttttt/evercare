@@ -19,224 +19,326 @@ class CareBookCover extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        boxShadow: [
-          BoxShadow(
-            color: Color(0x24172D20),
-            blurRadius: 28,
-            offset: Offset(0, 14),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(27),
-        child: Container(
-          color: AppColors.darkGreen,
-          child: Stack(
+    return AppCard(
+      color: AppColors.darkGreen,
+      borderColor: AppColors.darkGreen,
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Positioned(
-                left: 0,
-                top: 0,
-                bottom: 0,
-                child: Container(
-                  width: 14,
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: .16),
-                    border: Border(
-                      right: BorderSide(
-                        color: Colors.white.withValues(alpha: .10),
-                      ),
-                    ),
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: .12),
+                  borderRadius: BorderRadius.circular(13),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: .14),
                   ),
                 ),
-              ),
-              Positioned(
-                right: 28,
-                top: 0,
-                child: ClipPath(
-                  clipper: _RibbonClipper(),
-                  child: Container(
-                    width: 38,
-                    height: 64,
-                    color: const Color(0xFFE6A65D),
-                    child: const Align(
-                      alignment: Alignment.topCenter,
-                      child: Padding(
-                        padding: EdgeInsets.only(top: 11),
-                        child: Icon(
-                          Icons.bookmark_rounded,
-                          color: Colors.white,
-                          size: 19,
-                        ),
-                      ),
-                    ),
-                  ),
+                child: const Icon(
+                  Icons.local_library_rounded,
+                  color: Color(0xFFE6F4EB),
+                  size: 27,
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(29, 30, 25, 25),
+              const SizedBox(width: 14),
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: 59,
-                      height: 59,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: .13),
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: const Icon(
-                        Icons.local_library_rounded,
-                        color: Color(0xFFE6F4EB),
-                        size: 31,
-                      ),
-                    ),
-                    const SizedBox(height: 23),
                     Text(
-                      'The Caregiver’s\nHandbook',
-                      style: AppTextStyles.display.copyWith(
+                      'The Caregiver’s Handbook',
+                      style: AppTextStyles.sectionTitle.copyWith(
                         color: Colors.white,
-                        fontSize: 30,
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 4),
                     Text(
-                      'Official reference publication for family caregivers',
-                      style: AppTextStyles.body.copyWith(
+                      'Official reference for family caregivers',
+                      style: AppTextStyles.bodyMuted.copyWith(
                         color: const Color(0xFFD7EADF),
-                      ),
-                    ),
-                    const SizedBox(height: 21),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: .09),
-                        borderRadius: BorderRadius.circular(17),
-                      ),
-                      child: const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Published by the National Institute on Aging (NIA)',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              height: 1.35,
-                            ),
-                          ),
-                          SizedBox(height: 5),
-                          Text(
-                            'This PDF is an NIA publication—not an EverCare book. The notes below are simplified EverCare summaries based on this reference.',
-                            style: TextStyle(
-                              color: Color(0xFFC9DED2),
-                              fontSize: 12,
-                              height: 1.35,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton.icon(
-                        style: FilledButton.styleFrom(
-                          backgroundColor: const Color(0xFFFFF8E9),
-                          foregroundColor: AppColors.darkGreen,
-                        ),
-                        onPressed: onStartReading,
-                        icon: const Icon(Icons.menu_book_rounded),
-                        label: const Text('Start Reading'),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          side: BorderSide(
-                            color: Colors.white.withValues(alpha: .65),
-                          ),
-                        ),
-                        onPressed: onDownload,
-                        icon: downloading
-                            ? const SizedBox.square(
-                                dimension: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Icon(Icons.download_rounded),
-                        label: Text(
-                          downloading
-                              ? 'Preparing PDF…'
-                              : 'Download NIA Handbook PDF',
-                        ),
                       ),
                     ),
                   ],
                 ),
               ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: .11),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  'NIA',
+                  style: AppTextStyles.eyebrow.copyWith(color: Colors.white),
+                ),
+              ),
             ],
           ),
-        ),
+          const SizedBox(height: 16),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: .08),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white.withValues(alpha: .12)),
+            ),
+            child: Text(
+              'Published by the National Institute on Aging. The PDF is an NIA publication—not an EverCare book; EverCare provides simplified notes based on it.',
+              style: AppTextStyles.small.copyWith(
+                color: const Color(0xFFD7EADF),
+                height: 1.45,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 360;
+              final start = FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFFFFF8E9),
+                  foregroundColor: AppColors.darkGreen,
+                ),
+                onPressed: onStartReading,
+                icon: const Icon(Icons.menu_book_rounded),
+                label: const Text('Start Reading'),
+              );
+              final download = OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  side: BorderSide(color: Colors.white.withValues(alpha: .56)),
+                ),
+                onPressed: onDownload,
+                icon: downloading
+                    ? const SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.download_rounded),
+                label: Text(
+                  downloading ? 'Preparing PDF…' : 'Download NIA PDF',
+                ),
+              );
+              if (compact) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [start, const SizedBox(height: 9), download],
+                );
+              }
+              return Row(
+                children: [
+                  Expanded(child: start),
+                  const SizedBox(width: 10),
+                  Expanded(child: download),
+                ],
+              );
+            },
+          ),
+        ],
       ),
     );
   }
 }
 
-class CareBookChapterCard extends StatelessWidget {
-  const CareBookChapterCard({
+class CareBookChapterNavigator extends StatelessWidget {
+  const CareBookChapterNavigator({
     required this.chapter,
-    required this.selected,
-    required this.onTap,
+    required this.totalChapters,
+    required this.onBrowse,
     super.key,
   });
 
   final CareBookChapter chapter;
-  final bool selected;
-  final VoidCallback onTap;
+  final int totalChapters;
+  final VoidCallback onBrowse;
 
   @override
   Widget build(BuildContext context) {
     return AppCard(
-      onTap: onTap,
-      color: selected ? const Color(0xFFFFF6DF) : Colors.white,
-      borderColor: selected ? const Color(0xFFE6C88B) : null,
-      padding: const EdgeInsets.all(15),
-      child: Row(
+      onTap: onBrowse,
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: selected ? const Color(0xFFF4DDAE) : AppColors.lightGreen,
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: Icon(
-              careBookChapterIcon(chapter.iconName),
-              color: AppColors.darkGreen,
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: AppColors.lightGreen,
+                  borderRadius: BorderRadius.circular(11),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Icon(
+                  careBookChapterIcon(chapter.iconName),
+                  color: AppColors.darkGreen,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'TABLE OF CONTENTS · ${chapter.number}/$totalChapters',
+                      style: AppTextStyles.eyebrow,
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      chapter.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.cardTitle,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Icon(Icons.unfold_more_rounded, color: AppColors.darkGreen),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              minHeight: 5,
+              value: chapter.number / totalChapters,
+              backgroundColor: AppColors.surfaceMuted,
+              color: AppColors.primaryGreen,
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        ],
+      ),
+    );
+  }
+}
+
+class CareBookContentsSheet extends StatelessWidget {
+  const CareBookContentsSheet({
+    required this.chapters,
+    required this.selectedIndex,
+    required this.onSelected,
+    super.key,
+  });
+
+  final List<CareBookChapter> chapters;
+  final int selectedIndex;
+  final ValueChanged<int> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return FractionallySizedBox(
+      heightFactor: .82,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 2, 12, 14),
+            child: Row(
               children: [
-                Text('CHAPTER ${chapter.number}', style: AppTextStyles.eyebrow),
-                const SizedBox(height: 4),
-                Text(chapter.title, style: AppTextStyles.cardTitle),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Table of contents', style: AppTextStyles.pageTitle),
+                      SizedBox(height: 3),
+                      Text(
+                        'Choose a chapter to continue reading.',
+                        style: AppTextStyles.bodyMuted,
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  tooltip: 'Close table of contents',
+                  icon: const Icon(Icons.close_rounded),
+                ),
               ],
             ),
           ),
-          const SizedBox(width: 7),
-          const Icon(
-            Icons.chevron_right_rounded,
-            color: AppColors.secondaryText,
+          const Divider(height: 1),
+          Expanded(
+            child: ListView.separated(
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 24),
+              itemCount: chapters.length,
+              separatorBuilder: (_, _) => const Divider(height: 1, indent: 62),
+              itemBuilder: (context, index) {
+                final chapter = chapters[index];
+                final selected = index == selectedIndex;
+                return Material(
+                  color: selected ? AppColors.lightGreen : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                  child: InkWell(
+                    onTap: () => onSelected(index),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 11,
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: selected
+                                  ? AppColors.card
+                                  : AppColors.surfaceMuted,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: AppColors.border),
+                            ),
+                            child: Icon(
+                              careBookChapterIcon(chapter.iconName),
+                              color: AppColors.darkGreen,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Chapter ${chapter.number} · ${chapter.readingTime}',
+                                  style: AppTextStyles.small,
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  chapter.title,
+                                  style: AppTextStyles.cardTitle,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Icon(
+                            selected
+                                ? Icons.check_circle_rounded
+                                : Icons.chevron_right_rounded,
+                            color: selected
+                                ? AppColors.primaryGreen
+                                : AppColors.secondaryText,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
         ],
       ),
@@ -270,16 +372,19 @@ class CareBookReader extends StatelessWidget {
       decoration: const BoxDecoration(
         boxShadow: [
           BoxShadow(
-            color: Color(0x1C493C24),
-            blurRadius: 24,
-            offset: Offset(0, 10),
+            color: Color(0x12493C24),
+            blurRadius: 14,
+            offset: Offset(0, 4),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(27),
+        borderRadius: BorderRadius.circular(18),
         child: Container(
-          color: const Color(0xFFFFFBF1),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFFBF1),
+            border: Border.all(color: const Color(0xFFE9DFC9)),
+          ),
           child: Stack(
             children: [
               const Positioned(
@@ -298,16 +403,46 @@ class CareBookReader extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(29, 23, 20, 18),
+                padding: const EdgeInsets.fromLTRB(27, 20, 18, 18),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'CHAPTER ${chapter.number} · ${chapter.readingTime}',
-                      style: AppTextStyles.eyebrow,
+                    Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: AppColors.lightGreen,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(
+                            careBookChapterIcon(chapter.iconName),
+                            color: AppColors.darkGreen,
+                            size: 19,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'CHAPTER ${chapter.number} OF $totalChapters · ${chapter.readingTime}',
+                            style: AppTextStyles.eyebrow,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 10),
                     Text(chapter.title, style: AppTextStyles.pageTitle),
+                    const SizedBox(height: 12),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: LinearProgressIndicator(
+                        minHeight: 4,
+                        value: chapter.number / totalChapters,
+                        backgroundColor: const Color(0xFFECE4D2),
+                        color: AppColors.primaryGreen,
+                      ),
+                    ),
                     const SizedBox(height: 18),
                     ...chapter.paragraphs.map(
                       (paragraph) => Padding(
@@ -370,6 +505,8 @@ class CareBookReader extends StatelessWidget {
                       padding: EdgeInsets.symmetric(vertical: 17),
                       child: Divider(),
                     ),
+                    Text('Reading size', style: AppTextStyles.label),
+                    const SizedBox(height: 7),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
@@ -404,11 +541,11 @@ class CareBookReader extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 12),
                     Align(
                       alignment: Alignment.center,
                       child: Text(
-                        'Page ${chapter.number} of $totalChapters',
+                        'Chapter ${chapter.number} of $totalChapters',
                         style: AppTextStyles.small,
                       ),
                     ),
@@ -667,19 +804,6 @@ class _ReaderControl extends StatelessWidget {
       onPressed: onTap,
     );
   }
-}
-
-class _RibbonClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) => Path()
-    ..lineTo(size.width, 0)
-    ..lineTo(size.width, size.height)
-    ..lineTo(size.width / 2, size.height - 12)
-    ..lineTo(0, size.height)
-    ..close();
-
-  @override
-  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }
 
 IconData careBookChapterIcon(String name) => switch (name) {

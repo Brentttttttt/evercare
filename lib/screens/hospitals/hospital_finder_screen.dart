@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
@@ -9,7 +12,6 @@ import '../../services/hospital_finder_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_header.dart';
-import '../../widgets/app_page.dart';
 
 class HospitalFinderScreen extends StatefulWidget {
   const HospitalFinderScreen({
@@ -36,6 +38,7 @@ class _HospitalFinderScreenState extends State<HospitalFinderScreen> {
 
   final _searchController = TextEditingController();
   final _mapController = MapController();
+  Timer? _searchDebounce;
   late final HospitalFinderService _service;
   late final bool _ownsService;
   Position? _position;
@@ -44,7 +47,10 @@ class _HospitalFinderScreenState extends State<HospitalFinderScreen> {
   LocationAccessIssue? _locationIssue;
   String? _error;
   bool _loading = false;
+  bool _resolvingSelection = false;
   bool _hasSearched = false;
+  int _searchRevision = 0;
+  int _operationRevision = 0;
 
   @override
   void initState() {
@@ -58,6 +64,7 @@ class _HospitalFinderScreenState extends State<HospitalFinderScreen> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     _mapController.dispose();
     if (_ownsService) _service.close();
@@ -86,44 +93,8 @@ class _HospitalFinderScreenState extends State<HospitalFinderScreen> {
   Widget _buildContent() {
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _searchController,
-                  textInputAction: TextInputAction.search,
-                  onSubmitted: (_) => _searchHospitals(),
-                  decoration: InputDecoration(
-                    labelText: 'Search hospitals',
-                    hintText: 'Hospital name or city',
-                    prefixIcon: const Icon(Icons.search_rounded),
-                    suffixIcon: _searchController.text.isEmpty
-                        ? null
-                        : IconButton(
-                            tooltip: 'Clear hospital search',
-                            onPressed: () {
-                              _searchController.clear();
-                              setState(() {});
-                            },
-                            icon: const Icon(Icons.close_rounded),
-                          ),
-                  ),
-                  onChanged: (_) => setState(() {}),
-                ),
-              ),
-              const SizedBox(width: 9),
-              IconButton.filled(
-                tooltip: 'Search hospitals',
-                onPressed: _loading ? null : _searchHospitals,
-                icon: const Icon(Icons.search_rounded),
-              ),
-            ],
-          ),
-        ),
         Expanded(
-          flex: 5,
+          flex: 6,
           child: Stack(
             children: [
               FlutterMap(
@@ -144,6 +115,7 @@ class _HospitalFinderScreenState extends State<HospitalFinderScreen> {
                   MarkerLayer(markers: _markers),
                   RichAttributionWidget(
                     showFlutterMapAttribution: false,
+                    alignment: AttributionAlignment.bottomLeft,
                     attributions: [
                       LogoSourceAttribution(
                         Container(
@@ -173,29 +145,69 @@ class _HospitalFinderScreenState extends State<HospitalFinderScreen> {
               ),
               Positioned(
                 top: 12,
+                left: 12,
                 right: 12,
-                child: FloatingActionButton.small(
-                  heroTag: 'hospital-current-location',
-                  tooltip: 'Find hospitals near my location',
-                  onPressed: _loading ? null : _findNearby,
-                  backgroundColor: Colors.white,
-                  foregroundColor: AppColors.primaryGreen,
-                  child: const Icon(Icons.my_location_rounded),
+                child: _MapSearchBar(
+                  controller: _searchController,
+                  loading: _loading || _resolvingSelection,
+                  onChanged: _onSearchChanged,
+                  onClear: _clearSearch,
+                  onSearch: _submitSearch,
                 ),
               ),
-              if (_loading)
-                const Positioned(top: 12, left: 12, child: _LoadingPill()),
+              Positioned(
+                top: 78,
+                right: 12,
+                child: _GlassMapControl(
+                  child: IconButton(
+                    constraints: const BoxConstraints.tightFor(
+                      width: 48,
+                      height: 48,
+                    ),
+                    tooltip: 'Find hospitals near my location',
+                    onPressed: _loading || _resolvingSelection
+                        ? null
+                        : _findNearby,
+                    color: AppColors.primaryGreen,
+                    icon: const Icon(Icons.my_location_rounded),
+                  ),
+                ),
+              ),
+              if (_loading || _resolvingSelection)
+                const Positioned(top: 82, left: 12, child: _LoadingPill()),
             ],
           ),
         ),
         Expanded(
-          flex: 4,
-          child: DecoratedBox(
+          flex: 5,
+          child: Container(
             decoration: const BoxDecoration(
               color: AppColors.background,
-              border: Border(top: BorderSide(color: AppColors.border)),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              boxShadow: [
+                BoxShadow(
+                  color: Color(0x180D1811),
+                  blurRadius: 20,
+                  offset: Offset(0, -6),
+                ),
+              ],
             ),
-            child: _buildResults(),
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 8, bottom: 2),
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.border,
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                  ),
+                ),
+                Expanded(child: _buildResults()),
+              ],
+            ),
           ),
         ),
       ],
@@ -216,7 +228,7 @@ class _HospitalFinderScreenState extends State<HospitalFinderScreen> {
         title: 'Hospitals could not be loaded',
         message: _error!,
         actionLabel: 'Try Again',
-        onAction: _hasSearched ? _searchHospitals : _findNearby,
+        onAction: _hasSearched ? _submitSearch : _findNearby,
       );
     }
     if (_loading && _hospitals.isEmpty) {
@@ -236,7 +248,7 @@ class _HospitalFinderScreenState extends State<HospitalFinderScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(18, 13, 18, 5),
+          padding: const EdgeInsets.fromLTRB(18, 10, 18, 6),
           child: Row(
             children: [
               Expanded(
@@ -260,9 +272,10 @@ class _HospitalFinderScreenState extends State<HospitalFinderScreen> {
         ),
         Expanded(
           child: ListView.separated(
-            padding: const EdgeInsets.fromLTRB(14, 7, 14, 20),
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: const EdgeInsets.fromLTRB(14, 7, 14, 24),
             itemCount: _hospitals.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 9),
+            separatorBuilder: (_, _) => const SizedBox(height: 8),
             itemBuilder: (context, index) {
               final hospital = _hospitals[index];
               return _HospitalResultCard(
@@ -270,9 +283,7 @@ class _HospitalFinderScreenState extends State<HospitalFinderScreen> {
                 selected: hospital.id == _selected?.id,
                 allowSelection: widget.allowSelection,
                 onTap: () => _selectHospital(hospital),
-                onPrimaryAction: () => widget.allowSelection
-                    ? Navigator.pop(context, hospital)
-                    : _selectHospital(hospital),
+                onPrimaryAction: () => _selectHospital(hospital),
               );
             },
           ),
@@ -328,6 +339,8 @@ class _HospitalFinderScreenState extends State<HospitalFinderScreen> {
 
   Future<void> _findNearby() async {
     if (_loading) return;
+    _searchDebounce?.cancel();
+    final operation = ++_operationRevision;
     setState(() {
       _loading = true;
       _hasSearched = false;
@@ -336,33 +349,33 @@ class _HospitalFinderScreenState extends State<HospitalFinderScreen> {
     });
     try {
       final position = await _service.currentPosition();
-      if (!mounted) return;
+      if (!mounted || operation != _operationRevision) return;
       setState(() => _position = position);
       _focusPosition(position);
       final hospitals = await _service.findNearby(
         latitude: position.latitude,
         longitude: position.longitude,
       );
-      if (!mounted) return;
+      if (!mounted || operation != _operationRevision) return;
       setState(() {
         _hospitals = hospitals;
         _selected = hospitals.firstOrNull;
         _loading = false;
       });
     } on LocationAccessException catch (error) {
-      if (!mounted) return;
+      if (!mounted || operation != _operationRevision) return;
       setState(() {
         _loading = false;
         _locationIssue = error.issue;
       });
     } on HospitalFinderException catch (error) {
-      if (!mounted) return;
+      if (!mounted || operation != _operationRevision) return;
       setState(() {
         _loading = false;
         _error = error.message;
       });
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted || operation != _operationRevision) return;
       setState(() {
         _loading = false;
         _error =
@@ -371,10 +384,58 @@ class _HospitalFinderScreenState extends State<HospitalFinderScreen> {
     }
   }
 
-  Future<void> _searchHospitals() async {
+  void _onSearchChanged(String value) {
+    _searchDebounce?.cancel();
+    final revision = ++_searchRevision;
+    final query = value.trim();
+    if (query.length < 3) {
+      _operationRevision++;
+      setState(() {
+        _loading = false;
+        _hasSearched = false;
+        _error = null;
+      });
+      return;
+    }
+    setState(() {});
+    _searchDebounce = Timer(const Duration(milliseconds: 900), () {
+      if (!mounted || revision != _searchRevision) return;
+      _searchHospitals(query: query, searchRevision: revision);
+    });
+  }
+
+  void _clearSearch() {
+    _searchDebounce?.cancel();
+    _searchRevision++;
+    _operationRevision++;
+    _searchController.clear();
+    setState(() {
+      _loading = false;
+      _hasSearched = false;
+      _error = null;
+    });
+  }
+
+  Future<void> _submitSearch() async {
+    _searchDebounce?.cancel();
     final query = _searchController.text.trim();
-    if (query.isEmpty || _loading) return;
+    if (query.isEmpty) return;
+    final revision = ++_searchRevision;
     FocusScope.of(context).unfocus();
+    await _searchHospitals(
+      query: query,
+      searchRevision: revision,
+      submitted: true,
+    );
+  }
+
+  Future<void> _searchHospitals({
+    required String query,
+    required int searchRevision,
+    bool submitted = false,
+  }) async {
+    if (query.length < 3 && !submitted) return;
+    final operation = ++_operationRevision;
     setState(() {
       _loading = true;
       _hasSearched = true;
@@ -382,12 +443,22 @@ class _HospitalFinderScreenState extends State<HospitalFinderScreen> {
       _error = null;
     });
     try {
-      final hospitals = await _service.search(
-        query: query,
-        originLatitude: _position?.latitude,
-        originLongitude: _position?.longitude,
-      );
-      if (!mounted) return;
+      final hospitals = submitted
+          ? await _service.search(
+              query: query,
+              originLatitude: _position?.latitude,
+              originLongitude: _position?.longitude,
+            )
+          : await _service.suggest(
+              query: query,
+              originLatitude: _position?.latitude,
+              originLongitude: _position?.longitude,
+            );
+      if (!mounted ||
+          operation != _operationRevision ||
+          searchRevision != _searchRevision) {
+        return;
+      }
       setState(() {
         _hospitals = hospitals;
         _selected = hospitals.firstOrNull;
@@ -395,13 +466,21 @@ class _HospitalFinderScreenState extends State<HospitalFinderScreen> {
       });
       if (hospitals.isNotEmpty) _focusHospital(hospitals.first);
     } on HospitalFinderException catch (error) {
-      if (!mounted) return;
+      if (!mounted ||
+          operation != _operationRevision ||
+          searchRevision != _searchRevision) {
+        return;
+      }
       setState(() {
         _loading = false;
         _error = error.message;
       });
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted ||
+          operation != _operationRevision ||
+          searchRevision != _searchRevision) {
+        return;
+      }
       setState(() {
         _loading = false;
         _error =
@@ -410,14 +489,57 @@ class _HospitalFinderScreenState extends State<HospitalFinderScreen> {
     }
   }
 
-  void _selectHospital(HospitalLocation hospital) {
+  Future<void> _selectHospital(HospitalLocation hospital) async {
+    if (_resolvingSelection) return;
     if (widget.allowSelection) {
-      Navigator.pop(context, hospital);
+      var selectedHospital = hospital;
+      if (hospital.address.trim().isEmpty) {
+        setState(() => _resolvingSelection = true);
+        try {
+          selectedHospital = await _service.resolveAddress(hospital);
+        } on HospitalFinderException catch (error) {
+          if (!mounted) return;
+          selectedHospital = _withCoordinateAddress(hospital);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '${error.message} The coordinates were added instead.',
+              ),
+            ),
+          );
+        } catch (_) {
+          if (!mounted) return;
+          selectedHospital = _withCoordinateAddress(hospital);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'The street address could not be loaded. The coordinates were added instead.',
+              ),
+            ),
+          );
+        } finally {
+          if (mounted) setState(() => _resolvingSelection = false);
+        }
+      }
+      if (mounted) Navigator.pop(context, selectedHospital);
       return;
     }
     setState(() => _selected = hospital);
     _focusHospital(hospital);
     _showEmergencyHospitalActions(hospital);
+  }
+
+  HospitalLocation _withCoordinateAddress(HospitalLocation hospital) {
+    return HospitalLocation(
+      id: hospital.id,
+      name: hospital.name,
+      address:
+          'Coordinates: ${hospital.latitude.toStringAsFixed(6)}, '
+          '${hospital.longitude.toStringAsFixed(6)}',
+      latitude: hospital.latitude,
+      longitude: hospital.longitude,
+      distanceMeters: hospital.distanceMeters,
+    );
   }
 
   void _focusPosition(Position position) {
@@ -507,6 +629,98 @@ class _HospitalFinderScreenState extends State<HospitalFinderScreen> {
   }
 }
 
+class _MapSearchBar extends StatelessWidget {
+  const _MapSearchBar({
+    required this.controller,
+    required this.loading,
+    required this.onChanged,
+    required this.onClear,
+    required this.onSearch,
+  });
+
+  final TextEditingController controller;
+  final bool loading;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onClear;
+  final VoidCallback onSearch;
+
+  @override
+  Widget build(BuildContext context) {
+    return _GlassMapControl(
+      borderRadius: 18,
+      child: SizedBox(
+        height: 58,
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: controller,
+                textInputAction: TextInputAction.search,
+                onSubmitted: (_) => onSearch(),
+                onChanged: onChanged,
+                decoration: InputDecoration(
+                  hintText: 'Search hospital, city, or place',
+                  helperText: null,
+                  filled: false,
+                  prefixIcon: const Icon(Icons.search_rounded),
+                  suffixIcon: controller.text.isEmpty
+                      ? null
+                      : IconButton(
+                          tooltip: 'Clear hospital search',
+                          onPressed: onClear,
+                          icon: const Icon(Icons.close_rounded, size: 20),
+                        ),
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+              ),
+            ),
+            Container(width: 1, height: 28, color: AppColors.border),
+            IconButton(
+              tooltip: 'Search hospitals',
+              onPressed: loading ? null : onSearch,
+              constraints: const BoxConstraints.tightFor(width: 52, height: 52),
+              color: AppColors.primaryGreen,
+              icon: const Icon(Icons.arrow_forward_rounded),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _GlassMapControl extends StatelessWidget {
+  const _GlassMapControl({required this.child, this.borderRadius = 16});
+
+  final Widget child;
+  final double borderRadius;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(borderRadius),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+        child: Material(
+          color: Colors.white.withValues(alpha: .91),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(borderRadius),
+            side: BorderSide(
+              color: Colors.white.withValues(alpha: .82),
+              width: .8,
+            ),
+          ),
+          elevation: 0,
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
 class _HospitalMapMarker extends StatelessWidget {
   const _HospitalMapMarker({required this.selected});
 
@@ -517,13 +731,30 @@ class _HospitalMapMarker extends StatelessWidget {
     return AnimatedScale(
       scale: selected ? 1.12 : 1,
       duration: const Duration(milliseconds: 180),
-      child: Icon(
-        Icons.location_pin,
-        size: 48,
-        color: selected ? AppColors.warning : AppColors.primaryGreen,
-        shadows: const [
-          Shadow(color: Color(0x55000000), blurRadius: 6, offset: Offset(0, 3)),
-        ],
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        width: selected ? 44 : 40,
+        height: selected ? 44 : 40,
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primaryGreen : Colors.white,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: selected ? Colors.white : AppColors.primaryGreen,
+            width: selected ? 3 : 2.5,
+          ),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x26000000),
+              blurRadius: 7,
+              offset: Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Icon(
+          selected ? Icons.check_rounded : Icons.local_hospital_rounded,
+          size: 21,
+          color: selected ? Colors.white : AppColors.primaryGreen,
+        ),
       ),
     );
   }
@@ -540,7 +771,7 @@ class _UserLocationMarker extends StatelessWidget {
         color: const Color(0xFF2585E6),
         shape: BoxShape.circle,
         border: Border.all(color: Colors.white, width: 3),
-        boxShadow: const [BoxShadow(color: Color(0x44000000), blurRadius: 7)],
+        boxShadow: const [BoxShadow(color: Color(0x2A000000), blurRadius: 6)],
       ),
     );
   }
@@ -563,68 +794,112 @@ class _HospitalResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
-      borderColor: selected ? AppColors.primaryGreen : AppColors.border,
-      color: selected ? AppColors.lightGreen : Colors.white,
-      onTap: onTap,
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: selected ? Colors.white : AppColors.lightGreen,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Icon(
-              Icons.local_hospital_rounded,
-              color: AppColors.primaryGreen,
-            ),
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: '${hospital.name}, ${hospital.distanceLabel}',
+      hint: allowSelection
+          ? 'Select this hospital'
+          : 'Show directions and hospital details',
+      child: Material(
+        color: selected ? AppColors.primaryContainer : AppColors.card,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+          side: BorderSide(
+            color: selected
+                ? AppColors.primaryGreen
+                : AppColors.border.withValues(alpha: .72),
+            width: selected ? 1.4 : .7,
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  hospital.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.cardTitle,
-                ),
-                if (hospital.address.isNotEmpty) ...[
-                  const SizedBox(height: 3),
-                  Text(
-                    hospital.address,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.small,
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 84),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: selected ? Colors.white : AppColors.lightGreen,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      selected
+                          ? Icons.check_rounded
+                          : Icons.local_hospital_rounded,
+                      color: AppColors.primaryGreen,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          hospital.name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyles.cardTitle,
+                        ),
+                        if (hospital.address.isNotEmpty) ...[
+                          const SizedBox(height: 3),
+                          Text(
+                            hospital.address,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.small,
+                          ),
+                        ],
+                        const SizedBox(height: 5),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            Text(
+                              hospital.distanceLabel,
+                              style: AppTextStyles.label.copyWith(
+                                color: AppColors.primaryGreen,
+                              ),
+                            ),
+                            if (selected)
+                              Text(
+                                'Selected',
+                                style: AppTextStyles.label.copyWith(
+                                  color: AppColors.primaryContainerForeground,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  IconButton(
+                    tooltip: allowSelection
+                        ? 'Use ${hospital.name}'
+                        : 'Emergency options for ${hospital.name}',
+                    onPressed: onPrimaryAction,
+                    constraints: const BoxConstraints.tightFor(
+                      width: 44,
+                      height: 44,
+                    ),
+                    icon: Icon(
+                      allowSelection
+                          ? Icons.check_circle_outline_rounded
+                          : Icons.chevron_right_rounded,
+                    ),
                   ),
                 ],
-                const SizedBox(height: 4),
-                Text(
-                  hospital.distanceLabel,
-                  style: AppTextStyles.label.copyWith(
-                    color: AppColors.primaryGreen,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
-          const SizedBox(width: 7),
-          IconButton.filledTonal(
-            tooltip: allowSelection
-                ? 'Use ${hospital.name}'
-                : 'Emergency options for ${hospital.name}',
-            onPressed: onPrimaryAction,
-            icon: Icon(
-              allowSelection
-                  ? Icons.check_rounded
-                  : Icons.arrow_forward_rounded,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -643,105 +918,221 @@ class _EmergencyHospitalActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(22, 12, 22, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(
-              child: Container(
-                width: 44,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.border,
-                  borderRadius: BorderRadius.circular(20),
+    return SafeArea(
+      top: false,
+      child: Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * .86,
+        ),
+        decoration: const BoxDecoration(
+          color: AppColors.background,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+          boxShadow: [
+            BoxShadow(
+              color: Color(0x18000000),
+              blurRadius: 22,
+              offset: Offset(0, -6),
+            ),
+          ],
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(18, 10, 18, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 38,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 18),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: AppColors.lightGreen,
-                    borderRadius: BorderRadius.circular(16),
+              const SizedBox(height: 12),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 54,
+                    height: 54,
+                    decoration: const BoxDecoration(
+                      color: AppColors.primaryContainer,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.local_hospital_rounded,
+                      color: AppColors.primaryGreen,
+                      size: 28,
+                    ),
                   ),
-                  child: const Icon(
-                    Icons.local_hospital_rounded,
-                    color: AppColors.primaryGreen,
-                    size: 29,
+                  const SizedBox(width: 13),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(hospital.name, style: AppTextStyles.sectionTitle),
+                        if (hospital.address.isNotEmpty) ...[
+                          const SizedBox(height: 3),
+                          Text(
+                            hospital.address,
+                            style: AppTextStyles.bodyMuted,
+                          ),
+                        ],
+                        const SizedBox(height: 5),
+                        Text(
+                          hospital.distanceLabel,
+                          style: AppTextStyles.label.copyWith(
+                            color: AppColors.primaryGreen,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  IconButton.filledTonal(
+                    tooltip: 'Close hospital options',
+                    onPressed: () => Navigator.pop(context),
+                    constraints: const BoxConstraints.tightFor(
+                      width: 44,
+                      height: 44,
+                    ),
+                    icon: const Icon(Icons.close_rounded, size: 20),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Material(
+                color: AppColors.card,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: BorderSide(
+                    color: AppColors.border.withValues(alpha: .72),
+                    width: .7,
                   ),
                 ),
-                const SizedBox(width: 13),
+                clipBehavior: Clip.antiAlias,
+                child: Column(
+                  children: [
+                    _HospitalActionRow(
+                      icon: Icons.directions_rounded,
+                      title: 'Get Directions in Google Maps',
+                      subtitle: 'Open turn-by-turn driving directions',
+                      onTap: onDirections,
+                      emphasized: true,
+                    ),
+                    const Divider(
+                      height: 1,
+                      indent: 68,
+                      color: AppColors.border,
+                    ),
+                    _HospitalActionRow(
+                      icon: Icons.contact_phone_outlined,
+                      title: 'Find Contact Number & Details',
+                      subtitle: 'Check phone numbers and current information',
+                      onTap: onDetails,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.secondary,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.info_outline_rounded,
+                      size: 20,
+                      color: AppColors.primaryGreen,
+                    ),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Google Maps opens outside EverCare. Verify the hospital\'s contact details and availability before traveling when possible.',
+                        style: AppTextStyles.small,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HospitalActionRow extends StatelessWidget {
+  const _HospitalActionRow({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    this.emphasized = false,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+  final bool emphasized;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: title,
+      child: InkWell(
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 72),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: emphasized
+                        ? AppColors.primaryGreen
+                        : AppColors.primaryContainer,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    icon,
+                    color: emphasized ? Colors.white : AppColors.primaryGreen,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 11),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(hospital.name, style: AppTextStyles.sectionTitle),
-                      if (hospital.address.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Text(hospital.address, style: AppTextStyles.bodyMuted),
-                      ],
-                      const SizedBox(height: 4),
-                      Text(
-                        hospital.distanceLabel,
-                        style: AppTextStyles.label.copyWith(
-                          color: AppColors.primaryGreen,
-                        ),
-                      ),
+                      Text(title, style: AppTextStyles.cardTitle),
+                      const SizedBox(height: 2),
+                      Text(subtitle, style: AppTextStyles.small),
                     ],
                   ),
                 ),
+                const SizedBox(width: 4),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: AppColors.mutedForeground,
+                  size: 27,
+                ),
               ],
             ),
-            const SizedBox(height: 20),
-            FilledButton.icon(
-              onPressed: onDirections,
-              icon: const Icon(Icons.directions_rounded),
-              label: const Text('Get Directions in Google Maps'),
-            ),
-            const SizedBox(height: 10),
-            OutlinedButton.icon(
-              onPressed: onDetails,
-              icon: const Icon(Icons.contact_phone_outlined),
-              label: const Text('Find Contact Number & Details'),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(13),
-              decoration: BoxDecoration(
-                color: AppColors.background,
-                border: Border.all(color: AppColors.border),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: const Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    Icons.info_outline_rounded,
-                    size: 20,
-                    color: AppColors.primaryGreen,
-                  ),
-                  SizedBox(width: 9),
-                  Expanded(
-                    child: Text(
-                      'Google Maps opens outside EverCare. Verify the hospital\'s contact details and availability before traveling when possible.',
-                      style: AppTextStyles.small,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

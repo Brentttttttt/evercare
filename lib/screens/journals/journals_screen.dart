@@ -62,7 +62,7 @@ class _JournalsScreenState extends State<JournalsScreen> {
   Widget build(BuildContext context) {
     final visibleEntries = _visibleEntries;
     return SingleChildScrollView(
-      padding: pagePadding,
+      padding: mainPagePadding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

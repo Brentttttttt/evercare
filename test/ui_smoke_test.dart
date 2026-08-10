@@ -14,6 +14,8 @@ import 'package:evercare/screens/appointments/add_appointment_screen.dart';
 import 'package:evercare/screens/appointments/appointment_detail_screen.dart';
 import 'package:evercare/screens/appointments/appointments_screen.dart';
 import 'package:evercare/screens/appointments/edit_appointment_screen.dart';
+import 'package:evercare/screens/authentication/login_screen.dart';
+import 'package:evercare/screens/authentication/registration_screen.dart';
 import 'package:evercare/screens/caregiver/health_report_screen.dart';
 import 'package:evercare/screens/care_book/care_book_screen.dart';
 import 'package:evercare/screens/emergency/emergency_screen.dart';
@@ -30,10 +32,13 @@ import 'package:evercare/screens/journals/add_journal_entry_screen.dart';
 import 'package:evercare/screens/journals/journal_entry_card.dart';
 import 'package:evercare/screens/journals/journal_entry_reader.dart';
 import 'package:evercare/screens/journals/journals_screen.dart';
+import 'package:evercare/screens/medications/add_medication_screen.dart';
 import 'package:evercare/screens/medications/medication_screen.dart';
 import 'package:evercare/screens/notifications/notifications_screen.dart';
 import 'package:evercare/screens/onboarding/welcome_screen.dart';
 import 'package:evercare/screens/profile/profile_screen.dart';
+import 'package:evercare/screens/profile/accessibility_screen.dart';
+import 'package:evercare/screens/settings/settings_screen.dart';
 import 'package:evercare/theme/app_theme.dart';
 import 'package:evercare/theme/app_motion.dart';
 import 'package:evercare/widgets/app_bottom_navigation.dart';
@@ -460,8 +465,57 @@ void main() {
     await pumpPhoneScreen(tester, const MedicationScreen());
   });
 
+  testWidgets('grouped medication form fits a narrow phone', (tester) async {
+    await pumpPhoneScreen(
+      tester,
+      const AddMedicationScreen(),
+      size: const Size(320, 720),
+    );
+    expect(find.text('Medicine'), findsOneWidget);
+    expect(find.text('Schedule'), findsOneWidget);
+    expect(find.text('Reminder time'), findsOneWidget);
+    expect(find.text('Select reminder time'), findsOneWidget);
+    expect(find.textContaining('Reminder time (optional)'), findsNothing);
+    expect(find.text('Instructions and status'), findsOneWidget);
+  });
+
   testWidgets('profile screen renders without overflow', (tester) async {
     await pumpPhoneScreen(tester, const ProfileScreen());
+  });
+
+  testWidgets('login surface fits a narrow scaled phone', (tester) async {
+    await pumpPhoneScreen(
+      tester,
+      const LoginScreen(),
+      size: const Size(320, 720),
+      textScaleFactor: 1.3,
+    );
+    expect(find.text('Welcome back'), findsOneWidget);
+    expect(find.text('Care, made simpler'), findsOneWidget);
+  });
+
+  testWidgets('registration surface fits a narrow phone', (tester) async {
+    await pumpPhoneScreen(
+      tester,
+      const RegistrationScreen(),
+      size: const Size(320, 720),
+    );
+    expect(find.text('About you'), findsOneWidget);
+    expect(find.text('Account security'), findsOneWidget);
+  });
+
+  testWidgets('settings groups render without overflow', (tester) async {
+    await pumpPhoneScreen(tester, const SettingsScreen());
+    expect(find.text('Account and care'), findsOneWidget);
+    expect(find.text('Support and information'), findsOneWidget);
+  });
+
+  testWidgets('accessibility page clearly labels preview-only controls', (
+    tester,
+  ) async {
+    await pumpPhoneScreen(tester, const AccessibilityScreen());
+    expect(find.text('Preview mode'), findsOneWidget);
+    expect(find.text('COMING LATER'), findsOneWidget);
   });
 
   testWidgets('main shell shows appointments navigation and header', (
@@ -676,6 +730,7 @@ void main() {
     expect(find.textContaining('143'), findsOneWidget);
     expect(find.textContaining('911'), findsNothing);
     expect(find.text('Find Nearby Emergency Hospitals'), findsOneWidget);
+    expect(find.text('Medical information'), findsNothing);
   });
 
   testWidgets('hospital finder renders without a provider API key', (
@@ -687,6 +742,62 @@ void main() {
     );
     expect(find.text('Find nearby hospitals'), findsOneWidget);
     expect(find.textContaining('OpenStreetMap'), findsWidgets);
+  });
+
+  testWidgets('hospital search suggests matches after typing pauses', (
+    tester,
+  ) async {
+    var requestCount = 0;
+    final service = HospitalFinderService(
+      client: MockClient((_) async {
+        requestCount++;
+        return http.Response(
+          jsonEncode({
+            'features': [
+              {
+                'type': 'Feature',
+                'geometry': {
+                  'type': 'Point',
+                  'coordinates': [120.8800, 14.8300],
+                },
+                'properties': {
+                  'osm_type': 'N',
+                  'osm_id': 700,
+                  'name': 'Guiguinto Community Hospital',
+                  'city': 'Guiguinto',
+                  'state': 'Bulacan',
+                  'country': 'Philippines',
+                },
+              },
+            ],
+          }),
+          200,
+        );
+      }),
+      photonEndpoint: Uri.parse('https://example.test/api'),
+    );
+    addTearDown(service.close);
+    await pumpPhoneScreen(
+      tester,
+      HospitalFinderScreen(
+        autoLocate: false,
+        showMapTiles: false,
+        service: service,
+      ),
+    );
+
+    final searchField = find.byType(TextField).first;
+    await tester.enterText(searchField, 'Gui');
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.enterText(searchField, 'Guiguinto');
+    await tester.pump(const Duration(milliseconds: 899));
+    expect(requestCount, 0);
+
+    await tester.pump(const Duration(milliseconds: 2));
+    await tester.pumpAndSettle();
+
+    expect(requestCount, 1);
+    expect(find.text('Guiguinto Community Hospital'), findsWidgets);
   });
 
   testWidgets('appointment hospital result returns when its card is tapped', (
@@ -723,7 +834,7 @@ void main() {
     await tester.tap(find.text('Open hospital picker'));
     await tester.pumpAndSettle();
     await tester.enterText(
-      find.widgetWithText(TextField, 'Search hospitals'),
+      find.widgetWithText(TextField, 'Search hospital, city, or place'),
       'Guiguinto',
     );
     await tester.tap(find.byTooltip('Search hospitals'));
@@ -750,7 +861,7 @@ void main() {
     );
 
     await tester.enterText(
-      find.widgetWithText(TextField, 'Search hospitals'),
+      find.widgetWithText(TextField, 'Search hospital, city, or place'),
       'Guiguinto',
     );
     await tester.tap(find.byTooltip('Search hospitals'));
@@ -781,6 +892,7 @@ void main() {
     expect(find.text('Home'), findsOneWidget);
     expect(find.text('Health'), findsOneWidget);
     expect(find.text('Medicine'), findsOneWidget);
+    expect(find.text('Daily care'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Next navigation pages'));
     await tester.pumpAndSettle();
@@ -788,6 +900,7 @@ void main() {
     expect(find.text('Visits'), findsOneWidget);
     expect(find.text('Journals'), findsOneWidget);
     expect(find.text('Care Book'), findsOneWidget);
+    expect(find.text('Planning and memories'), findsOneWidget);
   });
 
   testWidgets('appointments dashboard renders without overflow', (
@@ -807,6 +920,10 @@ void main() {
     await pumpPhoneScreen(tester, const AddAppointmentScreen());
     expect(find.text('Type manually'), findsOneWidget);
     expect(find.text('OpenStreetMap'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('Type manually')).dy,
+      closeTo(tester.getTopLeft(find.text('OpenStreetMap')).dy, 1),
+    );
 
     await tester.tap(find.text('OpenStreetMap'));
     await tester.pumpAndSettle();

@@ -6,77 +6,77 @@ abstract final class AppTextStyles {
   static const display = TextStyle(
     fontSize: 32,
     height: 1.08,
-    fontWeight: FontWeight.w800,
-    letterSpacing: -1.1,
-    color: AppColors.primaryText,
+    fontWeight: FontWeight.w700,
+    letterSpacing: -0.8,
+    color: AppColors.foreground,
   );
 
   static const pageTitle = TextStyle(
-    fontSize: 25,
+    fontSize: 27,
     height: 1.14,
-    fontWeight: FontWeight.w800,
-    letterSpacing: -0.65,
-    color: AppColors.primaryText,
+    fontWeight: FontWeight.w700,
+    letterSpacing: -0.55,
+    color: AppColors.foreground,
   );
 
   static const sectionTitle = TextStyle(
-    fontSize: 19,
-    height: 1.2,
+    fontSize: 20,
+    height: 1.22,
     fontWeight: FontWeight.w700,
-    letterSpacing: -0.3,
-    color: AppColors.primaryText,
+    letterSpacing: -0.25,
+    color: AppColors.foreground,
   );
 
   static const cardTitle = TextStyle(
-    fontSize: 16,
-    height: 1.24,
-    fontWeight: FontWeight.w700,
+    fontSize: 17,
+    height: 1.28,
+    fontWeight: FontWeight.w600,
     letterSpacing: -0.15,
-    color: AppColors.primaryText,
+    color: AppColors.foreground,
   );
 
   static const body = TextStyle(
-    fontSize: 14.5,
-    height: 1.42,
+    fontSize: 16,
+    height: 1.45,
     fontWeight: FontWeight.w400,
-    color: AppColors.primaryText,
+    color: AppColors.foreground,
   );
 
   static const bodyMuted = TextStyle(
-    fontSize: 13.5,
-    height: 1.4,
+    fontSize: 15,
+    height: 1.42,
     fontWeight: FontWeight.w400,
-    color: AppColors.secondaryText,
+    color: AppColors.mutedForeground,
   );
 
   static const label = TextStyle(
-    fontSize: 12,
-    height: 1.22,
-    fontWeight: FontWeight.w700,
-    letterSpacing: 0.1,
-    color: AppColors.secondaryText,
+    fontSize: 13,
+    height: 1.32,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0.05,
+    color: AppColors.mutedForeground,
   );
 
   static const small = TextStyle(
-    fontSize: 11.5,
-    height: 1.3,
-    fontWeight: FontWeight.w600,
-    color: AppColors.secondaryText,
+    fontSize: 12,
+    height: 1.34,
+    fontWeight: FontWeight.w400,
+    color: AppColors.mutedForeground,
   );
 
   static const eyebrow = TextStyle(
     fontSize: 11,
-    height: 1.2,
-    fontWeight: FontWeight.w800,
-    letterSpacing: 1.05,
-    color: AppColors.secondaryText,
+    height: 1.28,
+    fontWeight: FontWeight.w700,
+    letterSpacing: 0.7,
+    color: AppColors.mutedForeground,
   );
 
   static const metric = TextStyle(
-    fontSize: 31,
-    height: 1,
-    fontWeight: FontWeight.w800,
-    letterSpacing: -1,
-    color: AppColors.primaryText,
+    fontSize: 34,
+    height: 1.02,
+    fontWeight: FontWeight.w700,
+    letterSpacing: -0.9,
+    color: AppColors.foreground,
   );
 }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_motion.dart';
 import '../theme/app_text_styles.dart';
+import 'app_glass_surface.dart';
 
 class AppHeader extends StatelessWidget {
   const AppHeader({
@@ -18,23 +19,26 @@ class AppHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: AppTextStyles.pageTitle),
-              if (subtitle != null) ...[
-                const SizedBox(height: 7),
-                Text(subtitle!, style: AppTextStyles.bodyMuted),
+    return Semantics(
+      header: true,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: AppTextStyles.pageTitle),
+                if (subtitle != null) ...[
+                  const SizedBox(height: 5),
+                  Text(subtitle!, style: AppTextStyles.bodyMuted),
+                ],
               ],
-            ],
+            ),
           ),
-        ),
-        if (trailing != null) ...[const SizedBox(width: 12), trailing!],
-      ],
+          if (trailing != null) ...[const SizedBox(width: 12), trailing!],
+        ],
+      ),
     );
   }
 }
@@ -62,73 +66,85 @@ class EverCareHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: AppColors.border)),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: AppColors.border.withValues(alpha: .68),
+            width: .7,
+          ),
+        ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.shadow,
-            blurRadius: 14,
-            offset: Offset(0, 5),
+            color: AppColors.shadow.withValues(alpha: .2),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(10, 10, 12, 11),
-          child: Row(
-            children: [
-              if (showBack) ...[
-                PressScale(
-                  child: IconButton(
+      child: AppGlassSurface(
+        borderRadius: BorderRadius.zero,
+        blurSigma: 22,
+        tint: Colors.white.withValues(alpha: .89),
+        borderColor: Colors.transparent,
+        boxShadow: const [],
+        child: SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(10, 7, 12, 8),
+            child: Row(
+              children: [
+                if (showBack) ...[
+                  _HeaderIconButton(
                     tooltip: 'Back',
+                    icon: Icons.arrow_back_ios_new_rounded,
                     onPressed: onBack ?? () => Navigator.maybePop(context),
-                    icon: const Icon(Icons.arrow_back_rounded),
                   ),
+                  const SizedBox(width: 5),
+                ],
+                const _EverCareBrandLockup(
+                  markSize: 39,
+                  textSize: 16,
+                  showWordmark: false,
                 ),
-                const SizedBox(width: 2),
-              ],
-              const _EverCareBrandLockup(
-                markSize: 37,
-                textSize: 16,
-                showWordmark: false,
-              ),
-              const SizedBox(width: 11),
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.cardTitle.copyWith(fontSize: 16.5),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Semantics(
+                    header: true,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyles.cardTitle.copyWith(
+                            fontSize: 17,
+                            letterSpacing: -.25,
+                          ),
+                        ),
+                        if (subtitle != null) ...[
+                          const SizedBox(height: 1),
+                          Text(
+                            subtitle!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.small,
+                          ),
+                        ],
+                      ],
                     ),
-                    if (subtitle != null) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitle!,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTextStyles.small,
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              if (showNotifications)
-                PressScale(
-                  enabled: onNotifications != null,
-                  child: IconButton(
-                    tooltip: 'Notifications',
-                    onPressed: onNotifications,
-                    icon: const Icon(Icons.notifications_none_rounded),
                   ),
                 ),
-              ...actions,
-            ],
+                if (showNotifications)
+                  _HeaderIconButton(
+                    tooltip: 'Notifications',
+                    icon: Icons.notifications_none_rounded,
+                    onPressed: onNotifications,
+                  ),
+                ...actions,
+              ],
+            ),
           ),
         ),
       ),
@@ -174,6 +190,13 @@ class _EverCareBrandLockup extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.lightGreen,
             borderRadius: BorderRadius.circular(markSize * .28),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.shadow.withValues(alpha: .24),
+                blurRadius: 5,
+                offset: const Offset(0, 1),
+              ),
+            ],
           ),
           clipBehavior: Clip.antiAlias,
           child: Transform.scale(
@@ -200,6 +223,37 @@ class _EverCareBrandLockup extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+class _HeaderIconButton extends StatelessWidget {
+  const _HeaderIconButton({
+    required this.tooltip,
+    required this.icon,
+    required this.onPressed,
+  });
+
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return PressScale(
+      enabled: onPressed != null,
+      child: IconButton(
+        tooltip: tooltip,
+        onPressed: onPressed,
+        style: IconButton.styleFrom(
+          minimumSize: const Size.square(44),
+          foregroundColor: AppColors.primaryText,
+          backgroundColor: Colors.white.withValues(alpha: .62),
+          disabledBackgroundColor: AppColors.surfaceMuted,
+          shape: const CircleBorder(),
+        ),
+        icon: Icon(icon, size: 21),
+      ),
     );
   }
 }

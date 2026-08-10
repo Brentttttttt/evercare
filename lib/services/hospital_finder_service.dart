@@ -27,16 +27,19 @@ class HospitalFinderException implements Exception {
   String toString() => message;
 }
 
-/// Loads nearby hospitals from Overpass and submitted searches from Nominatim.
+/// Loads nearby hospitals from Overpass, submitted searches from Nominatim,
+/// and debounced type-ahead suggestions from Photon.
 ///
-/// Search is intentionally submit-only. Public Nominatim usage is serialized to
-/// at most one request per second, and identical requests are cached in memory.
+/// Public geocoder requests are serialized, and identical searches,
+/// suggestions, and reverse-address lookups are cached in memory.
 class HospitalFinderService {
   HospitalFinderService({
     http.Client? client,
     Uri? overpassEndpoint,
     List<Uri>? overpassEndpoints,
     Uri? nominatimEndpoint,
+    Uri? nominatimReverseEndpoint,
+    Uri? photonEndpoint,
     String userAgent = defaultUserAgent,
     DateTime Function()? now,
     Future<void> Function(Duration)? delay,
@@ -48,6 +51,11 @@ class HospitalFinderService {
        _nominatimEndpoint =
            nominatimEndpoint ??
            Uri.parse('https://nominatim.openstreetmap.org/search'),
+       _nominatimReverseEndpoint =
+           nominatimReverseEndpoint ??
+           Uri.parse('https://nominatim.openstreetmap.org/reverse'),
+       _photonEndpoint =
+           photonEndpoint ?? Uri.parse('https://photon.komoot.io/api'),
        _userAgent = userAgent,
        _now = now ?? DateTime.now,
        _delay = delay ?? Future<void>.delayed;
@@ -60,12 +68,15 @@ class HospitalFinderService {
     Uri.parse('https://overpass.private.coffee/api/interpreter'),
   ]);
   static const _nominatimInterval = Duration(seconds: 1);
+  static const _photonInterval = Duration(seconds: 1);
   static const _maxNearbyResults = 25;
   static const _overpassTimeout = Duration(seconds: 35);
 
   final http.Client _client;
   final List<Uri> _overpassEndpoints;
   final Uri _nominatimEndpoint;
+  final Uri _nominatimReverseEndpoint;
+  final Uri _photonEndpoint;
   final String _userAgent;
   final DateTime Function() _now;
   final Future<void> Function(Duration) _delay;
@@ -74,9 +85,14 @@ class HospitalFinderService {
   final Map<String, Future<List<HospitalLocation>>> _nearbyInFlight = {};
   final Map<String, List<HospitalLocation>> _searchCache = {};
   final Map<String, Future<List<HospitalLocation>>> _searchInFlight = {};
+  final Map<String, List<HospitalLocation>> _suggestionCache = {};
+  final Map<String, Future<List<HospitalLocation>>> _suggestionInFlight = {};
+  final Map<String, String> _reverseAddressCache = {};
 
   Future<void> _nominatimQueue = Future<void>.value();
   DateTime? _lastNominatimRequestAt;
+  Future<void> _photonQueue = Future<void>.value();
+  DateTime? _lastPhotonRequestAt;
 
   Future<Position> currentPosition() async {
     if (!await Geolocator.isLocationServiceEnabled()) {
@@ -167,6 +183,101 @@ class HospitalFinderService {
       rawHospitals,
       originLatitude: originLatitude,
       originLongitude: originLongitude,
+    );
+  }
+
+  /// Returns search-as-you-type matches from Photon, which is designed for
+  /// autocomplete over OpenStreetMap data. The public Nominatim search API is
+  /// intentionally not used for this method.
+  Future<List<HospitalLocation>> suggest({
+    required String query,
+    double? originLatitude,
+    double? originLongitude,
+  }) async {
+    final trimmedQuery = query.trim();
+    if (trimmedQuery.length < 3) return const [];
+
+    final cacheKey = _normalize(trimmedQuery);
+    var rawHospitals = _suggestionCache[cacheKey];
+    if (rawHospitals == null) {
+      final existingRequest = _suggestionInFlight[cacheKey];
+      final request =
+          existingRequest ??
+          _loadSuggestions(
+            trimmedQuery,
+            originLatitude: originLatitude,
+            originLongitude: originLongitude,
+          );
+      if (existingRequest == null) _suggestionInFlight[cacheKey] = request;
+      try {
+        rawHospitals = await request;
+        rawHospitals = List<HospitalLocation>.unmodifiable(rawHospitals);
+        _suggestionCache[cacheKey] = rawHospitals;
+      } finally {
+        if (existingRequest == null) _suggestionInFlight.remove(cacheKey);
+      }
+    }
+
+    return _addDistancesAndSort(
+      rawHospitals,
+      originLatitude: originLatitude,
+      originLongitude: originLongitude,
+    );
+  }
+
+  /// Resolves a missing postal address only when the user selects a result.
+  /// Existing OSM addresses are preserved without making another request.
+  Future<HospitalLocation> resolveAddress(HospitalLocation hospital) async {
+    if (hospital.address.trim().isNotEmpty) return hospital;
+    if (!hospital.latitude.isFinite || !hospital.longitude.isFinite) {
+      throw const HospitalFinderException(
+        'This OpenStreetMap place has invalid coordinates.',
+      );
+    }
+
+    final cacheKey =
+        '${hospital.latitude.toStringAsFixed(6)}|'
+        '${hospital.longitude.toStringAsFixed(6)}';
+    var address = _reverseAddressCache[cacheKey];
+    if (address == null) {
+      final uri = _nominatimReverseEndpoint.replace(
+        queryParameters: {
+          ..._nominatimReverseEndpoint.queryParameters,
+          'format': 'jsonv2',
+          'lat': hospital.latitude.toString(),
+          'lon': hospital.longitude.toString(),
+          'addressdetails': '1',
+          'zoom': '18',
+        },
+      );
+      final response = await _rateLimitedNominatimRequest(uri);
+      _ensureSuccessful(response, serviceName: 'OpenStreetMap address service');
+      try {
+        final body = jsonDecode(utf8.decode(response.bodyBytes));
+        if (body is! Map) {
+          throw const FormatException('Expected an address object.');
+        }
+        address = body['display_name']?.toString().trim();
+      } on FormatException catch (error) {
+        throw HospitalFinderException(
+          'The address service returned invalid data: ${error.message}',
+        );
+      }
+      if (address == null || address.isEmpty) {
+        throw const HospitalFinderException(
+          'OpenStreetMap does not have a street address for this place.',
+        );
+      }
+      _reverseAddressCache[cacheKey] = address;
+    }
+
+    return HospitalLocation(
+      id: hospital.id,
+      name: hospital.name,
+      address: address,
+      latitude: hospital.latitude,
+      longitude: hospital.longitude,
+      distanceMeters: hospital.distanceMeters,
     );
   }
 
@@ -301,6 +412,51 @@ out center tags;
     }
   }
 
+  Future<List<HospitalLocation>> _loadSuggestions(
+    String query, {
+    required double? originLatitude,
+    required double? originLongitude,
+  }) async {
+    final queryParameters = <String, String>{
+      ..._photonEndpoint.queryParameters,
+      'q': query,
+      'countrycode': 'PH',
+      'limit': '10',
+      'osm_tag': 'amenity:hospital',
+      if (originLatitude != null && originLongitude != null) ...{
+        'lat': originLatitude.toString(),
+        'lon': originLongitude.toString(),
+        'zoom': '10',
+        'location_bias_scale': '0.25',
+      },
+    };
+    final response = await _rateLimitedPhotonRequest(
+      _photonEndpoint.replace(queryParameters: queryParameters),
+    );
+    _ensureSuccessful(
+      response,
+      serviceName: 'OpenStreetMap suggestion service',
+    );
+
+    try {
+      final body = jsonDecode(utf8.decode(response.bodyBytes));
+      if (body is! Map || body['features'] is! List) {
+        throw const FormatException('Expected a GeoJSON feature collection.');
+      }
+      final hospitals = <HospitalLocation>[];
+      for (final value in body['features'] as List) {
+        if (value is! Map) continue;
+        final hospital = _hospitalFromPhoton(Map<String, dynamic>.from(value));
+        if (hospital != null) hospitals.add(hospital);
+      }
+      return _deduplicateAndSort(hospitals);
+    } on FormatException catch (error) {
+      throw HospitalFinderException(
+        'The suggestion service returned invalid data: ${error.message}',
+      );
+    }
+  }
+
   Future<http.Response> _rateLimitedNominatimRequest(Uri uri) {
     final request = _nominatimQueue.then((_) async {
       final previousRequest = _lastNominatimRequestAt;
@@ -315,6 +471,26 @@ out center tags;
           .timeout(const Duration(seconds: 25));
     });
     _nominatimQueue = request.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace _) {},
+    );
+    return request;
+  }
+
+  Future<http.Response> _rateLimitedPhotonRequest(Uri uri) {
+    final request = _photonQueue.then((_) async {
+      final previousRequest = _lastPhotonRequestAt;
+      if (previousRequest != null) {
+        final elapsed = _now().difference(previousRequest);
+        final remaining = _photonInterval - elapsed;
+        if (remaining > Duration.zero) await _delay(remaining);
+      }
+      _lastPhotonRequestAt = _now();
+      return _client
+          .get(uri, headers: _headers())
+          .timeout(const Duration(seconds: 20));
+    });
+    _photonQueue = request.then<void>(
       (_) {},
       onError: (Object _, StackTrace _) {},
     );
@@ -397,6 +573,60 @@ out center tags;
       id: id,
       name: name,
       address: displayName,
+      latitude: latitude,
+      longitude: longitude,
+    );
+  }
+
+  HospitalLocation? _hospitalFromPhoton(Map<String, dynamic> feature) {
+    final rawGeometry = feature['geometry'];
+    final geometry = rawGeometry is Map
+        ? Map<String, dynamic>.from(rawGeometry)
+        : const <String, dynamic>{};
+    final coordinates = geometry['coordinates'];
+    if (coordinates is! List || coordinates.length < 2) return null;
+    final longitude = _asDouble(coordinates[0]);
+    final latitude = _asDouble(coordinates[1]);
+    if (latitude == null || longitude == null) return null;
+
+    final rawProperties = feature['properties'];
+    if (rawProperties is! Map) return null;
+    final properties = Map<String, dynamic>.from(rawProperties);
+    final name = _firstNonEmpty([properties['name']]);
+    if (name == null) return null;
+
+    final houseAndStreet = [
+      properties['housenumber']?.toString().trim(),
+      properties['street']?.toString().trim(),
+    ].whereType<String>().where((value) => value.isNotEmpty).join(' ');
+    final addressParts = <String>[
+      if (houseAndStreet.isNotEmpty) houseAndStreet,
+      for (final value in [
+        properties['district'],
+        properties['city'],
+        properties['county'],
+        properties['state'],
+        properties['postcode'],
+        properties['country'],
+      ])
+        if (value?.toString().trim().isNotEmpty == true)
+          value!.toString().trim(),
+    ];
+    final uniqueAddressParts = <String>[];
+    final normalizedParts = <String>{};
+    for (final part in addressParts) {
+      if (normalizedParts.add(_normalize(part))) uniqueAddressParts.add(part);
+    }
+
+    final osmType = properties['osm_type']?.toString().trim() ?? '';
+    final osmId = properties['osm_id']?.toString().trim() ?? '';
+    final id = osmType.isNotEmpty && osmId.isNotEmpty
+        ? 'photon:$osmType:$osmId'
+        : 'photon:${latitude.toStringAsFixed(6)},${longitude.toStringAsFixed(6)}';
+    return HospitalLocation(
+      id: id,
+      name: name,
+      address: uniqueAddressParts.join(', '),
       latitude: latitude,
       longitude: longitude,
     );

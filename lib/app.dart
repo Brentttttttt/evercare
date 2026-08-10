@@ -49,11 +49,23 @@ class _EverCareAppState extends State<EverCareApp> with WidgetsBindingObserver {
           title: 'EverCare',
           debugShowCheckedModeBanner: false,
           theme: AppTheme.light,
+          themeAnimationDuration: const Duration(milliseconds: 300),
+          themeAnimationCurve: Curves.easeOutCubic,
+          scrollBehavior: const _EverCareScrollBehavior(),
           initialRoute: AppRoutes.splash,
           onGenerateRoute: AppRoutes.onGenerateRoute,
           navigatorObservers: [everCareRouteObserver],
         ),
       ),
     );
+  }
+}
+
+class _EverCareScrollBehavior extends MaterialScrollBehavior {
+  const _EverCareScrollBehavior();
+
+  @override
+  ScrollPhysics getScrollPhysics(BuildContext context) {
+    return const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics());
   }
 }

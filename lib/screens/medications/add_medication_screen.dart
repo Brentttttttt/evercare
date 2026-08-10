@@ -28,6 +28,7 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
   late final TextEditingController _purpose;
   late final TextEditingController _frequency;
   late final TextEditingController _instructions;
+  final _reminderTimeKey = GlobalKey<FormFieldState<TimeOfDay>>();
   DateTime? _startDate;
   DateTime? _endDate;
   TimeOfDay? _scheduleTime;
@@ -79,82 +80,115 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              _isEditing ? 'Update medication' : 'Medication details',
-              style: AppTextStyles.sectionTitle,
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'Save only the details shown on your medicine label or provided by your care team.',
-              style: AppTextStyles.bodyMuted,
-            ),
-            const SizedBox(height: 21),
-            _field(
-              controller: _name,
-              label: 'Medicine name',
-              hint: 'Enter the medicine name',
+            const _MedicationSafetyNotice(),
+            const SizedBox(height: 24),
+            _MedicationFormSection(
               icon: Icons.medication_outlined,
-              required: true,
+              title: 'Medicine',
+              description: 'Name, dose, and reason for taking it.',
+              children: [
+                _field(
+                  controller: _name,
+                  label: 'Medicine name',
+                  hint: 'Enter the medicine name',
+                  icon: Icons.medication_outlined,
+                  required: true,
+                ),
+                _field(
+                  controller: _dosage,
+                  label: 'Dosage',
+                  hint: 'e.g. 5 mg · One tablet',
+                  icon: Icons.scale_outlined,
+                  required: true,
+                ),
+                _field(
+                  controller: _purpose,
+                  label: 'Purpose',
+                  hint: 'What was it prescribed for?',
+                  icon: Icons.health_and_safety_outlined,
+                  bottomPadding: 0,
+                ),
+              ],
             ),
-            _field(
-              controller: _dosage,
-              label: 'Dosage',
-              hint: 'e.g. 5 mg · One tablet',
-              icon: Icons.scale_outlined,
-              required: true,
+            const SizedBox(height: 22),
+            _MedicationFormSection(
+              icon: Icons.schedule_outlined,
+              title: 'Schedule',
+              description: 'When this medicine should be taken.',
+              children: [
+                _field(
+                  controller: _frequency,
+                  label: 'Frequency',
+                  hint: 'e.g. Once daily',
+                  icon: Icons.repeat_rounded,
+                  required: true,
+                ),
+                _DateTile(
+                  label: 'Start date',
+                  value: _startDate,
+                  icon: Icons.event_outlined,
+                  onTap: () => _pickDate(isStart: true),
+                ),
+                _DateTile(
+                  label: 'End date (optional)',
+                  value: _endDate,
+                  icon: Icons.event_available_outlined,
+                  onTap: () => _pickDate(isStart: false),
+                  onClear: _endDate == null
+                      ? null
+                      : () => setState(() => _endDate = null),
+                ),
+                FormField<TimeOfDay>(
+                  key: _reminderTimeKey,
+                  initialValue: _scheduleTime,
+                  validator: (value) =>
+                      value == null ? 'Reminder time is required.' : null,
+                  builder: (field) => _DateTile(
+                    label: 'Reminder time',
+                    valueLabel: _scheduleTime?.format(context),
+                    emptyLabel: 'Select reminder time',
+                    errorText: field.errorText,
+                    icon: Icons.schedule_rounded,
+                    onTap: _pickTime,
+                    bottomPadding: 0,
+                  ),
+                ),
+              ],
             ),
-            _field(
-              controller: _purpose,
-              label: 'Purpose',
-              hint: 'What was it prescribed for?',
-              icon: Icons.health_and_safety_outlined,
+            const SizedBox(height: 22),
+            _MedicationFormSection(
+              icon: Icons.notes_rounded,
+              title: 'Instructions and status',
+              description: 'Add care notes and choose where it appears.',
+              children: [
+                _field(
+                  controller: _instructions,
+                  label: 'Instructions',
+                  hint: 'Add label or care-team instructions',
+                  icon: Icons.description_outlined,
+                  maxLines: 3,
+                ),
+                Material(
+                  color: AppColors.muted,
+                  borderRadius: BorderRadius.circular(14),
+                  clipBehavior: Clip.antiAlias,
+                  child: SwitchListTile.adaptive(
+                    contentPadding: const EdgeInsets.fromLTRB(14, 4, 10, 4),
+                    title: const Text('Active medication'),
+                    subtitle: const Text(
+                      'Show this medicine in the active list',
+                    ),
+                    secondary: const Icon(
+                      Icons.check_circle_outline_rounded,
+                      color: AppColors.primaryGreen,
+                    ),
+                    value: _isActive,
+                    onChanged: (value) => setState(() => _isActive = value),
+                  ),
+                ),
+              ],
             ),
-            _field(
-              controller: _frequency,
-              label: 'Frequency',
-              hint: 'e.g. Once daily',
-              icon: Icons.repeat_rounded,
-              required: true,
-            ),
-            _DateTile(
-              label: 'Start date',
-              value: _startDate,
-              icon: Icons.event_outlined,
-              onTap: () => _pickDate(isStart: true),
-            ),
-            _DateTile(
-              label: 'End date (optional)',
-              value: _endDate,
-              icon: Icons.event_available_outlined,
-              onTap: () => _pickDate(isStart: false),
-              onClear: _endDate == null
-                  ? null
-                  : () => setState(() => _endDate = null),
-            ),
-            _DateTile(
-              label: 'Reminder time (optional)',
-              valueLabel: _scheduleTime?.format(context),
-              icon: Icons.schedule_rounded,
-              onTap: _pickTime,
-              onClear: _scheduleTime == null
-                  ? null
-                  : () => setState(() => _scheduleTime = null),
-            ),
-            _field(
-              controller: _instructions,
-              label: 'Instructions',
-              hint: 'Add label or care-team instructions',
-              icon: Icons.description_outlined,
-              maxLines: 3,
-            ),
-            SwitchListTile.adaptive(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-              title: const Text('Active medication'),
-              subtitle: const Text('Show this medicine in the active list'),
-              value: _isActive,
-              onChanged: (value) => setState(() => _isActive = value),
-            ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             if (!canSave)
               const Padding(
                 padding: EdgeInsets.only(bottom: 14),
@@ -182,6 +216,7 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
                 ),
               ),
             ),
+            const SizedBox(height: 8),
           ],
         ),
       ),
@@ -195,12 +230,14 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
     required IconData icon,
     bool required = false,
     int maxLines = 1,
+    double bottomPadding = 14,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.only(bottom: bottomPadding),
       child: TextFormField(
         controller: controller,
         maxLines: maxLines,
+        scrollPadding: const EdgeInsets.only(bottom: 140),
         textInputAction: maxLines == 1
             ? TextInputAction.next
             : TextInputAction.newline,
@@ -247,19 +284,22 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
       context: context,
       initialTime: _scheduleTime ?? TimeOfDay.now(),
     );
-    if (selected != null && mounted) setState(() => _scheduleTime = selected);
+    if (selected == null || !mounted) return;
+    setState(() => _scheduleTime = selected);
+    _reminderTimeKey.currentState?.didChange(selected);
   }
 
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
+    final scheduleTime = _scheduleTime;
+    if (scheduleTime == null) return;
     final client = EverCareBackendScope.maybeClient(context);
     if (client?.auth.currentUser == null) return;
     setState(() => _saving = true);
     final repository = MedicationRepository(client!);
-    final time = _scheduleTime == null
-        ? null
-        : '${_scheduleTime!.hour.toString().padLeft(2, '0')}:'
-              '${_scheduleTime!.minute.toString().padLeft(2, '0')}:00';
+    final time =
+        '${scheduleTime.hour.toString().padLeft(2, '0')}:'
+        '${scheduleTime.minute.toString().padLeft(2, '0')}:00';
     try {
       final item = widget.medication;
       if (item == null) {
@@ -302,6 +342,119 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
   }
 }
 
+class _MedicationSafetyNotice extends StatelessWidget {
+  const _MedicationSafetyNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      color: AppColors.primaryContainer,
+      borderColor: AppColors.primaryGreen.withValues(alpha: .18),
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: AppColors.card,
+              borderRadius: BorderRadius.circular(13),
+            ),
+            child: const Icon(
+              Icons.verified_user_outlined,
+              size: 21,
+              color: AppColors.darkGreen,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Keep details accurate',
+                  style: AppTextStyles.cardTitle.copyWith(
+                    color: AppColors.primaryContainerForeground,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Save only the details shown on your medicine label or provided by your care team.',
+                  style: AppTextStyles.bodyMuted.copyWith(
+                    color: AppColors.primaryContainerForeground.withValues(
+                      alpha: .78,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MedicationFormSection extends StatelessWidget {
+  const _MedicationFormSection({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.children,
+  });
+
+  final IconData icon;
+  final String title;
+  final String description;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryContainer,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, size: 17, color: AppColors.darkGreen),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: AppTextStyles.cardTitle),
+                    const SizedBox(height: 2),
+                    Text(description, style: AppTextStyles.bodyMuted),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        AppCard(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: children,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _DateTile extends StatelessWidget {
   const _DateTile({
     required this.label,
@@ -309,7 +462,10 @@ class _DateTile extends StatelessWidget {
     required this.onTap,
     this.value,
     this.valueLabel,
+    this.emptyLabel = 'Not set',
+    this.errorText,
     this.onClear,
+    this.bottomPadding = 14,
   });
 
   final String label;
@@ -317,18 +473,22 @@ class _DateTile extends StatelessWidget {
   final VoidCallback onTap;
   final DateTime? value;
   final String? valueLabel;
+  final String emptyLabel;
+  final String? errorText;
   final VoidCallback? onClear;
+  final double bottomPadding;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.only(bottom: bottomPadding),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: InputDecorator(
           decoration: InputDecoration(
             labelText: label,
+            errorText: errorText,
             prefixIcon: Icon(icon, color: AppColors.primaryGreen),
             suffixIcon: onClear == null
                 ? const Icon(Icons.chevron_right_rounded)
@@ -338,7 +498,9 @@ class _DateTile extends StatelessWidget {
                     icon: const Icon(Icons.close_rounded),
                   ),
           ),
-          child: Text(valueLabel ?? _dateLabel(value)),
+          child: Text(
+            valueLabel ?? (value == null ? emptyLabel : _dateLabel(value)),
+          ),
         ),
       ),
     );

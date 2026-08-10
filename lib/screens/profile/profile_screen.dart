@@ -8,7 +8,9 @@ import '../../services/auth_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_page.dart';
+import '../../widgets/app_skeleton.dart';
 import '../../widgets/evercare_backend_scope.dart';
+import '../../widgets/section_header.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -106,7 +108,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final client = _client;
     final isSignedIn = client?.auth.currentUser != null;
     return SingleChildScrollView(
-      padding: pagePadding,
+      padding: mainPagePadding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -134,12 +136,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               future: _profileFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const AppCard(
-                    child: SizedBox(
-                      height: 190,
-                      child: Center(child: CircularProgressIndicator()),
-                    ),
-                  );
+                  return const AppCardSkeleton(showLeading: false, lines: 4);
                 }
                 if (snapshot.hasError || !snapshot.hasData) {
                   return _ProfileNotice(
@@ -158,25 +155,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
               },
             ),
           const SizedBox(height: 18),
+          const SectionHeader(
+            title: 'Personal care',
+            subtitle: 'Keep your identity and care information up to date.',
+          ),
+          const SizedBox(height: 10),
           AppCard(
-            padding: const EdgeInsets.symmetric(vertical: 7),
-            child: Column(
+            padding: const EdgeInsets.symmetric(vertical: 5),
+            child: _ProfileMenuGroup(
               children: [
                 _ProfileMenuItem(
                   icon: Icons.badge_outlined,
+                  color: AppColors.blue,
                   label: 'Personal Information',
                   onTap: isSignedIn ? _openEditProfile : null,
                 ),
                 _ProfileMenuItem(
                   icon: Icons.medical_information_outlined,
+                  color: AppColors.primaryGreen,
                   label: 'Medical Information',
                   onTap: isSignedIn
                       ? () =>
                             Navigator.pushNamed(context, AppRoutes.medicalInfo)
                       : null,
                 ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 22),
+          const SectionHeader(
+            title: 'Safety and sharing',
+            subtitle: 'Manage emergency details and trusted people.',
+          ),
+          const SizedBox(height: 10),
+          AppCard(
+            padding: const EdgeInsets.symmetric(vertical: 5),
+            child: _ProfileMenuGroup(
+              children: [
                 _ProfileMenuItem(
                   icon: Icons.contact_emergency_outlined,
+                  color: AppColors.danger,
                   label: 'Emergency Contacts',
                   onTap: isSignedIn
                       ? () => Navigator.pushNamed(
@@ -187,6 +205,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 _ProfileMenuItem(
                   icon: Icons.family_restroom_rounded,
+                  color: AppColors.purple,
                   label: 'Family and Caregivers',
                   onTap: isSignedIn
                       ? () => Navigator.pushNamed(
@@ -195,25 +214,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         )
                       : null,
                 ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 22),
+          const SectionHeader(
+            title: 'App and support',
+            subtitle: 'Adjust your experience or find help.',
+          ),
+          const SizedBox(height: 10),
+          AppCard(
+            padding: const EdgeInsets.symmetric(vertical: 5),
+            child: _ProfileMenuGroup(
+              children: [
                 _ProfileMenuItem(
                   icon: Icons.accessibility_new_rounded,
+                  color: AppColors.blue,
                   label: 'Accessibility',
                   onTap: () =>
                       Navigator.pushNamed(context, AppRoutes.accessibility),
                 ),
                 _ProfileMenuItem(
                   icon: Icons.settings_outlined,
+                  color: AppColors.secondaryText,
                   label: 'Settings',
                   onTap: () => Navigator.pushNamed(context, AppRoutes.settings),
                 ),
                 _ProfileMenuItem(
                   icon: Icons.help_outline_rounded,
+                  color: AppColors.warning,
                   label: 'Help and Support',
                   onTap: () =>
                       Navigator.pushNamed(context, AppRoutes.helpSupport),
                 ),
                 _ProfileMenuItem(
                   icon: Icons.info_outline_rounded,
+                  color: AppColors.primaryGreen,
                   label: 'About EverCare',
                   onTap: () => Navigator.pushNamed(context, AppRoutes.about),
                 ),
@@ -273,30 +309,39 @@ class _ProfileSummaryCard extends StatelessWidget {
       if (profile.userTypeLabel.isNotEmpty) profile.userTypeLabel,
     ];
     return AppCard(
-      color: AppColors.lightGreen,
-      borderColor: AppColors.lightGreen,
       child: Column(
         children: [
           Stack(
             clipBehavior: Clip.none,
             children: [
-              CircleAvatar(
-                radius: 48,
-                backgroundColor: Colors.white,
-                child: profile.initials.isEmpty
-                    ? const Icon(
-                        Icons.person_outline_rounded,
-                        size: 42,
-                        color: AppColors.darkGreen,
-                      )
-                    : Text(
-                        profile.initials,
-                        style: const TextStyle(
+              Container(
+                padding: const EdgeInsets.all(5),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [AppColors.primaryContainer, AppColors.accent],
+                  ),
+                ),
+                child: CircleAvatar(
+                  radius: 44,
+                  backgroundColor: AppColors.card,
+                  child: profile.initials.isEmpty
+                      ? const Icon(
+                          Icons.person_outline_rounded,
+                          size: 40,
                           color: AppColors.darkGreen,
-                          fontSize: 25,
-                          fontWeight: FontWeight.w800,
+                        )
+                      : Text(
+                          profile.initials,
+                          style: const TextStyle(
+                            color: AppColors.darkGreen,
+                            fontSize: 24,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
-                      ),
+                ),
               ),
               Positioned(
                 right: -5,
@@ -331,7 +376,7 @@ class _ProfileSummaryCard extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: .74),
+              color: AppColors.secondary,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Column(
@@ -342,7 +387,10 @@ class _ProfileSummaryCard extends StatelessWidget {
                       ? 'Account email unavailable'
                       : profile.email,
                 ),
-                const SizedBox(height: 7),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Divider(),
+                ),
                 _ContactLine(
                   icon: Icons.phone_outlined,
                   value: profile.phoneNumber.isEmpty
@@ -430,11 +478,13 @@ class _ProfileNotice extends StatelessWidget {
 class _ProfileMenuItem extends StatelessWidget {
   const _ProfileMenuItem({
     required this.icon,
+    required this.color,
     required this.label,
     required this.onTap,
   });
 
   final IconData icon;
+  final Color color;
   final String label;
   final VoidCallback? onTap;
 
@@ -447,17 +497,46 @@ class _ProfileMenuItem extends StatelessWidget {
         width: 44,
         height: 44,
         decoration: BoxDecoration(
-          color: AppColors.lightGreen,
-          borderRadius: BorderRadius.circular(14),
+          color: onTap == null ? color.withValues(alpha: .42) : color,
+          borderRadius: BorderRadius.circular(11),
+          boxShadow: onTap == null
+              ? null
+              : [
+                  BoxShadow(
+                    color: color.withValues(alpha: .1),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
         ),
-        child: Icon(icon, color: AppColors.darkGreen, size: 22),
+        child: Icon(icon, color: Colors.white, size: 22),
       ),
       title: Text(label, style: Theme.of(context).textTheme.titleSmall),
       trailing: const Icon(
-        Icons.chevron_right_rounded,
+        Icons.arrow_forward_ios_rounded,
         color: AppColors.secondaryText,
+        size: 16,
       ),
       onTap: onTap,
+    );
+  }
+}
+
+class _ProfileMenuGroup extends StatelessWidget {
+  const _ProfileMenuGroup({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        for (var index = 0; index < children.length; index++) ...[
+          children[index],
+          if (index != children.length - 1)
+            const Divider(indent: 72, endIndent: 14),
+        ],
+      ],
     );
   }
 }

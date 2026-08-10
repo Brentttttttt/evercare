@@ -24,16 +24,16 @@ class MedicationCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 56,
-            height: 56,
+            width: 50,
+            height: 50,
             decoration: BoxDecoration(
               color: active ? AppColors.lightGreen : const Color(0xFFFFF4E1),
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(15),
             ),
             child: Icon(
               Icons.medication_rounded,
               color: active ? AppColors.primaryGreen : AppColors.warning,
-              size: 28,
+              size: 24,
             ),
           ),
           const SizedBox(width: 14),
@@ -67,16 +67,11 @@ class MedicationCard extends StatelessWidget {
               ],
             ),
           ),
-          Container(
-            width: 32,
-            height: 32,
-            decoration: const BoxDecoration(
-              color: AppColors.surfaceMuted,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.arrow_forward_rounded,
-              size: 17,
+          const Padding(
+            padding: EdgeInsets.only(top: 13),
+            child: Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 16,
               color: AppColors.secondaryText,
             ),
           ),
@@ -99,7 +94,7 @@ class _Pill extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
         color: positive ? AppColors.lightGreen : AppColors.background,
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

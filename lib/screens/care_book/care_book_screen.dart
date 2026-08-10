@@ -4,7 +4,6 @@ import '../../data/care_book_data.dart';
 import '../../services/care_book_service.dart';
 import '../../widgets/app_page.dart';
 import '../../widgets/care_photo_banner.dart';
-import '../../widgets/section_header.dart';
 import 'care_book_widgets.dart';
 
 class CareBookScreen extends StatefulWidget {
@@ -33,7 +32,7 @@ class _CareBookScreenState extends State<CareBookScreen> {
     final chapter = chapters[_selectedChapter];
     return SingleChildScrollView(
       controller: _scrollController,
-      padding: pagePadding,
+      padding: mainPagePadding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -43,9 +42,9 @@ class _CareBookScreenState extends State<CareBookScreen> {
                 'A caregiver and an older man reading a caregiving book together',
             title: 'Care knowledge, shared with warmth',
             subtitle: 'Simple guidance for safer and more confident care.',
-            height: 168,
+            height: 156,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 18),
           CareBookCover(
             downloading: _downloading,
             onStartReading: () {
@@ -54,7 +53,13 @@ class _CareBookScreenState extends State<CareBookScreen> {
             },
             onDownload: _downloading ? null : _downloadHandbook,
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: 22),
+          CareBookChapterNavigator(
+            chapter: chapter,
+            totalChapters: chapters.length,
+            onBrowse: _showTableOfContents,
+          ),
+          const SizedBox(height: 12),
           KeyedSubtree(
             key: _readerKey,
             child: CareBookReader(
@@ -75,23 +80,7 @@ class _CareBookScreenState extends State<CareBookScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 30),
-          const SectionHeader(
-            title: 'Simplified Caregiving Notes',
-            subtitle: 'EverCare summaries based on the official NIA handbook',
-          ),
-          const SizedBox(height: 13),
-          ...chapters.map(
-            (item) => Padding(
-              padding: const EdgeInsets.only(bottom: 11),
-              child: CareBookChapterCard(
-                chapter: item,
-                selected: item.number - 1 == _selectedChapter,
-                onTap: () => _selectChapter(item.number - 1),
-              ),
-            ),
-          ),
-          const SizedBox(height: 17),
+          const SizedBox(height: 26),
           CareBookReferenceCard(
             downloading: _downloading,
             onDownloadLocal: _downloading ? null : _downloadHandbook,
@@ -112,6 +101,22 @@ class _CareBookScreenState extends State<CareBookScreen> {
   void _selectChapter(int index) {
     setState(() => _selectedChapter = index);
     _scrollToReader();
+  }
+
+  Future<void> _showTableOfContents() async {
+    final selected = await showModalBottomSheet<int>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (sheetContext) => CareBookContentsSheet(
+        chapters: CareBookData.chapters,
+        selectedIndex: _selectedChapter,
+        onSelected: (index) => Navigator.pop(sheetContext, index),
+      ),
+    );
+    if (selected == null || !mounted) return;
+    _selectChapter(selected);
   }
 
   void _scrollToReader() {

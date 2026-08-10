@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:evercare/models/hospital_location.dart';
 import 'package:evercare/services/hospital_finder_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -202,99 +203,96 @@ void main() {
     });
   });
 
-  group('HospitalFinderService submitted search', () {
-    test(
-      'uses Nominatim only on submit, caches, and rate limits requests',
-      () async {
-        final requests = <http.Request>[];
-        var now = DateTime.utc(2026, 8, 10, 12);
-        final delays = <Duration>[];
-        final client = MockClient((request) async {
-          requests.add(request);
-          return http.Response(
-            jsonEncode([
-              {
-                'place_id': 10,
-                'osm_type': 'way',
-                'osm_id': 501,
-                'lat': '14.8300',
-                'lon': '120.8800',
-                'name': 'Guiguinto Community Hospital',
-                'display_name':
-                    'Guiguinto Community Hospital, Bulacan, Philippines',
-                'address': {'amenity': 'Guiguinto Community Hospital'},
-              },
-              {
-                'place_id': 11,
-                'osm_type': 'node',
-                'osm_id': 502,
-                'lat': '14.9000',
-                'lon': '120.9500',
-                'display_name': 'Bulacan Medical Center, Bulacan, Philippines',
-                'address': {'amenity': 'Bulacan Medical Center'},
-              },
-              {
-                'place_id': 12,
-                'osm_type': 'node',
-                'osm_id': 503,
-                'lat': '14.83001',
-                'lon': '120.88001',
-                'name': 'Guiguinto Community Hospital',
-                'display_name': 'Duplicate result, Bulacan, Philippines',
-              },
-              {'place_id': 13, 'name': 'Invalid result without coordinates'},
-            ]),
-            200,
-          );
-        });
-        final service = HospitalFinderService(
-          client: client,
-          nominatimEndpoint: Uri.parse('https://example.test/search'),
-          now: () => now,
-          delay: (duration) async {
-            delays.add(duration);
-            now = now.add(duration);
-          },
+  group('HospitalFinderService hospital search', () {
+    test('uses Nominatim, caches matches, and rate limits requests', () async {
+      final requests = <http.Request>[];
+      var now = DateTime.utc(2026, 8, 10, 12);
+      final delays = <Duration>[];
+      final client = MockClient((request) async {
+        requests.add(request);
+        return http.Response(
+          jsonEncode([
+            {
+              'place_id': 10,
+              'osm_type': 'way',
+              'osm_id': 501,
+              'lat': '14.8300',
+              'lon': '120.8800',
+              'name': 'Guiguinto Community Hospital',
+              'display_name':
+                  'Guiguinto Community Hospital, Bulacan, Philippines',
+              'address': {'amenity': 'Guiguinto Community Hospital'},
+            },
+            {
+              'place_id': 11,
+              'osm_type': 'node',
+              'osm_id': 502,
+              'lat': '14.9000',
+              'lon': '120.9500',
+              'display_name': 'Bulacan Medical Center, Bulacan, Philippines',
+              'address': {'amenity': 'Bulacan Medical Center'},
+            },
+            {
+              'place_id': 12,
+              'osm_type': 'node',
+              'osm_id': 503,
+              'lat': '14.83001',
+              'lon': '120.88001',
+              'name': 'Guiguinto Community Hospital',
+              'display_name': 'Duplicate result, Bulacan, Philippines',
+            },
+            {'place_id': 13, 'name': 'Invalid result without coordinates'},
+          ]),
+          200,
         );
-        addTearDown(service.close);
+      });
+      final service = HospitalFinderService(
+        client: client,
+        nominatimEndpoint: Uri.parse('https://example.test/search'),
+        now: () => now,
+        delay: (duration) async {
+          delays.add(duration);
+          now = now.add(duration);
+        },
+      );
+      addTearDown(service.close);
 
-        expect(requests, isEmpty);
-        expect(await service.search(query: '   '), isEmpty);
-        expect(requests, isEmpty);
+      expect(requests, isEmpty);
+      expect(await service.search(query: '   '), isEmpty);
+      expect(requests, isEmpty);
 
-        final first = await service.search(query: 'Guiguinto');
-        final cachedWithNewOrigin = await service.search(
-          query: '  GUIGUINTO  ',
-          originLatitude: 14.9,
-          originLongitude: 120.95,
-        );
-        await service.search(query: 'Malolos Medical Center');
+      final first = await service.search(query: 'Guiguinto');
+      final cachedWithNewOrigin = await service.search(
+        query: '  GUIGUINTO  ',
+        originLatitude: 14.9,
+        originLongitude: 120.95,
+      );
+      await service.search(query: 'Malolos Medical Center');
 
-        expect(requests, hasLength(2));
-        expect(delays, [const Duration(seconds: 1)]);
-        expect(requests.first.method, 'GET');
-        expect(
-          requests.first.headers['user-agent'],
-          HospitalFinderService.defaultUserAgent,
-        );
-        expect(requests.first.url.queryParameters['format'], 'jsonv2');
-        expect(requests.first.url.queryParameters['countrycodes'], 'ph');
-        expect(requests.first.url.queryParameters['addressdetails'], '1');
-        expect(
-          requests.first.url.queryParameters['q'],
-          'Guiguinto, hospital, Philippines',
-        );
-        expect(
-          requests.last.url.queryParameters['q'],
-          'Malolos Medical Center, Philippines',
-        );
-        expect(first, hasLength(2));
-        expect(first.first.name, 'Bulacan Medical Center');
-        expect(first.last.name, 'Guiguinto Community Hospital');
-        expect(cachedWithNewOrigin.first.name, 'Bulacan Medical Center');
-        expect(cachedWithNewOrigin.first.distanceMeters, closeTo(0, 0.01));
-      },
-    );
+      expect(requests, hasLength(2));
+      expect(delays, [const Duration(seconds: 1)]);
+      expect(requests.first.method, 'GET');
+      expect(
+        requests.first.headers['user-agent'],
+        HospitalFinderService.defaultUserAgent,
+      );
+      expect(requests.first.url.queryParameters['format'], 'jsonv2');
+      expect(requests.first.url.queryParameters['countrycodes'], 'ph');
+      expect(requests.first.url.queryParameters['addressdetails'], '1');
+      expect(
+        requests.first.url.queryParameters['q'],
+        'Guiguinto, hospital, Philippines',
+      );
+      expect(
+        requests.last.url.queryParameters['q'],
+        'Malolos Medical Center, Philippines',
+      );
+      expect(first, hasLength(2));
+      expect(first.first.name, 'Bulacan Medical Center');
+      expect(first.last.name, 'Guiguinto Community Hospital');
+      expect(cachedWithNewOrigin.first.name, 'Bulacan Medical Center');
+      expect(cachedWithNewOrigin.first.distanceMeters, closeTo(0, 0.01));
+    });
 
     test('serializes concurrent Nominatim searches one second apart', () async {
       var now = DateTime.utc(2026, 8, 10, 12);
@@ -327,5 +325,121 @@ void main() {
       ]);
       expect(delays, [const Duration(seconds: 1), const Duration(seconds: 1)]);
     });
+  });
+
+  group('HospitalFinderService reverse address', () {
+    test('resolves and caches a missing selected-place address', () async {
+      final requests = <http.Request>[];
+      final service = HospitalFinderService(
+        client: MockClient((request) async {
+          requests.add(request);
+          return http.Response(
+            jsonEncode({
+              'display_name':
+                  'Test Community Hospital, Guiguinto, Bulacan, Philippines',
+            }),
+            200,
+          );
+        }),
+        nominatimReverseEndpoint: Uri.parse('https://example.test/reverse'),
+      );
+      addTearDown(service.close);
+      const hospital = HospitalLocation(
+        id: 'node:77',
+        name: 'Test Community Hospital',
+        address: '',
+        latitude: 14.8305,
+        longitude: 120.8805,
+      );
+
+      final resolved = await service.resolveAddress(hospital);
+      final cached = await service.resolveAddress(hospital);
+
+      expect(requests, hasLength(1));
+      expect(requests.single.url.path, '/reverse');
+      expect(requests.single.url.queryParameters['format'], 'jsonv2');
+      expect(requests.single.url.queryParameters['addressdetails'], '1');
+      expect(resolved.address, contains('Guiguinto'));
+      expect(cached.address, resolved.address);
+    });
+
+    test('keeps an existing address without another request', () async {
+      var requestCount = 0;
+      final service = HospitalFinderService(
+        client: MockClient((_) async {
+          requestCount++;
+          return http.Response('{}', 200);
+        }),
+      );
+      addTearDown(service.close);
+      const hospital = HospitalLocation(
+        id: 'node:78',
+        name: 'Addressed Hospital',
+        address: '1 Care Street, Bulacan',
+        latitude: 14.83,
+        longitude: 120.88,
+      );
+
+      expect(await service.resolveAddress(hospital), same(hospital));
+      expect(requestCount, 0);
+    });
+  });
+
+  group('HospitalFinderService type-ahead suggestions', () {
+    test(
+      'uses Photon OSM data, filters to the Philippines, and caches',
+      () async {
+        final requests = <http.Request>[];
+        final service = HospitalFinderService(
+          client: MockClient((request) async {
+            requests.add(request);
+            return http.Response(
+              jsonEncode({
+                'features': [
+                  {
+                    'type': 'Feature',
+                    'geometry': {
+                      'type': 'Point',
+                      'coordinates': [120.8805, 14.8305],
+                    },
+                    'properties': {
+                      'osm_type': 'N',
+                      'osm_id': 900,
+                      'name': 'Guiguinto Community Hospital',
+                      'street': 'Care Road',
+                      'housenumber': '12',
+                      'city': 'Guiguinto',
+                      'state': 'Bulacan',
+                      'country': 'Philippines',
+                    },
+                  },
+                ],
+              }),
+              200,
+            );
+          }),
+          photonEndpoint: Uri.parse('https://example.test/api'),
+        );
+        addTearDown(service.close);
+
+        expect(await service.suggest(query: 'ab'), isEmpty);
+        final first = await service.suggest(query: 'Guiguinto');
+        final cached = await service.suggest(query: '  GUIGUINTO  ');
+
+        expect(requests, hasLength(1));
+        expect(requests.single.url.queryParameters['q'], 'Guiguinto');
+        expect(requests.single.url.queryParameters['countrycode'], 'PH');
+        expect(
+          requests.single.url.queryParameters['osm_tag'],
+          'amenity:hospital',
+        );
+        expect(first.single.name, 'Guiguinto Community Hospital');
+        expect(
+          first.single.address,
+          '12 Care Road, Guiguinto, Bulacan, Philippines',
+        );
+        expect(cached.single.id, first.single.id);
+      },
+    );
   });
 }

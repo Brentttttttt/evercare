@@ -10,30 +10,65 @@ class EmptyStateCard extends StatelessWidget {
     required this.message,
     required this.icon,
     super.key,
+    this.actionLabel,
+    this.onAction,
+    this.actionIcon,
   });
 
   final String title;
   final String message;
   final IconData icon;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+  final IconData? actionIcon;
 
   @override
   Widget build(BuildContext context) {
     return AppCard(
       child: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 24),
-          child: Column(
-            children: [
-              Icon(icon, size: 48, color: AppColors.primaryGreen),
-              const SizedBox(height: 14),
-              Text(title, style: AppTextStyles.cardTitle),
-              const SizedBox(height: 6),
-              Text(
-                message,
-                textAlign: TextAlign.center,
-                style: AppTextStyles.bodyMuted,
-              ),
-            ],
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 380),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 26, horizontal: 10),
+            child: Column(
+              children: [
+                Container(
+                  width: 58,
+                  height: 58,
+                  decoration: BoxDecoration(
+                    color: AppColors.lightGreen,
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Icon(icon, size: 27, color: AppColors.darkGreen),
+                ),
+                const SizedBox(height: 17),
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.cardTitle,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.bodyMuted,
+                ),
+                if (actionLabel != null && onAction != null) ...[
+                  const SizedBox(height: 19),
+                  if (actionIcon == null)
+                    OutlinedButton(
+                      onPressed: onAction,
+                      child: Text(actionLabel!),
+                    )
+                  else
+                    OutlinedButton.icon(
+                      onPressed: onAction,
+                      icon: Icon(actionIcon, size: 19),
+                      label: Text(actionLabel!),
+                    ),
+                ],
+              ],
+            ),
           ),
         ),
       ),

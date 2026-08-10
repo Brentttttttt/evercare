@@ -27,16 +27,16 @@ class AppointmentCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 54,
-                height: 54,
+                width: 50,
+                height: 50,
                 decoration: BoxDecoration(
                   color: colors.background,
-                  borderRadius: BorderRadius.circular(17),
+                  borderRadius: BorderRadius.circular(15),
                 ),
                 child: Icon(
                   _statusIcon(appointment.status),
                   color: colors.foreground,
-                  size: 27,
+                  size: 23,
                 ),
               ),
               const SizedBox(width: 13),
@@ -57,14 +57,18 @@ class AppointmentCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               const Icon(
-                Icons.chevron_right_rounded,
+                Icons.arrow_forward_ios_rounded,
                 color: AppColors.secondaryText,
+                size: 16,
               ),
             ],
           ),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 14),
-            child: Divider(height: 1),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            child: Divider(
+              height: 1,
+              color: AppColors.border.withValues(alpha: .65),
+            ),
           ),
           Wrap(
             spacing: 16,
@@ -99,10 +103,10 @@ class AppointmentCard extends StatelessWidget {
           Align(
             alignment: Alignment.centerLeft,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: colors.background,
-                borderRadius: BorderRadius.circular(30),
+                borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
                 appointment.statusLabel,

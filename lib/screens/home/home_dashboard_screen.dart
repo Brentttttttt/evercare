@@ -37,128 +37,130 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
     return DashboardRepository(client).load();
   }
 
+  void _reloadSummary() {
+    setState(() => _summary = _loadSummary());
+  }
+
   @override
   Widget build(BuildContext context) {
     final bpMonitor = BpMonitorBleScope.watch(context);
     return SingleChildScrollView(
-      padding: pagePadding,
+      padding: mainPagePadding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(_todayLabel(), style: AppTextStyles.eyebrow),
-          const SizedBox(height: 7),
+          Text(
+            _todayLabel(),
+            style: AppTextStyles.eyebrow.copyWith(
+              color: AppColors.primaryGreen,
+              letterSpacing: .85,
+            ),
+          ),
+          const SizedBox(height: 8),
           FutureBuilder<DashboardSummary>(
             future: _summary,
             builder: (context, snapshot) {
               final name = snapshot.data?.fullName;
               return Text(
                 name == null ? 'Welcome to EverCare' : '${_greeting()}, $name',
-                style: AppTextStyles.pageTitle,
+                style: AppTextStyles.display.copyWith(
+                  fontSize: 33,
+                  letterSpacing: -1.05,
+                ),
               );
             },
           ),
-          const SizedBox(height: 5),
+          const SizedBox(height: 7),
           const Text(
             'Your caregiving overview for today.',
             style: AppTextStyles.bodyMuted,
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 22),
           const CarePhotoBanner(
             assetPath: 'assets/images/dashboard_care.png',
             semanticLabel:
                 'An elderly woman and her daughter reviewing a health notebook at home',
             title: 'Care that feels close to home',
             subtitle: 'Health, medicines, and visits organized in one place.',
-            height: 180,
+            height: 156,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           _BloodPressureSummaryCard(
             service: bpMonitor,
             onTap: () => widget.onSelectTab(1),
           ),
           const SizedBox(height: 28),
           const SectionHeader(title: 'Today’s overview'),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           FutureBuilder<DashboardSummary>(
             future: _summary,
             builder: (context, snapshot) => _DashboardOverview(
               summary: snapshot.data ?? const DashboardSummary(),
               loading: snapshot.connectionState != ConnectionState.done,
               hasError: snapshot.hasError,
+              onRetry: _reloadSummary,
               onMedication: () => widget.onSelectTab(2),
               onAppointment: () => widget.onSelectTab(3),
             ),
           ),
           const SizedBox(height: 28),
           const SectionHeader(title: 'Quick actions'),
-          const SizedBox(height: 12),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final width = (constraints.maxWidth - 12) / 2;
-              return Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  _QuickAction(
-                    width: width,
-                    label: 'Add BP record',
-                    icon: Icons.edit_note_rounded,
-                    onTap: () =>
-                        Navigator.pushNamed(context, AppRoutes.manualRecord),
-                  ),
-                  _QuickAction(
-                    width: width,
-                    label: 'Medications',
-                    icon: Icons.medication_outlined,
-                    onTap: () => widget.onSelectTab(2),
-                  ),
-                  _QuickAction(
-                    width: width,
-                    label: 'Appointments',
-                    icon: Icons.event_available_outlined,
-                    onTap: () => widget.onSelectTab(3),
-                  ),
-                  _QuickAction(
-                    width: width,
-                    label: 'Emergency',
-                    icon: Icons.sos_rounded,
-                    color: AppColors.danger,
-                    onTap: () => widget.onSelectTab(6),
-                  ),
-                ],
-              );
-            },
+          const SizedBox(height: 10),
+          _QuickActionsPanel(
+            actions: [
+              _QuickActionData(
+                label: 'Add BP record',
+                icon: Icons.edit_note_rounded,
+                onTap: () =>
+                    Navigator.pushNamed(context, AppRoutes.manualRecord),
+              ),
+              _QuickActionData(
+                label: 'Medications',
+                icon: Icons.medication_outlined,
+                onTap: () => widget.onSelectTab(2),
+              ),
+              _QuickActionData(
+                label: 'Appointments',
+                icon: Icons.event_available_outlined,
+                onTap: () => widget.onSelectTab(3),
+              ),
+              _QuickActionData(
+                label: 'Emergency',
+                icon: Icons.sos_rounded,
+                color: AppColors.danger,
+                onTap: () => widget.onSelectTab(6),
+              ),
+            ],
           ),
           const SizedBox(height: 28),
           const SectionHeader(
-            title: 'More Care Services',
-            subtitle: 'Extra support for everyday care',
+            title: 'Care tools',
+            subtitle: 'Helpful spaces for everyday caregiving',
           ),
-          const SizedBox(height: 12),
-          _CareServiceCard(
-            icon: Icons.auto_stories_outlined,
-            color: AppColors.purple,
-            title: 'Journals',
-            description: 'Record thoughts, symptoms, moods, and daily moments.',
-            onTap: () => widget.onSelectTab(4),
-          ),
-          const SizedBox(height: 11),
-          _CareServiceCard(
-            icon: Icons.menu_book_outlined,
-            color: AppColors.primaryGreen,
-            title: 'Care Book',
-            description:
-                'Read simplified notes and access the official NIA handbook.',
-            onTap: () => widget.onSelectTab(5),
-          ),
-          const SizedBox(height: 11),
-          _CareServiceCard(
-            icon: Icons.sos_rounded,
-            color: AppColors.danger,
-            title: 'Emergency',
-            description:
-                'Keep essential contacts and medical details close by.',
-            onTap: () => widget.onSelectTab(6),
+          const SizedBox(height: 10),
+          AppCard(
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                _CareServiceCard(
+                  icon: Icons.auto_stories_outlined,
+                  color: AppColors.purple,
+                  title: 'Journals',
+                  description:
+                      'Record thoughts, symptoms, moods, and daily moments.',
+                  onTap: () => widget.onSelectTab(4),
+                ),
+                const Divider(height: 1, indent: 80),
+                _CareServiceCard(
+                  icon: Icons.menu_book_outlined,
+                  color: AppColors.primaryGreen,
+                  title: 'Care Book',
+                  description:
+                      'Read simplified notes and access the official NIA handbook.',
+                  onTap: () => widget.onSelectTab(5),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -206,6 +208,7 @@ class _DashboardOverview extends StatelessWidget {
     required this.summary,
     required this.loading,
     required this.hasError,
+    required this.onRetry,
     required this.onMedication,
     required this.onAppointment,
   });
@@ -213,51 +216,107 @@ class _DashboardOverview extends StatelessWidget {
   final DashboardSummary summary;
   final bool loading;
   final bool hasError;
+  final VoidCallback onRetry;
   final VoidCallback onMedication;
   final VoidCallback onAppointment;
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = (constraints.maxWidth - 12) / 2;
-        final medicationValue = loading
-            ? 'Loading…'
-            : hasError
-            ? 'Unavailable'
-            : summary.nextMedicationName ?? 'No medicine scheduled';
-        final appointmentValue = loading
-            ? 'Loading…'
-            : hasError
-            ? 'Unavailable'
-            : summary.nextAppointmentTitle ?? 'No upcoming visit';
-        return Wrap(
-          spacing: 12,
-          runSpacing: 12,
+    if (loading) {
+      return const AppCard(
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+        child: Column(
           children: [
-            _OverviewTile(
-              width: width,
-              icon: Icons.medication_outlined,
-              color: AppColors.primaryGreen,
-              label: 'Medication',
-              value: medicationValue,
-              detail: summary.nextMedicationTime == null
-                  ? 'Open medications'
-                  : 'Scheduled · ${summary.nextMedicationTime}',
-              onTap: onMedication,
+            _OverviewLoadingRow(icon: Icons.medication_outlined),
+            Divider(height: 1),
+            _OverviewLoadingRow(icon: Icons.calendar_month_outlined),
+          ],
+        ),
+      );
+    }
+
+    if (hasError) {
+      return AppCard(
+        color: AppColors.warningContainer,
+        borderColor: AppColors.warning.withValues(alpha: .28),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: AppColors.warning.withValues(alpha: .10),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.cloud_off_outlined,
+                    color: AppColors.warning,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Today’s details didn’t refresh',
+                        style: AppTextStyles.cardTitle,
+                      ),
+                      const SizedBox(height: 3),
+                      const Text(
+                        'Your care pages are still available below.',
+                        style: AppTextStyles.bodyMuted,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            _OverviewTile(
-              width: width,
-              icon: Icons.calendar_month_outlined,
-              color: AppColors.blue,
-              label: 'Appointment',
-              value: appointmentValue,
-              detail: _appointmentLabel(summary.nextAppointmentAt),
-              onTap: onAppointment,
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerRight,
+              child: OutlinedButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text('Try again'),
+              ),
             ),
           ],
-        );
-      },
+        ),
+      );
+    }
+
+    return AppCard(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+      child: Column(
+        children: [
+          _OverviewRow(
+            icon: Icons.medication_outlined,
+            color: AppColors.primaryGreen,
+            label: 'Next medication',
+            value: summary.nextMedicationName ?? 'Nothing scheduled',
+            detail: summary.nextMedicationTime == null
+                ? 'Review medication schedule'
+                : 'Scheduled · ${summary.nextMedicationTime}',
+            onTap: onMedication,
+          ),
+          const Divider(height: 1),
+          _OverviewRow(
+            icon: Icons.calendar_month_outlined,
+            color: AppColors.blue,
+            label: 'Next appointment',
+            value: summary.nextAppointmentTitle ?? 'No upcoming visit',
+            detail: _appointmentLabel(summary.nextAppointmentAt),
+            onTap: onAppointment,
+          ),
+        ],
+      ),
     );
   }
 
@@ -290,38 +349,180 @@ class _CareServiceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: '$title. $description',
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: .10),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(icon, color: color, size: 23),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: AppTextStyles.cardTitle),
+                    const SizedBox(height: 3),
+                    Text(
+                      description,
+                      style: AppTextStyles.bodyMuted.copyWith(fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.secondaryText,
+                size: 22,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickActionData {
+  const _QuickActionData({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+    this.color = AppColors.primaryGreen,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+  final Color color;
+}
+
+class _QuickActionsPanel extends StatelessWidget {
+  const _QuickActionsPanel({required this.actions});
+
+  final List<_QuickActionData> actions;
+
+  @override
+  Widget build(BuildContext context) {
     return AppCard(
-      onTap: onTap,
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: .11),
-              borderRadius: BorderRadius.circular(17),
+      padding: const EdgeInsets.all(8),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final textScale = MediaQuery.textScalerOf(context).scale(1);
+          final singleColumn = constraints.maxWidth < 300 || textScale > 1.2;
+          final width = singleColumn
+              ? constraints.maxWidth
+              : (constraints.maxWidth - 8) / 2;
+          return Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final action in actions)
+                _QuickAction(
+                  width: width,
+                  label: action.label,
+                  icon: action.icon,
+                  color: action.color,
+                  horizontal: singleColumn,
+                  onTap: action.onTap,
+                ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _QuickAction extends StatelessWidget {
+  const _QuickAction({
+    required this.width,
+    required this.label,
+    required this.icon,
+    required this.onTap,
+    required this.horizontal,
+    this.color = AppColors.primaryGreen,
+  });
+
+  final double width;
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool horizontal;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final iconTile = Container(
+      width: 42,
+      height: 42,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: .10),
+        borderRadius: BorderRadius.circular(13),
+      ),
+      child: Icon(icon, color: color, size: 22),
+    );
+    return SizedBox(
+      width: width,
+      child: Semantics(
+        button: true,
+        label: label,
+        child: Material(
+          color: AppColors.background.withValues(alpha: .72),
+          borderRadius: BorderRadius.circular(15),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.all(13),
+              child: horizontal
+                  ? Row(
+                      children: [
+                        iconTile,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(label, style: AppTextStyles.cardTitle),
+                        ),
+                        const Icon(
+                          Icons.chevron_right_rounded,
+                          size: 21,
+                          color: AppColors.secondaryText,
+                        ),
+                      ],
+                    )
+                  : SizedBox(
+                      height: 82,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          iconTile,
+                          const Spacer(),
+                          Text(
+                            label,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.cardTitle.copyWith(
+                              fontSize: 15,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
             ),
-            child: Icon(icon, color: color, size: 25),
           ),
-          const SizedBox(width: 13),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: AppTextStyles.cardTitle),
-                const SizedBox(height: 4),
-                Text(description, style: AppTextStyles.bodyMuted),
-              ],
-            ),
-          ),
-          const SizedBox(width: 7),
-          const Icon(
-            Icons.arrow_forward_rounded,
-            color: AppColors.secondaryText,
-            size: 20,
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -375,9 +576,9 @@ class _BloodPressureSummaryCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     const Icon(
-                      Icons.arrow_forward_rounded,
+                      Icons.chevron_right_rounded,
                       color: Colors.white,
-                      size: 20,
+                      size: 22,
                     ),
                   ],
                 ),
@@ -392,13 +593,13 @@ class _BloodPressureSummaryCard extends StatelessWidget {
                   ),
                 const SizedBox(height: 18),
                 Container(
-                  padding: const EdgeInsets.all(14),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 13,
+                  ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: .10),
-                    borderRadius: BorderRadius.circular(17),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: .08),
-                    ),
+                    color: Colors.white.withValues(alpha: .12),
+                    borderRadius: BorderRadius.circular(14),
                   ),
                   child: Row(
                     children: [
@@ -423,9 +624,9 @@ class _BloodPressureSummaryCard extends StatelessWidget {
                         ),
                       ),
                       const Icon(
-                        Icons.arrow_forward_rounded,
+                        Icons.chevron_right_rounded,
                         color: Colors.white,
-                        size: 20,
+                        size: 22,
                       ),
                     ],
                   ),
@@ -540,7 +741,7 @@ class _EmptyBloodPressureSummary extends StatelessWidget {
           'No real reading received yet',
           style: TextStyle(
             color: Colors.white,
-            fontSize: 23,
+            fontSize: 25,
             height: 1.15,
             fontWeight: FontWeight.w800,
           ),
@@ -642,9 +843,8 @@ class _RealBloodPressureSummary extends StatelessWidget {
   }
 }
 
-class _OverviewTile extends StatelessWidget {
-  const _OverviewTile({
-    required this.width,
+class _OverviewRow extends StatelessWidget {
+  const _OverviewRow({
     required this.icon,
     required this.color,
     required this.label,
@@ -653,7 +853,6 @@ class _OverviewTile extends StatelessWidget {
     required this.onTap,
   });
 
-  final double width;
   final IconData icon;
   final Color color;
   final String label;
@@ -663,93 +862,128 @@ class _OverviewTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: width,
-      child: AppCard(
+    return Semantics(
+      button: true,
+      excludeSemantics: true,
+      label: '$label, $value, $detail',
+      child: InkWell(
         onTap: onTap,
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: .11),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(icon, color: color, size: 22),
+        borderRadius: BorderRadius.circular(10),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: .10),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                const Spacer(),
-                const Icon(
-                  Icons.arrow_forward_rounded,
-                  size: 19,
-                  color: AppColors.secondaryText,
+                child: Icon(icon, color: color, size: 21),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(label, style: AppTextStyles.small),
+                    const SizedBox(height: 2),
+                    Text(
+                      value,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.cardTitle.copyWith(fontSize: 15),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      detail,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.small,
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            Text(label, style: AppTextStyles.label),
-            const SizedBox(height: 5),
-            Text(
-              value,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: AppTextStyles.cardTitle.copyWith(fontSize: 15),
-            ),
-            const SizedBox(height: 7),
-            Text(detail, style: AppTextStyles.small),
-          ],
+              ),
+              const SizedBox(width: 8),
+              const Icon(
+                Icons.chevron_right_rounded,
+                size: 21,
+                color: AppColors.secondaryText,
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _QuickAction extends StatelessWidget {
-  const _QuickAction({
-    required this.width,
-    required this.label,
-    required this.icon,
-    required this.onTap,
-    this.color = AppColors.primaryGreen,
-  });
+class _OverviewLoadingRow extends StatelessWidget {
+  const _OverviewLoadingRow({required this.icon});
 
-  final double width;
-  final String label;
   final IconData icon;
-  final VoidCallback onTap;
-  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: width,
-      child: AppCard(
-        onTap: onTap,
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: .11),
-                borderRadius: BorderRadius.circular(16),
+    return Semantics(
+      label: 'Loading today’s care details',
+      child: ExcludeSemantics(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.muted,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: AppColors.secondaryText, size: 20),
               ),
-              child: Icon(icon, color: color),
-            ),
-            const SizedBox(width: 11),
-            Expanded(
-              child: Text(
-                label,
-                style: AppTextStyles.cardTitle.copyWith(fontSize: 14.5),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    FractionallySizedBox(
+                      widthFactor: .38,
+                      child: _OverviewSkeletonBar(height: 9),
+                    ),
+                    SizedBox(height: 8),
+                    FractionallySizedBox(
+                      widthFactor: .68,
+                      child: _OverviewSkeletonBar(height: 13),
+                    ),
+                    SizedBox(height: 7),
+                    FractionallySizedBox(
+                      widthFactor: .50,
+                      child: _OverviewSkeletonBar(height: 9),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
+      ),
+    );
+  }
+}
+
+class _OverviewSkeletonBar extends StatelessWidget {
+  const _OverviewSkeletonBar({required this.height});
+
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: height,
+      decoration: BoxDecoration(
+        color: AppColors.muted,
+        borderRadius: BorderRadius.circular(5),
       ),
     );
   }

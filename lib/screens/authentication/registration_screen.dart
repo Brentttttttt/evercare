@@ -151,6 +151,12 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         subtitle:
             'Tell us a little about yourself to personalize the experience.',
         children: [
+          const _RegistrationSection(
+            icon: Icons.person_outline_rounded,
+            title: 'About you',
+            description: 'Your basic profile and role in care.',
+          ),
+          const SizedBox(height: 18),
           AppTextField(
             label: 'Full name',
             icon: Icons.person_outline_rounded,
@@ -208,6 +214,14 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   ),
                 )
                 .toList(),
+          ),
+          const SizedBox(height: 24),
+          const Divider(),
+          const SizedBox(height: 22),
+          const _RegistrationSection(
+            icon: Icons.shield_outlined,
+            title: 'Account security',
+            description: 'Use at least 8 characters for your password.',
           ),
           const SizedBox(height: 18),
           AppTextField(
@@ -270,19 +284,13 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             const SizedBox(height: 12),
           ],
           const SizedBox(height: 6),
-          if (_isSubmitting)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 12),
-                child: CircularProgressIndicator(),
-              ),
-            )
-          else
-            PrimaryButton(
-              label: 'Create Account',
-              icon: Icons.arrow_forward_rounded,
-              onPressed: _register,
-            ),
+          PrimaryButton(
+            label: 'Create Account',
+            loadingLabel: 'Creating Account…',
+            isLoading: _isSubmitting,
+            icon: Icons.arrow_forward_rounded,
+            onPressed: _register,
+          ),
           const SizedBox(height: 12),
           Center(
             child: TextButton(
@@ -299,6 +307,48 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     final month = date.month.toString().padLeft(2, '0');
     final day = date.day.toString().padLeft(2, '0');
     return '$month/$day/${date.year}';
+  }
+}
+
+class _RegistrationSection extends StatelessWidget {
+  const _RegistrationSection({
+    required this.icon,
+    required this.title,
+    required this.description,
+  });
+
+  final IconData icon;
+  final String title;
+  final String description;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: AppColors.accent,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Icon(icon, size: 20, color: AppColors.darkGreen),
+        ),
+        const SizedBox(width: 11),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: AppTextStyles.cardTitle),
+              const SizedBox(height: 2),
+              Text(description, style: AppTextStyles.bodyMuted),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }
 

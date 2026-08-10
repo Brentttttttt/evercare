@@ -113,19 +113,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             const SizedBox(height: 12),
           ],
           const SizedBox(height: 8),
-          if (_isSubmitting)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 12),
-                child: CircularProgressIndicator(),
-              ),
-            )
-          else
-            PrimaryButton(
-              label: 'Send Reset Link',
-              icon: Icons.mark_email_read_outlined,
-              onPressed: _sendResetLink,
-            ),
+          PrimaryButton(
+            label: 'Send Reset Link',
+            loadingLabel: 'Sending Link…',
+            isLoading: _isSubmitting,
+            icon: Icons.mark_email_read_outlined,
+            onPressed: _sendResetLink,
+          ),
           const SizedBox(height: 12),
           OutlinedButton(
             onPressed: _isSubmitting ? null : () => Navigator.pop(context),

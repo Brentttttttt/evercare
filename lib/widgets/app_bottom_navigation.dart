@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_motion.dart';
+import '../theme/app_text_styles.dart';
+import 'app_glass_surface.dart';
 
 class AppBottomNavigation extends StatefulWidget {
   const AppBottomNavigation({
@@ -19,12 +21,17 @@ class AppBottomNavigation extends StatefulWidget {
 
 class _AppBottomNavigationState extends State<AppBottomNavigation> {
   static const _itemsPerPage = 3;
+  static const _pageLabels = [
+    'Daily care',
+    'Planning and memories',
+    'Safety and account',
+  ];
   static const _destinations = [
     _NavigationItem('Home', Icons.home_outlined, Icons.home_rounded),
     _NavigationItem(
       'Health',
-      Icons.monitor_heart_outlined,
-      Icons.monitor_heart_rounded,
+      Icons.favorite_border_rounded,
+      Icons.favorite_rounded,
     ),
     _NavigationItem(
       'Medicine',
@@ -98,25 +105,45 @@ class _AppBottomNavigationState extends State<AppBottomNavigation> {
   Widget build(BuildContext context) {
     return SafeArea(
       top: false,
-      minimum: const EdgeInsets.fromLTRB(10, 5, 10, 9),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppColors.border),
-          boxShadow: const [
-            BoxShadow(
-              color: AppColors.shadow,
-              blurRadius: 24,
-              offset: Offset(0, 10),
-            ),
-          ],
-        ),
+      minimum: const EdgeInsets.fromLTRB(12, 6, 12, 8),
+      child: AppGlassSurface(
+        borderRadius: BorderRadius.circular(28),
+        blurSigma: 32,
+        tint: Colors.white.withValues(alpha: .34),
+        borderColor: Colors.white.withValues(alpha: .88),
+        boxShadow: const [],
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(5, 7, 5, 6),
+          padding: const EdgeInsets.fromLTRB(6, 3, 6, 5),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
+                child: Semantics(
+                  liveRegion: true,
+                  label:
+                      '${_pageLabels[_currentPage]}, navigation group ${_currentPage + 1} of $_pageCount',
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _pageLabels[_currentPage],
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyles.eyebrow.copyWith(
+                            color: AppColors.darkGreen,
+                            fontSize: 9,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        '${_currentPage + 1} of $_pageCount',
+                        style: AppTextStyles.small.copyWith(fontSize: 9.5),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
               Row(
                 children: [
                   _PageArrow(
@@ -127,7 +154,7 @@ class _AppBottomNavigationState extends State<AppBottomNavigation> {
                   ),
                   Expanded(
                     child: SizedBox(
-                      height: 62,
+                      height: 56,
                       child: PageView.builder(
                         controller: _pageController,
                         itemCount: _pageCount,
@@ -144,25 +171,6 @@ class _AppBottomNavigationState extends State<AppBottomNavigation> {
                     onPressed: () => _goToPage(_currentPage + 1),
                   ),
                 ],
-              ),
-              const SizedBox(height: 3),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(
-                  _pageCount,
-                  (index) => AnimatedContainer(
-                    duration: const Duration(milliseconds: 220),
-                    width: index == _currentPage ? 17 : 5,
-                    height: 5,
-                    margin: const EdgeInsets.symmetric(horizontal: 2),
-                    decoration: BoxDecoration(
-                      color: index == _currentPage
-                          ? AppColors.primaryGreen
-                          : AppColors.border,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
               ),
             ],
           ),
@@ -195,7 +203,7 @@ class _AppBottomNavigationState extends State<AppBottomNavigation> {
     if (page < 0 || page >= _pageCount) return;
     _pageController.animateToPage(
       page,
-      duration: const Duration(milliseconds: 320),
+      duration: const Duration(milliseconds: 340),
       curve: Curves.easeOutCubic,
     );
   }
@@ -216,34 +224,36 @@ class _BottomDestination extends StatelessWidget {
   Widget build(BuildContext context) {
     final selectedColor = item.danger ? AppColors.danger : AppColors.darkGreen;
     final selectedBackground = item.danger
-        ? const Color(0xFFFFE9E5)
-        : AppColors.lightGreen;
+        ? const Color(0xFFFFE9E5).withValues(alpha: .88)
+        : AppColors.lightGreen.withValues(alpha: .78);
     return PressScale(
+      pressedScale: .96,
       child: Semantics(
         button: true,
         selected: selected,
         label: item.label,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
           child: InkWell(
             onTap: onTap,
-            borderRadius: BorderRadius.circular(17),
+            borderRadius: BorderRadius.circular(16),
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 6),
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
               decoration: BoxDecoration(
                 color: selected ? selectedBackground : Colors.transparent,
-                borderRadius: BorderRadius.circular(17),
+                borderRadius: BorderRadius.circular(16),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
                     selected ? item.selectedIcon : item.icon,
-                    size: 22,
+                    size: 21,
                     color: selected ? selectedColor : AppColors.secondaryText,
                   ),
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 2),
                   FittedBox(
                     fit: BoxFit.scaleDown,
                     child: Text(
@@ -255,8 +265,9 @@ class _BottomDestination extends StatelessWidget {
                             : AppColors.secondaryText,
                         fontSize: 10.5,
                         fontWeight: selected
-                            ? FontWeight.w800
+                            ? FontWeight.w700
                             : FontWeight.w600,
+                        letterSpacing: -.08,
                       ),
                     ),
                   ),
@@ -287,6 +298,7 @@ class _PageArrow extends StatelessWidget {
   Widget build(BuildContext context) {
     return PressScale(
       enabled: enabled,
+      pressedScale: .92,
       child: Semantics(
         button: true,
         enabled: enabled,
@@ -294,10 +306,14 @@ class _PageArrow extends StatelessWidget {
         child: IconButton(
           onPressed: enabled ? onPressed : null,
           icon: Icon(icon),
-          iconSize: 25,
-          visualDensity: VisualDensity.compact,
+          iconSize: 23,
+          style: IconButton.styleFrom(
+            minimumSize: const Size(44, 48),
+            backgroundColor: Colors.transparent,
+            shape: const CircleBorder(),
+          ),
           color: AppColors.darkGreen,
-          disabledColor: AppColors.border,
+          disabledColor: AppColors.secondaryText.withValues(alpha: .24),
           tooltip: label,
         ),
       ),

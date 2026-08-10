@@ -75,20 +75,22 @@ flutter run `
 ## OpenStreetMap Hospital Finder
 
 The hospital finder uses `flutter_map` with OpenStreetMap tiles, Overpass for
-nearby hospital data, and Nominatim for an explicitly submitted name or city
-search. It does not need a map-provider account, billing setup, or API key.
+nearby hospital data, Photon for debounced search-as-you-type suggestions, and
+Nominatim for explicitly submitted searches and a selected place's missing
+address. It does not need a map-provider account, billing setup, or API key.
 Location access is requested only when the user asks EverCare to find nearby
 hospitals; no background location is used.
 
 EverCare identifies its network requests, displays OpenStreetMap attribution,
 caches repeated lookups, limits nearby results, automatically tries additional
-public Overpass instances after a timeout or temporary server error, and
-rate-limits Nominatim searches. Search happens only after submission, never on
-each keystroke. The public OpenStreetMap, Nominatim, and Overpass services have
-usage policies and no availability guarantee, so this configuration is
-intended for low-volume development and classroom demonstration. A production
-deployment should use a provider or hosted infrastructure with an appropriate
-service agreement.
+public Overpass instances after a timeout or temporary server error, and rate
+limits both Photon suggestions and Nominatim lookups. Suggestions begin only
+after three characters and a typing pause; repeated queries are cached. The app
+does not use Nominatim for autocomplete. The public OpenStreetMap, Photon,
+Nominatim, and Overpass services have usage policies and no availability
+guarantee, so this configuration is intended for low-volume development and
+classroom demonstration. A production deployment should use a provider or
+hosted infrastructure with an appropriate service agreement.
 
 Emergency hospital results can open directions or a hospital-details search
 using external Google Maps URLs. Maps URLs do not require an embedded Google

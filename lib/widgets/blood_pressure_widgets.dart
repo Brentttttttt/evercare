@@ -24,7 +24,7 @@ class BloodPressureStatusBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: color.withValues(alpha: .10),
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -98,15 +98,18 @@ class BloodPressureRecordCard extends StatelessWidget {
               BloodPressureStatusBadge(status: record.statusLabel),
               const Spacer(),
               const Icon(
-                Icons.arrow_forward_rounded,
+                Icons.arrow_forward_ios_rounded,
                 color: AppColors.secondaryText,
-                size: 20,
+                size: 16,
               ),
             ],
           ),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 13),
-            child: Divider(),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            child: Divider(
+              height: 1,
+              color: AppColors.border.withValues(alpha: .65),
+            ),
           ),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,

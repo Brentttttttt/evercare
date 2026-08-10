@@ -14,6 +14,7 @@ import '../../widgets/empty_state_card.dart';
 import '../../widgets/evercare_backend_scope.dart';
 import '../../widgets/section_header.dart';
 import '../hospitals/hospital_finder_screen.dart';
+import 'emergency_contacts_screen.dart';
 import 'emergency_widgets.dart';
 
 class EmergencyScreen extends StatefulWidget {
@@ -26,7 +27,6 @@ class EmergencyScreen extends StatefulWidget {
 class _EmergencyScreenState extends State<EmergencyScreen> {
   EmergencyRepository? _repository;
   List<EmergencyContact> _contacts = const [];
-  EmergencyMedicalProfile? _medicalProfile;
   bool _initialized = false;
   bool _loading = true;
   String? _error;
@@ -54,10 +54,8 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
     final otherContacts = _contacts
         .where((contact) => contact.id != primary?.id)
         .toList(growable: false);
-    final medicalItems = _medicalItems(_medicalProfile);
-
     return SingleChildScrollView(
-      padding: pagePadding,
+      padding: mainPagePadding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -67,33 +65,37 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
                 'A daughter reassuring an older woman beside a prepared care bag and medical folder',
             title: 'Prepared care brings peace of mind',
             subtitle: 'Keep trusted contacts and important details nearby.',
-            height: 168,
+            height: 148,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           _EmergencyHotlineCard(onCopy: () => _copyNumber('143')),
           const SizedBox(height: 14),
           _EmergencyHospitalFinderCard(onOpen: _openHospitalFinder),
-          const SizedBox(height: 27),
+          const SizedBox(height: 30),
           if (_loading)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.all(36),
-                child: CircularProgressIndicator(),
-              ),
-            )
+            const _EmergencyDetailsLoading()
           else if (_repository == null)
             const EmptyStateCard(
-              title: 'Sign in to prepare emergency details',
+              title: 'Sign in to add emergency contacts',
               message:
-                  'Your trusted contacts and medical information will appear here after you sign in.',
+                  'Your trusted contacts are saved privately with your EverCare account.',
               icon: Icons.lock_outline_rounded,
             )
           else if (_error != null)
             _EmergencyLoadError(message: _error!, onRetry: _load)
           else ...[
+            SectionHeader(
+              title: 'Emergency contacts',
+              subtitle: 'People you trust, such as a partner or relative',
+              actionLabel: 'Manage',
+              onAction: _openContacts,
+            ),
+            const SizedBox(height: 12),
+            _AddEmergencyContactCard(onTap: _openAddContact),
+            const SizedBox(height: 24),
             const SectionHeader(
-              title: 'Primary Emergency Contact',
-              subtitle: 'The trusted person you chose to contact first',
+              title: 'Primary emergency contact',
+              subtitle: 'The trusted person to contact first',
             ),
             const SizedBox(height: 12),
             if (primary == null)
@@ -109,9 +111,9 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
                 onDetails: _openContacts,
               ),
             if (otherContacts.isNotEmpty) ...[
-              const SizedBox(height: 27),
+              const SizedBox(height: 24),
               const SectionHeader(
-                title: 'Other Emergency Contacts',
+                title: 'Other emergency contacts',
                 subtitle: 'Your additional trusted contacts',
               ),
               const SizedBox(height: 12),
@@ -126,26 +128,10 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
                 ),
               ),
             ],
-            const SizedBox(height: 16),
-            const SectionHeader(
-              title: 'Emergency Medical Information',
-              subtitle: 'Details saved to your private EverCare account',
-            ),
-            const SizedBox(height: 12),
-            EmergencyInformationCard(
-              title: _medicalProfile?.fullName.isNotEmpty == true
-                  ? '${_medicalProfile!.fullName}’s Medical ID'
-                  : 'Emergency Medical ID',
-              subtitle: medicalItems.isEmpty
-                  ? 'Add health details that may help during an emergency.'
-                  : 'Review these details regularly and keep them accurate.',
-              items: medicalItems,
-              onShowFullId: _openMedicalInformation,
-            ),
           ],
-          const SizedBox(height: 27),
+          const SizedBox(height: 24),
           const SectionHeader(
-            title: 'While Waiting for Help',
+            title: 'While waiting for help',
             subtitle: 'Simple reminders during an emergency',
           ),
           const SizedBox(height: 12),
@@ -171,14 +157,10 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
       _error = null;
     });
     try {
-      final values = await Future.wait<Object>([
-        repository.fetchContacts(),
-        repository.fetchMedicalProfile(),
-      ]);
+      final contacts = await repository.fetchContacts();
       if (!mounted) return;
       setState(() {
-        _contacts = values[0] as List<EmergencyContact>;
-        _medicalProfile = values[1] as EmergencyMedicalProfile;
+        _contacts = contacts;
         _loading = false;
       });
     } catch (_) {
@@ -206,8 +188,13 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
     if (mounted) await _load();
   }
 
-  Future<void> _openMedicalInformation() async {
-    await Navigator.pushNamed(context, AppRoutes.medicalInfo);
+  Future<void> _openAddContact() async {
+    await Navigator.push<void>(
+      context,
+      EverCarePageRoute(
+        builder: (_) => const EmergencyContactsScreen(startAdding: true),
+      ),
+    );
     if (mounted) await _load();
   }
 
@@ -217,18 +204,83 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
       EverCarePageRoute(builder: (_) => const HospitalFinderScreen()),
     );
   }
+}
 
-  List<(String, String)> _medicalItems(EmergencyMedicalProfile? profile) {
-    if (profile == null) return const [];
-    return [
-      if (profile.bloodType.isNotEmpty) ('Blood type', profile.bloodType),
-      if (profile.allergies.isNotEmpty)
-        ('Allergies', profile.allergies.join(', ')),
-      if (profile.conditions.isNotEmpty)
-        ('Conditions', profile.conditions.join(', ')),
-      if (profile.preferredHospital.isNotEmpty)
-        ('Preferred hospital', profile.preferredHospital),
-    ];
+class _AddEmergencyContactCard extends StatelessWidget {
+  const _AddEmergencyContactCard({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: 'Add your own emergency contact',
+      hint:
+          'Enter the name, relationship, and phone number of a trusted person',
+      child: Material(
+        color: AppColors.primaryContainer,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color: AppColors.primaryGreen.withValues(alpha: .16),
+            width: .7,
+          ),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          key: const Key('emergency-add-contact'),
+          onTap: onTap,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 78),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 13, 12, 13),
+              child: Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: const BoxDecoration(
+                      color: AppColors.primaryGreen,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.person_add_alt_1_rounded,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 13),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Add your own emergency contact',
+                          style: AppTextStyles.cardTitle,
+                        ),
+                        SizedBox(height: 3),
+                        Text(
+                          'Partner, family member, relative, or trusted person',
+                          style: AppTextStyles.bodyMuted,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppColors.primaryGreen,
+                    size: 27,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -239,56 +291,102 @@ class _EmergencyHotlineCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      color: const Color(0xFFFFF8F4),
-      borderColor: const Color(0xFFF5D8D3),
-      child: Column(
-        children: [
-          Container(
-            width: 58,
-            height: 58,
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFE5E1),
-              borderRadius: BorderRadius.circular(19),
+    return Semantics(
+      container: true,
+      label: 'Philippine Red Cross emergency hotline 143',
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFFFF7F5), Colors.white],
+          ),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: const Color(0xFFF1D8D2), width: .8),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0A0F1712),
+              blurRadius: 14,
+              offset: Offset(0, 5),
             ),
-            child: const Icon(
-              Icons.sos_rounded,
-              color: AppColors.danger,
-              size: 32,
-            ),
-          ),
-          const SizedBox(height: 13),
-          const Text(
-            'Do you need immediate help?',
-            textAlign: TextAlign.center,
-            style: AppTextStyles.sectionTitle,
-          ),
-          const SizedBox(height: 7),
-          const Text(
-            'Use your Phone app to call the Philippine Red Cross emergency hotline. EverCare does not place calls itself.',
-            textAlign: TextAlign.center,
-            style: AppTextStyles.bodyMuted,
-          ),
-          const SizedBox(height: 17),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: onCopy,
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.danger,
-                padding: const EdgeInsets.symmetric(vertical: 15),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: const BoxDecoration(
+                      color: AppColors.destructiveContainer,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.sos_rounded,
+                      color: AppColors.danger,
+                      size: 27,
+                    ),
+                  ),
+                  const SizedBox(width: 13),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Need immediate help?',
+                          style: AppTextStyles.sectionTitle,
+                        ),
+                        SizedBox(height: 3),
+                        Text(
+                          'Philippine emergency support',
+                          style: AppTextStyles.bodyMuted,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              icon: const Icon(Icons.copy_rounded),
-              label: const Text('Copy Philippine Red Cross Hotline 143'),
-            ),
+              const SizedBox(height: 20),
+              const Text('PHILIPPINE RED CROSS', style: AppTextStyles.eyebrow),
+              const SizedBox(height: 2),
+              Text(
+                '143',
+                style: AppTextStyles.metric.copyWith(
+                  color: AppColors.danger,
+                  fontSize: 48,
+                  height: 1,
+                  letterSpacing: -1.4,
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Text('Emergency hotline', style: AppTextStyles.bodyMuted),
+              const SizedBox(height: 18),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: onCopy,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.danger,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size.fromHeight(54),
+                  ),
+                  icon: const Icon(Icons.copy_rounded),
+                  label: const Text('Copy hotline number'),
+                ),
+              ),
+              const SizedBox(height: 11),
+              const Text(
+                'EverCare copies the number only. Open your Phone app and dial the copied number to place the call.',
+                style: AppTextStyles.small,
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
-          const Text(
-            'If the person is unconscious, has difficulty breathing, severe chest pain, or faces immediate danger, contact emergency services now.',
-            textAlign: TextAlign.center,
-            style: AppTextStyles.bodyMuted,
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -301,62 +399,123 @@ class _EmergencyHospitalFinderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      color: const Color(0xFFEAF5EF),
-      borderColor: const Color(0xFFC8E3D5),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(17),
-                ),
-                child: const Icon(
-                  Icons.local_hospital_rounded,
-                  color: AppColors.primaryGreen,
-                  size: 29,
-                ),
-              ),
-              const SizedBox(width: 13),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Find Nearby Emergency Hospitals',
-                      style: AppTextStyles.cardTitle,
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Use your location to see hospitals and open driving directions.',
-                      style: AppTextStyles.bodyMuted,
-                    ),
-                  ],
-                ),
-              ),
-            ],
+    return Semantics(
+      button: true,
+      label: 'Find nearby emergency hospitals',
+      hint: 'Opens the hospital map',
+      child: Material(
+        color: AppColors.card,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color: AppColors.border.withValues(alpha: .72),
+            width: .7,
           ),
-          const SizedBox(height: 15),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: onOpen,
-              icon: const Icon(Icons.map_rounded),
-              label: const Text('Open Emergency Hospital Map'),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onOpen,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 84),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 10, 14),
+              child: Row(
+                children: [
+                  Container(
+                    width: 50,
+                    height: 50,
+                    decoration: const BoxDecoration(
+                      color: AppColors.primaryContainer,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.local_hospital_outlined,
+                      color: AppColors.primaryGreen,
+                      size: 26,
+                    ),
+                  ),
+                  const SizedBox(width: 13),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Find Nearby Emergency Hospitals',
+                          style: AppTextStyles.cardTitle,
+                        ),
+                        SizedBox(height: 3),
+                        Text(
+                          'View nearby care and driving directions',
+                          style: AppTextStyles.bodyMuted,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 5),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppColors.mutedForeground,
+                    size: 28,
+                  ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 9),
-          const Text(
-            'Hospital availability and travel conditions can change. Call ahead when possible.',
-            textAlign: TextAlign.center,
-            style: AppTextStyles.small,
-          ),
-        ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EmergencyDetailsLoading extends StatelessWidget {
+  const _EmergencyDetailsLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Loading emergency details',
+      child: AppCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2.4),
+                ),
+                SizedBox(width: 11),
+                Expanded(
+                  child: Text(
+                    'Loading emergency details',
+                    style: AppTextStyles.cardTitle,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              height: 12,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: AppColors.surfaceMuted,
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ),
+            const SizedBox(height: 9),
+            FractionallySizedBox(
+              widthFactor: .68,
+              child: Container(
+                height: 12,
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceMuted,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -371,15 +530,28 @@ class _EmergencyLoadError extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppCard(
+      padding: const EdgeInsets.all(16),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
-            Icons.cloud_off_outlined,
-            size: 42,
-            color: AppColors.danger,
+          const Row(
+            children: [
+              Icon(
+                Icons.cloud_off_outlined,
+                size: 24,
+                color: AppColors.warning,
+              ),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Emergency details unavailable',
+                  style: AppTextStyles.cardTitle,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 10),
-          Text(message, textAlign: TextAlign.center),
+          const SizedBox(height: 8),
+          Text(message, style: AppTextStyles.bodyMuted),
           const SizedBox(height: 12),
           OutlinedButton.icon(
             onPressed: onRetry,

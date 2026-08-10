@@ -9,7 +9,10 @@ import '../../widgets/empty_state_card.dart';
 import '../../widgets/evercare_backend_scope.dart';
 
 class EmergencyContactsScreen extends StatefulWidget {
-  const EmergencyContactsScreen({super.key});
+  const EmergencyContactsScreen({super.key, this.startAdding = false});
+
+  /// Opens the add-contact editor after the signed-in user's contacts load.
+  final bool startAdding;
 
   @override
   State<EmergencyContactsScreen> createState() =>
@@ -22,6 +25,7 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
   bool _initialized = false;
   bool _loading = true;
   bool _busy = false;
+  bool _openedInitialEditor = false;
   String? _error;
 
   @override
@@ -35,7 +39,12 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
       return;
     }
     _repository = EmergencyRepository(client!);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _load();
+      if (!mounted || !widget.startAdding || _openedInitialEditor) return;
+      _openedInitialEditor = true;
+      await _openEditor(null);
+    });
   }
 
   @override
@@ -324,6 +333,7 @@ class _ContactEditorDialogState extends State<_ContactEditorDialog> {
                 controller: _relationship,
                 decoration: const InputDecoration(
                   labelText: 'Relationship',
+                  hintText: 'Partner, spouse, parent, sibling, or relative',
                   prefixIcon: Icon(Icons.family_restroom_rounded),
                 ),
                 textCapitalization: TextCapitalization.words,

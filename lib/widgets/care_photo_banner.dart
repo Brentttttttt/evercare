@@ -21,19 +21,26 @@ class CarePhotoBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
+    return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: const [
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
           BoxShadow(
-            color: AppColors.shadow,
-            blurRadius: 20,
-            offset: Offset(0, 8),
+            color: AppColors.shadow.withValues(alpha: .42),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
+      foregroundDecoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: .58),
+          width: .8,
+        ),
+      ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(22),
         child: SizedBox(
           width: double.infinity,
           height: height,
@@ -56,18 +63,18 @@ class CarePhotoBanner extends StatelessWidget {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Color(0x000C2117),
-                      Color(0x160C2117),
-                      Color(0xD914261D),
+                      Color(0x080C2117),
+                      Color(0x100C2117),
+                      Color(0xE014261D),
                     ],
-                    stops: [0, .42, 1],
+                    stops: [0, .38, 1],
                   ),
                 ),
               ),
               Positioned(
-                left: 18,
-                right: 18,
-                bottom: 16,
+                left: 20,
+                right: 20,
+                bottom: 18,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -78,6 +85,8 @@ class CarePhotoBanner extends StatelessWidget {
                       style: AppTextStyles.cardTitle.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.w800,
+                        fontSize: 17,
+                        letterSpacing: -.25,
                       ),
                     ),
                     const SizedBox(height: 3),
@@ -86,7 +95,7 @@ class CarePhotoBanner extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyles.bodyMuted.copyWith(
-                        color: const Color(0xFFE5EFE9),
+                        color: Colors.white.withValues(alpha: .88),
                         height: 1.3,
                       ),
                     ),

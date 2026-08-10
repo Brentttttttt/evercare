@@ -103,10 +103,31 @@ class _HealthOverviewScreenState extends State<HealthOverviewScreen>
   Widget build(BuildContext context) {
     final service = BpMonitorBleScope.watch(context);
     return SingleChildScrollView(
-      padding: pagePadding,
+      padding: mainPagePadding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text(
+            'MY HEALTH',
+            style: AppTextStyles.eyebrow.copyWith(
+              color: AppColors.primaryGreen,
+              letterSpacing: .9,
+            ),
+          ),
+          const SizedBox(height: 7),
+          Text(
+            'Blood Pressure',
+            style: AppTextStyles.display.copyWith(
+              fontSize: 33,
+              letterSpacing: -1.05,
+            ),
+          ),
+          const SizedBox(height: 7),
+          const Text(
+            'Connect, measure, and review readings in one secure place.',
+            style: AppTextStyles.bodyMuted,
+          ),
+          const SizedBox(height: 22),
           const CarePhotoBanner(
             assetPath: 'assets/images/bp_monitor_home.png',
             semanticLabel:
@@ -114,33 +135,22 @@ class _HealthOverviewScreenState extends State<HealthOverviewScreen>
             title: 'Measure with confidence',
             subtitle:
                 'Connect the real monitor and keep the patient calm and still.',
-            height: 170,
+            height: 150,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           _MonitorConnectionCard(service: service),
-          const SizedBox(height: 24),
-          const SectionHeader(title: 'Measurement instructions'),
-          const SizedBox(height: 12),
-          const _MeasurementInstructionsCard(),
-          const SizedBox(height: 24),
-          const SectionHeader(title: 'Live measurement status'),
-          const SizedBox(height: 12),
-          _LiveMeasurementCard(service: service),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
           if (service.currentResult case final result?)
             _CompletedReadingSection(result: result)
           else ...[
-            const SectionHeader(title: 'Completed reading'),
+            const SectionHeader(
+              title: 'Latest reading',
+              subtitle: 'Only completed monitor results appear here.',
+            ),
             const SizedBox(height: 12),
             const _NoResultCard(),
           ],
-          const SizedBox(height: 24),
-          const SectionHeader(title: 'Current session'),
-          const SizedBox(height: 12),
-          _CurrentSessionCard(service: service),
           if (service.currentResult == null) ...[
-            const SizedBox(height: 24),
-            const SectionHeader(title: 'Reading history'),
             const SizedBox(height: 12),
             AppCard(
               onTap: () =>
@@ -179,14 +189,21 @@ class _HealthOverviewScreenState extends State<HealthOverviewScreen>
               ),
             ),
           ],
-          const SizedBox(height: 18),
-          FilledButton.icon(
-            onPressed: () =>
-                Navigator.pushNamed(context, AppRoutes.manualRecord),
-            icon: const Icon(Icons.edit_note_rounded),
-            label: const Text('Enter Blood Pressure Manually'),
+          const SizedBox(height: 16),
+          const _MeasurementInstructionsCard(),
+          const SizedBox(height: 10),
+          _ConnectionDetailsCard(service: service),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: () =>
+                  Navigator.pushNamed(context, AppRoutes.manualRecord),
+              icon: const Icon(Icons.edit_note_rounded),
+              label: const Text('Enter Blood Pressure Manually'),
+            ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
           const _SafetyNotice(),
           if (kDebugMode) ...[
             const SizedBox(height: 12),
@@ -219,6 +236,7 @@ class _MonitorConnectionCard extends StatelessWidget {
     final deviceName = service.savedName ?? BpMonitorBleService.monitorName;
 
     return AppCard(
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -226,86 +244,64 @@ class _MonitorConnectionCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 58,
-                height: 58,
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
                   color: status.color.withValues(alpha: .11),
-                  borderRadius: BorderRadius.circular(19),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: status.color.withValues(alpha: .18),
+                  ),
                 ),
-                child: Icon(status.icon, color: status.color, size: 29),
+                child: Icon(status.icon, color: status.color, size: 25),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(deviceName, style: AppTextStyles.cardTitle),
-                    const SizedBox(height: 4),
-                    Text(
-                      service.savedIdentifier ??
-                          'No monitor identifier saved yet',
+                    const Text(
+                      'Blood pressure monitor',
                       style: AppTextStyles.small,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 2),
+                    Text(deviceName, style: AppTextStyles.cardTitle),
+                    const SizedBox(height: 4),
                     _StatusPill(label: status.label, color: status.color),
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 17),
-          _ConnectionDetail(
-            icon: Icons.bluetooth_rounded,
-            label: 'Bluetooth',
-            value: service.adapterStatusLabel,
-          ),
-          _ConnectionDetail(
-            icon: Icons.link_rounded,
-            label: 'Connection',
-            value: status.label,
-          ),
-          _ConnectionDetail(
-            icon: Icons.schedule_rounded,
-            label: 'Last connected',
-            value: service.lastConnectedAt == null
-                ? 'Not connected in this app session'
-                : _formatDateTime(service.lastConnectedAt!),
-          ),
-          _ConnectionDetail(
-            icon: Icons.battery_unknown_rounded,
-            label: 'Monitor battery',
-            value: 'Battery level unavailable.',
-          ),
           Container(
-            margin: const EdgeInsets.only(top: 6),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+            width: double.infinity,
+            margin: const EdgeInsets.only(top: 14),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.surfaceMuted,
-              borderRadius: BorderRadius.circular(16),
+              color: status.color.withValues(alpha: .065),
+              borderRadius: BorderRadius.circular(14),
             ),
-            child: SwitchListTile.adaptive(
-              contentPadding: EdgeInsets.zero,
-              dense: true,
-              value: service.autoConnect,
-              onChanged: service.hasSavedMonitor
-                  ? service.setAutoConnect
-                  : null,
-              secondary: const Icon(
-                Icons.autorenew_rounded,
-                color: AppColors.primaryGreen,
-              ),
-              title: const Text(
-                'Automatic reconnection',
-                style: AppTextStyles.label,
-              ),
-              subtitle: Text(
-                service.autoReconnectActive
-                    ? 'On — searches for the saved monitor while this page is active.'
-                    : service.hasSavedMonitor
-                    ? 'Paused or turned off.'
-                    : 'Available after initial setup.',
-                style: AppTextStyles.small,
-              ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  service.isMeasurementInProgress
+                      ? Icons.monitor_heart_rounded
+                      : Icons.info_outline_rounded,
+                  color: status.color,
+                  size: 20,
+                ),
+                const SizedBox(width: 9),
+                Expanded(
+                  child: Text(
+                    service.statusMessage,
+                    style: AppTextStyles.bodyMuted.copyWith(
+                      color: AppColors.foreground,
+                      height: 1.36,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           if (service.hasSavedMonitor) ...[
@@ -316,83 +312,113 @@ class _MonitorConnectionCard extends StatelessWidget {
             const SizedBox(height: 12),
             _InlineError(message: service.lastError!),
           ],
+          if (service.measurementFailureMessage != null &&
+              service.measurementFailureMessage != service.lastError) ...[
+            const SizedBox(height: 12),
+            _InlineError(message: service.measurementFailureMessage!),
+          ],
+          if (service.isMeasurementInProgress) ...[
+            const SizedBox(height: 12),
+            _LiveMeasurementProgress(service: service),
+          ],
           const SizedBox(height: 16),
           if (service.permissionState != BpMonitorPermissionState.granted)
-            FilledButton.icon(
-              onPressed: service.isSupported
-                  ? service.requestPermissions
-                  : null,
-              icon: const Icon(Icons.verified_user_outlined),
-              label: const Text('Allow Bluetooth Access'),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: service.isSupported
+                    ? service.requestPermissions
+                    : null,
+                icon: const Icon(Icons.verified_user_outlined),
+                label: const Text('Allow Bluetooth Access'),
+              ),
             ),
           if (service.canOpenSettings) ...[
             const SizedBox(height: 9),
-            OutlinedButton.icon(
-              onPressed: service.openPermissionSettings,
-              icon: const Icon(Icons.settings_outlined),
-              label: const Text('Open App Settings'),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: service.openPermissionSettings,
+                icon: const Icon(Icons.settings_outlined),
+                label: const Text('Open App Settings'),
+              ),
             ),
           ],
           if (canUseBluetooth && !service.hasSavedMonitor)
-            FilledButton.icon(
-              onPressed: service.isScanning || service.isConnecting
-                  ? null
-                  : service.startScan,
-              icon: service.isScanning
-                  ? const SizedBox.square(
-                      dimension: 19,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.bluetooth_searching_rounded),
-              label: Text(
-                service.isScanning ? 'Searching...' : 'Set Up Monitor',
-              ),
-            ),
-          if (canUseBluetooth && service.hasSavedMonitor) ...[
-            if (service.stage == BpMonitorBleStage.error &&
-                service.isConnected) ...[
-              FilledButton.icon(
-                onPressed: service.retryNotificationSetup,
-                icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Retry Measurement Listener'),
-              ),
-              const SizedBox(height: 9),
-            ],
-            if (!service.isConnected && !service.isConnecting) ...[
-              FilledButton.icon(
-                onPressed: service.isScanning ? null : service.startScan,
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: service.isScanning || service.isConnecting
+                    ? null
+                    : service.startScan,
                 icon: service.isScanning
                     ? const SizedBox.square(
                         dimension: 19,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Icon(Icons.radar_rounded),
+                    : const Icon(Icons.bluetooth_searching_rounded),
                 label: Text(
-                  service.isScanning ? 'Searching...' : 'Search Again',
+                  service.isScanning ? 'Searching...' : 'Set Up Monitor',
+                ),
+              ),
+            ),
+          if (canUseBluetooth && service.hasSavedMonitor) ...[
+            if (service.stage == BpMonitorBleStage.error &&
+                service.isConnected) ...[
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: service.retryNotificationSetup,
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: const Text('Retry Measurement Listener'),
                 ),
               ),
               const SizedBox(height: 9),
-              OutlinedButton.icon(
-                onPressed: service.connectSavedMonitor,
-                icon: const Icon(Icons.link_rounded),
-                label: const Text('Connect Saved Monitor'),
+            ],
+            if (!service.isConnected && !service.isConnecting) ...[
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: service.isScanning ? null : service.startScan,
+                  icon: service.isScanning
+                      ? const SizedBox.square(
+                          dimension: 19,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.radar_rounded),
+                  label: Text(
+                    service.isScanning ? 'Searching...' : 'Search Again',
+                  ),
+                ),
+              ),
+              const SizedBox(height: 9),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: service.connectSavedMonitor,
+                  icon: const Icon(Icons.link_rounded),
+                  label: const Text('Connect Saved Monitor'),
+                ),
               ),
             ],
             if (service.isConnected || service.isConnecting)
-              OutlinedButton.icon(
-                onPressed: service.isCancellingConnection
-                    ? null
-                    : service.disconnect,
-                icon: service.isCancellingConnection
-                    ? const SizedBox.square(
-                        dimension: 19,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.link_off_rounded),
-                label: Text(
-                  service.isCancellingConnection
-                      ? 'Canceling Connection...'
-                      : 'Disconnect',
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: service.isCancellingConnection
+                      ? null
+                      : service.disconnect,
+                  icon: service.isCancellingConnection
+                      ? const SizedBox.square(
+                          dimension: 19,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.link_off_rounded),
+                  label: Text(
+                    service.isCancellingConnection
+                        ? 'Canceling Connection...'
+                        : 'Disconnect',
+                  ),
                 ),
               ),
             const SizedBox(height: 5),
@@ -475,7 +501,7 @@ class _DetectedMonitorTile extends StatelessWidget {
       padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
         color: AppColors.background,
-        borderRadius: BorderRadius.circular(17),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
@@ -525,8 +551,10 @@ class _MeasurementInstructionsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const AppCard(
-      color: Color(0xFFF7FBF8),
+    return const _HealthAccordion(
+      icon: Icons.checklist_rounded,
+      title: 'How to measure',
+      subtitle: 'Review the five steps before starting the monitor.',
       child: Column(
         children: [
           _InstructionStep(
@@ -551,6 +579,149 @@ class _MeasurementInstructionsCard extends StatelessWidget {
             showDivider: false,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ConnectionDetailsCard extends StatelessWidget {
+  const _ConnectionDetailsCard({required this.service});
+
+  final BpMonitorBleService service;
+
+  @override
+  Widget build(BuildContext context) {
+    final status = _connectionPresentation(service);
+    return _HealthAccordion(
+      icon: Icons.bluetooth_rounded,
+      title: 'Connection details',
+      subtitle: 'Monitor settings and current BLE session information.',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _ConnectionDetail(
+            icon: Icons.tag_rounded,
+            label: 'Identifier',
+            value: service.savedIdentifier ?? 'No monitor saved',
+          ),
+          _ConnectionDetail(
+            icon: Icons.bluetooth_rounded,
+            label: 'Bluetooth',
+            value: service.adapterStatusLabel,
+          ),
+          _ConnectionDetail(
+            icon: Icons.link_rounded,
+            label: 'Connection',
+            value: status.label,
+          ),
+          _ConnectionDetail(
+            icon: Icons.schedule_rounded,
+            label: 'Last connected',
+            value: service.lastConnectedAt == null
+                ? 'Not connected in this app session'
+                : _formatDateTime(service.lastConnectedAt!),
+          ),
+          const _ConnectionDetail(
+            icon: Icons.battery_unknown_rounded,
+            label: 'Monitor battery',
+            value: 'Battery level unavailable.',
+          ),
+          const SizedBox(height: 8),
+          Container(
+            decoration: BoxDecoration(
+              color: AppColors.muted,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: SwitchListTile.adaptive(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+              value: service.autoConnect,
+              onChanged: service.hasSavedMonitor
+                  ? service.setAutoConnect
+                  : null,
+              secondary: const Icon(
+                Icons.autorenew_rounded,
+                color: AppColors.primaryGreen,
+              ),
+              title: const Text(
+                'Automatic reconnection',
+                style: AppTextStyles.label,
+              ),
+              subtitle: Text(
+                service.autoReconnectActive
+                    ? 'On — searches while the Health page is active.'
+                    : service.hasSavedMonitor
+                    ? 'Paused or turned off.'
+                    : 'Available after initial setup.',
+                style: AppTextStyles.small,
+              ),
+            ),
+          ),
+          const SizedBox(height: 18),
+          const Divider(height: 1),
+          const SizedBox(height: 16),
+          const Text('Current session', style: AppTextStyles.cardTitle),
+          const SizedBox(height: 6),
+          const Text(
+            'Technical session values are shown for transparency and troubleshooting.',
+            style: AppTextStyles.bodyMuted,
+          ),
+          const SizedBox(height: 10),
+          _CurrentSessionCard(service: service),
+        ],
+      ),
+    );
+  }
+}
+
+class _HealthAccordion extends StatelessWidget {
+  const _HealthAccordion({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.child,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      padding: EdgeInsets.zero,
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          iconColor: AppColors.primaryGreen,
+          collapsedIconColor: AppColors.mutedForeground,
+          shape: const Border(),
+          collapsedShape: const Border(),
+          leading: Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: AppColors.accent,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: AppColors.primaryGreen, size: 21),
+          ),
+          title: Semantics(
+            header: true,
+            child: Text(title, style: AppTextStyles.cardTitle),
+          ),
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 3),
+            child: Text(subtitle, style: AppTextStyles.small),
+          ),
+          children: [
+            const Divider(height: 1),
+            const SizedBox(height: 10),
+            child,
+          ],
+        ),
       ),
     );
   }
@@ -598,8 +769,8 @@ class _InstructionStep extends StatelessWidget {
   }
 }
 
-class _LiveMeasurementCard extends StatelessWidget {
-  const _LiveMeasurementCard({required this.service});
+class _LiveMeasurementProgress extends StatelessWidget {
+  const _LiveMeasurementProgress({required this.service});
 
   final BpMonitorBleService service;
 
@@ -607,9 +778,14 @@ class _LiveMeasurementCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final presentation = _measurementPresentation(service);
     final progress = service.latestProgressPressure;
-    return AppCard(
-      color: presentation.color.withValues(alpha: .08),
-      borderColor: presentation.color.withValues(alpha: .22),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: presentation.color.withValues(alpha: .07),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: presentation.color.withValues(alpha: .22)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -617,15 +793,19 @@ class _LiveMeasurementCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 50,
-                height: 50,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  color: AppColors.card,
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(presentation.icon, color: presentation.color),
+                child: Icon(
+                  presentation.icon,
+                  color: presentation.color,
+                  size: 22,
+                ),
               ),
-              const SizedBox(width: 13),
+              const SizedBox(width: 11),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -639,13 +819,14 @@ class _LiveMeasurementCard extends StatelessWidget {
             ],
           ),
           if (service.isMeasurementInProgress && progress != null) ...[
-            const SizedBox(height: 18),
+            const SizedBox(height: 12),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: .86),
-                borderRadius: BorderRadius.circular(18),
+                color: AppColors.card.withValues(alpha: .88),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.border),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -657,7 +838,7 @@ class _LiveMeasurementCard extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     '$progress',
-                    style: AppTextStyles.metric.copyWith(fontSize: 38),
+                    style: AppTextStyles.metric.copyWith(fontSize: 34),
                   ),
                   const SizedBox(height: 7),
                   Text(
@@ -771,7 +952,7 @@ class _BloodPressureResultCard extends StatelessWidget {
                   Text(
                     'Your blood pressure reading was received successfully.',
                     style: AppTextStyles.bodyMuted.copyWith(
-                      color: const Color(0xFF435A4E),
+                      color: AppColors.mutedForeground,
                     ),
                   ),
                   const SizedBox(height: 11),
@@ -815,9 +996,9 @@ class _BloodPressureResultCard extends StatelessWidget {
                           begin: Alignment.centerLeft,
                           end: Alignment.centerRight,
                           colors: [
-                            Color(0xFFFFFCF6),
-                            Color(0xFAFFFCF6),
-                            Color(0xCEFFFCF6),
+                            AppColors.card,
+                            Color(0xFAFFFFFF),
+                            Color(0xD9FFFFFF),
                             Color(0x32FFFFFF),
                           ],
                           stops: [0, .42, .72, 1],
@@ -890,7 +1071,7 @@ class _BloodPressureResultCard extends StatelessWidget {
           ),
           Container(
             width: double.infinity,
-            color: const Color(0xFFFFFCF6),
+            color: AppColors.card,
             padding: const EdgeInsets.all(14),
             child: LayoutBuilder(
               builder: (context, constraints) {
@@ -951,32 +1132,33 @@ class _BloodPressureStatusIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textScale = MediaQuery.textScalerOf(context).scale(1);
-    final diameter = (114 + ((textScale - 1) * 60)).clamp(114, 170).toDouble();
+    final diameter = (108 + ((textScale - 1) * 58)).clamp(108, 166).toDouble();
     final indicator = Semantics(
       label: 'Status: Reading received',
       excludeSemantics: true,
       child: Container(
         width: diameter,
         height: diameter,
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(7),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.white.withValues(alpha: .94),
-          border: Border.all(color: AppColors.primaryGreen, width: 5),
-          boxShadow: const [
+          color: Colors.white.withValues(alpha: .96),
+          border: Border.all(
+            color: AppColors.primaryGreen.withValues(alpha: .68),
+            width: 3,
+          ),
+          boxShadow: [
             BoxShadow(
-              color: Color(0x1F17402C),
-              blurRadius: 18,
-              offset: Offset(0, 7),
+              color: AppColors.darkGreen.withValues(alpha: .09),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
         child: Container(
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(
-              color: AppColors.primaryGreen.withValues(alpha: .18),
-            ),
+            color: AppColors.lightGreen.withValues(alpha: .78),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -984,7 +1166,7 @@ class _BloodPressureStatusIndicator extends StatelessWidget {
               const Icon(
                 Icons.monitor_heart_rounded,
                 color: AppColors.primaryGreen,
-                size: 28,
+                size: 27,
               ),
               const SizedBox(height: 4),
               Text(
@@ -1048,15 +1230,8 @@ class _BloodPressureValueTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 13),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(19),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: AppColors.border),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x0D173524),
-              blurRadius: 12,
-              offset: Offset(0, 5),
-            ),
-          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1185,7 +1360,7 @@ class _MeasurementInfoCard extends StatelessWidget {
           Container(
             decoration: BoxDecoration(
               color: AppColors.background,
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: AppColors.border),
             ),
             clipBehavior: Clip.antiAlias,
@@ -1290,13 +1465,13 @@ class _ReadingInsightCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppCard(
-      color: const Color(0xFFFFFAEF),
-      borderColor: const Color(0xFFEDE0BD),
+      color: AppColors.warningContainer,
+      borderColor: AppColors.warning.withValues(alpha: .24),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(10),
             child: SizedBox(
               width: 64,
               height: 78,
@@ -1378,7 +1553,7 @@ class _BloodPressureTrendCard extends StatelessWidget {
             padding: const EdgeInsets.all(13),
             decoration: BoxDecoration(
               color: AppColors.background,
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: AppColors.border),
             ),
             child: Column(
@@ -1489,8 +1664,8 @@ class _BleResultBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppCard(
-      color: Color(0xFFF0F6F3),
-      borderColor: Color(0xFFD6E6DD),
+      color: AppColors.accent,
+      borderColor: AppColors.primaryGreen.withValues(alpha: .18),
       padding: EdgeInsets.all(15),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1670,67 +1845,65 @@ class _CurrentSessionCard extends StatelessWidget {
         service.currentResult != null ||
         service.latestProgressPressure != null ||
         service.measurementFailureMessage != null;
-    return AppCard(
-      child: Column(
-        children: [
-          _SessionRow(
-            label: 'Measurement started',
-            value: service.measurementStartedAt == null
-                ? 'Not started'
-                : _formatDateTime(service.measurementStartedAt!),
-          ),
+    return Column(
+      children: [
+        _SessionRow(
+          label: 'Measurement started',
+          value: service.measurementStartedAt == null
+              ? 'Not started'
+              : _formatDateTime(service.measurementStartedAt!),
+        ),
+        const Divider(),
+        _SessionRow(
+          label: 'Measurement completed',
+          value: service.measurementCompletedAt == null
+              ? 'Not completed'
+              : _formatDateTime(service.measurementCompletedAt!),
+        ),
+        const Divider(),
+        _SessionRow(
+          label: 'Current BLE status',
+          value: _connectionPresentation(service).label,
+        ),
+        const Divider(),
+        _SessionRow(
+          label: 'Latest raw progress value',
+          value: service.latestProgressPressure?.toString() ?? 'None',
+        ),
+        const Divider(),
+        _SessionRow(
+          label: 'Final 0x81 result received',
+          value: service.hasFinalResult ? 'Yes' : 'No',
+        ),
+        if (service.measurementFailureMessage != null) ...[
           const Divider(),
           _SessionRow(
-            label: 'Measurement completed',
-            value: service.measurementCompletedAt == null
-                ? 'Not completed'
-                : _formatDateTime(service.measurementCompletedAt!),
-          ),
-          const Divider(),
-          _SessionRow(
-            label: 'Current BLE status',
-            value: _connectionPresentation(service).label,
-          ),
-          const Divider(),
-          _SessionRow(
-            label: 'Latest raw progress value',
-            value: service.latestProgressPressure?.toString() ?? 'None',
-          ),
-          const Divider(),
-          _SessionRow(
-            label: 'Final 0x81 result received',
-            value: service.hasFinalResult ? 'Yes' : 'No',
-          ),
-          if (service.measurementFailureMessage != null) ...[
-            const Divider(),
-            _SessionRow(
-              label: 'Session issue',
-              value: service.measurementFailureMessage!,
-              warning: true,
-            ),
-          ],
-          const SizedBox(height: 15),
-          OutlinedButton.icon(
-            onPressed: service.hasSavedMonitor
-                ? service.prepareForNextMeasurement
-                : null,
-            icon: const Icon(Icons.replay_rounded),
-            label: const Text('Retry Measurement'),
-          ),
-          const SizedBox(height: 8),
-          TextButton.icon(
-            onPressed: hasSession ? service.clearCurrentResult : null,
-            icon: const Icon(Icons.clear_rounded),
-            label: const Text('Clear Current Result'),
-          ),
-          const SizedBox(height: 3),
-          const Text(
-            'Retry only prepares EverCare to listen. Start the measurement with the monitor’s physical button.',
-            textAlign: TextAlign.center,
-            style: AppTextStyles.small,
+            label: 'Session issue',
+            value: service.measurementFailureMessage!,
+            warning: true,
           ),
         ],
-      ),
+        const SizedBox(height: 15),
+        OutlinedButton.icon(
+          onPressed: service.hasSavedMonitor
+              ? service.prepareForNextMeasurement
+              : null,
+          icon: const Icon(Icons.replay_rounded),
+          label: const Text('Retry Measurement'),
+        ),
+        const SizedBox(height: 8),
+        TextButton.icon(
+          onPressed: hasSession ? service.clearCurrentResult : null,
+          icon: const Icon(Icons.clear_rounded),
+          label: const Text('Clear Current Result'),
+        ),
+        const SizedBox(height: 3),
+        const Text(
+          'Retry only prepares EverCare to listen. Start the measurement with the monitor’s physical button.',
+          textAlign: TextAlign.center,
+          style: AppTextStyles.small,
+        ),
+      ],
     );
   }
 }
@@ -1741,8 +1914,8 @@ class _SafetyNotice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const AppCard(
-      color: Color(0xFFFFF8EB),
-      borderColor: Color(0xFFF1D89D),
+      color: AppColors.warningContainer,
+      borderColor: Color(0x3DB87317),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

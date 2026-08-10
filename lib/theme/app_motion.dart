@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 abstract final class AppMotion {
-  static const quick = Duration(milliseconds: 150);
-  static const standard = Duration(milliseconds: 240);
-  static const page = Duration(milliseconds: 340);
-  static const emphasizedCurve = Curves.easeOutCubic;
+  static const quick = Duration(milliseconds: 160);
+  static const standard = Duration(milliseconds: 260);
+  static const page = Duration(milliseconds: 360);
+  static const emphasizedCurve = Cubic(0.22, 1, 0.36, 1);
 }
 
 class EverCarePageTransitionsBuilder extends PageTransitionsBuilder {
@@ -23,17 +23,17 @@ class EverCarePageTransitionsBuilder extends PageTransitionsBuilder {
     final curvedAnimation = CurvedAnimation(
       parent: animation,
       curve: AppMotion.emphasizedCurve,
-      reverseCurve: Curves.easeInCubic,
+      reverseCurve: const Cubic(0.4, 0, 1, 1),
     );
     return FadeTransition(
-      opacity: Tween<double>(begin: .12, end: 1).animate(curvedAnimation),
+      opacity: Tween<double>(begin: .88, end: 1).animate(curvedAnimation),
       child: SlideTransition(
         position: Tween<Offset>(
-          begin: const Offset(.055, .012),
+          begin: const Offset(.055, 0),
           end: Offset.zero,
         ).animate(curvedAnimation),
         child: ScaleTransition(
-          scale: Tween<double>(begin: .985, end: 1).animate(curvedAnimation),
+          scale: Tween<double>(begin: .998, end: 1).animate(curvedAnimation),
           child: child,
         ),
       ),
@@ -57,7 +57,7 @@ class PressScale extends StatefulWidget {
     super.key,
     this.enabled = true,
     this.pressedScale = .975,
-    this.hoverScale = 1.008,
+    this.hoverScale = 1.0,
   });
 
   final Widget child;

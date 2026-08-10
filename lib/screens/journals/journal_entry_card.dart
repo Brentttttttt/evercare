@@ -20,6 +20,7 @@ class JournalEntryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppCard(
+      onTap: () => onAction('View'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -49,13 +50,40 @@ class JournalEntryCard extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(
-                entry.bookmarked
-                    ? Icons.bookmark_rounded
-                    : Icons.bookmark_border_rounded,
-                color: entry.bookmarked
-                    ? AppColors.warning
-                    : AppColors.secondaryText,
+              IconButton(
+                onPressed: () => onAction('Bookmark'),
+                tooltip: entry.bookmarked
+                    ? 'Remove journal bookmark'
+                    : 'Bookmark journal entry',
+                icon: Icon(
+                  entry.bookmarked
+                      ? Icons.bookmark_rounded
+                      : Icons.bookmark_border_rounded,
+                  color: entry.bookmarked
+                      ? AppColors.warning
+                      : AppColors.secondaryText,
+                ),
+              ),
+              PopupMenuButton<String>(
+                tooltip: 'Journal entry actions',
+                onSelected: onAction,
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'Edit',
+                    child: _MenuAction(
+                      icon: Icons.edit_outlined,
+                      label: 'Edit entry',
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'Delete',
+                    child: _MenuAction(
+                      icon: Icons.delete_outline_rounded,
+                      label: 'Delete entry',
+                      color: AppColors.danger,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -80,42 +108,30 @@ class JournalEntryCard extends StatelessWidget {
                 icon: journalMoodIcon(entry.mood),
                 emphasized: true,
               ),
-              ...entry.tags.map(
-                (tag) => _EntryTag(label: tag, icon: Icons.sell_outlined),
+              ..._visibleDetails.map(
+                (detail) => _EntryTag(
+                  label: detail.label,
+                  icon: detail.isCustom ? Icons.sell_outlined : null,
+                ),
               ),
-              ...entry.symptoms.map((tag) => _EntryTag(label: tag)),
-              ...entry.activities.map((tag) => _EntryTag(label: tag)),
+              if (_hiddenDetailCount > 0)
+                _EntryTag(label: '+$_hiddenDetailCount more'),
             ],
           ),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
-            child: Divider(),
-          ),
+          const SizedBox(height: 15),
+          const Divider(height: 1),
+          const SizedBox(height: 11),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _ActionButton(
-                icon: Icons.visibility_outlined,
-                label: 'View',
-                onTap: () => onAction('View'),
+              Text(
+                'View entry',
+                style: AppTextStyles.label.copyWith(color: AppColors.darkGreen),
               ),
-              _ActionButton(
-                icon: Icons.edit_outlined,
-                label: 'Edit',
-                onTap: () => onAction('Edit'),
-              ),
-              _ActionButton(
-                icon: Icons.delete_outline_rounded,
-                label: 'Delete',
-                color: AppColors.danger,
-                onTap: () => onAction('Delete'),
-              ),
-              _ActionButton(
-                icon: entry.bookmarked
-                    ? Icons.bookmark_remove_outlined
-                    : Icons.bookmark_add_outlined,
-                label: entry.bookmarked ? 'Unsave' : 'Save',
-                onTap: () => onAction('Bookmark'),
+              const Spacer(),
+              const Icon(
+                Icons.arrow_forward_rounded,
+                size: 18,
+                color: AppColors.darkGreen,
               ),
             ],
           ),
@@ -124,8 +140,26 @@ class JournalEntryCard extends StatelessWidget {
     );
   }
 
+  List<_JournalDetail> get _details => [
+    ...entry.tags.map((label) => _JournalDetail(label, isCustom: true)),
+    ...entry.symptoms.map(_JournalDetail.new),
+    ...entry.activities.map(_JournalDetail.new),
+  ];
+
+  List<_JournalDetail> get _visibleDetails =>
+      _details.take(3).toList(growable: false);
+
+  int get _hiddenDetailCount => (_details.length - 3).clamp(0, _details.length);
+
   String _dateLabel(DateTime value) =>
       journalDateLabel(value, includeTime: true);
+}
+
+class _JournalDetail {
+  const _JournalDetail(this.label, {this.isCustom = false});
+
+  final String label;
+  final bool isCustom;
 }
 
 class _EntryTag extends StatelessWidget {
@@ -213,34 +247,25 @@ class _PhotoPreview extends StatelessWidget {
   }
 }
 
-class _ActionButton extends StatelessWidget {
-  const _ActionButton({
+class _MenuAction extends StatelessWidget {
+  const _MenuAction({
     required this.icon,
     required this.label,
-    required this.onTap,
     this.color = AppColors.darkGreen,
   });
 
   final IconData icon;
   final String label;
-  final VoidCallback onTap;
   final Color color;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 8),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 20),
-            const SizedBox(height: 3),
-            Text(label, style: AppTextStyles.small.copyWith(color: color)),
-          ],
-        ),
-      ),
+    return Row(
+      children: [
+        Icon(icon, color: color, size: 20),
+        const SizedBox(width: 10),
+        Text(label, style: AppTextStyles.body.copyWith(color: color)),
+      ],
     );
   }
 }

@@ -78,97 +78,126 @@ class _AppointmentFormFieldsState extends State<AppointmentFormFields> {
         : [controller.specialty, ...AppointmentFormController.specialties];
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _field(
-          controller: controller.title,
-          label: 'Appointment title',
-          hint: 'e.g. General check-up',
-          icon: Icons.event_note_outlined,
-          required: true,
-        ),
-        _field(
-          controller: controller.doctorName,
-          label: 'Doctor or provider name',
-          hint: 'Enter the provider name',
-          icon: Icons.person_outline_rounded,
-          required: true,
-        ),
-        Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: DropdownButtonFormField<String>(
-            initialValue: controller.specialty,
-            isExpanded: true,
-            decoration: const InputDecoration(
-              labelText: 'Specialty',
-              prefixIcon: Icon(
-                Icons.medical_services_outlined,
-                color: AppColors.primaryGreen,
-              ),
+        _AppointmentFormSection(
+          title: 'Visit details',
+          description: 'Name the visit and care provider.',
+          children: [
+            _field(
+              controller: controller.title,
+              label: 'Appointment title',
+              hint: 'e.g. General check-up',
+              icon: Icons.event_note_outlined,
+              required: true,
             ),
-            items: specialties
-                .map(
-                  (specialty) => DropdownMenuItem(
-                    value: specialty,
-                    child: Text(specialty, overflow: TextOverflow.ellipsis),
-                  ),
-                )
-                .toList(growable: false),
-            onChanged: (value) {
-              if (value != null) controller.specialty = value;
-            },
-          ),
+            _field(
+              controller: controller.doctorName,
+              label: 'Doctor or provider name',
+              hint: 'Enter the provider name',
+              icon: Icons.person_outline_rounded,
+              required: true,
+            ),
+            DropdownButtonFormField<String>(
+              initialValue: controller.specialty,
+              isExpanded: true,
+              decoration: const InputDecoration(
+                labelText: 'Specialty',
+                prefixIcon: Icon(
+                  Icons.medical_services_outlined,
+                  color: AppColors.primaryGreen,
+                ),
+              ),
+              items: specialties
+                  .map(
+                    (specialty) => DropdownMenuItem(
+                      value: specialty,
+                      child: Text(specialty, overflow: TextOverflow.ellipsis),
+                    ),
+                  )
+                  .toList(growable: false),
+              onChanged: (value) {
+                if (value != null) controller.specialty = value;
+              },
+            ),
+          ],
         ),
-        _HospitalEntryChoice(
-          selected: _locationMode,
-          onChanged: (mode) => setState(() => _locationMode = mode),
+        const SizedBox(height: 22),
+        _AppointmentFormSection(
+          title: 'Hospital',
+          description: 'Enter a location or choose one from the map.',
+          children: [
+            _HospitalEntryChoice(
+              selected: _locationMode,
+              onChanged: (mode) => setState(() => _locationMode = mode),
+            ),
+            const SizedBox(height: 14),
+            if (_locationMode == _LocationEntryMode.openStreetMap) ...[
+              _MapHospitalPicker(
+                selectedHospital: _selectedHospital,
+                existingHospitalName: controller.clinic.text,
+                onPick: _pickHospital,
+              ),
+              const SizedBox(height: 14),
+            ],
+            _field(
+              controller: controller.clinic,
+              label: 'Clinic or hospital',
+              hint: _locationMode == _LocationEntryMode.manual
+                  ? 'Enter the clinic name'
+                  : 'Choose a hospital from OpenStreetMap',
+              icon: Icons.local_hospital_outlined,
+              required: true,
+              readOnly: _locationMode == _LocationEntryMode.openStreetMap,
+            ),
+            _field(
+              controller: controller.address,
+              label: 'Address',
+              hint: _locationMode == _LocationEntryMode.manual
+                  ? 'Clinic address'
+                  : 'Filled from your map selection',
+              icon: Icons.location_on_outlined,
+              readOnly: _locationMode == _LocationEntryMode.openStreetMap,
+              bottomPadding: 0,
+            ),
+          ],
         ),
-        const SizedBox(height: 14),
-        if (_locationMode == _LocationEntryMode.openStreetMap) ...[
-          _MapHospitalPicker(
-            selectedHospital: _selectedHospital,
-            existingHospitalName: controller.clinic.text,
-            onPick: _pickHospital,
-          ),
-          const SizedBox(height: 16),
-        ],
-        _field(
-          controller: controller.clinic,
-          label: 'Clinic or hospital',
-          hint: _locationMode == _LocationEntryMode.manual
-              ? 'Enter the clinic name'
-              : 'Choose a hospital from OpenStreetMap',
-          icon: Icons.local_hospital_outlined,
-          required: true,
-          readOnly: _locationMode == _LocationEntryMode.openStreetMap,
+        const SizedBox(height: 22),
+        _AppointmentFormSection(
+          title: 'Date and time',
+          description: 'Choose when the visit is scheduled.',
+          children: [
+            _PickerField(
+              label: 'Date',
+              value: _dateLabel(controller.date),
+              icon: Icons.calendar_today_outlined,
+              onTap: _pickDate,
+            ),
+            _PickerField(
+              label: 'Time',
+              value: controller.time.format(context),
+              icon: Icons.schedule_rounded,
+              onTap: _pickTime,
+              bottomPadding: 0,
+            ),
+          ],
         ),
-        _PickerField(
-          label: 'Date',
-          value: _dateLabel(controller.date),
-          icon: Icons.calendar_today_outlined,
-          onTap: _pickDate,
+        const SizedBox(height: 22),
+        _AppointmentFormSection(
+          title: 'Notes',
+          description: 'Add anything helpful to remember before the visit.',
+          children: [
+            _field(
+              controller: controller.notes,
+              label: 'Notes',
+              hint: 'Optional reminders for this visit',
+              icon: Icons.notes_rounded,
+              maxLines: 4,
+              bottomPadding: 0,
+            ),
+          ],
         ),
-        _PickerField(
-          label: 'Time',
-          value: controller.time.format(context),
-          icon: Icons.schedule_rounded,
-          onTap: _pickTime,
-        ),
-        _field(
-          controller: controller.address,
-          label: 'Address',
-          hint: _locationMode == _LocationEntryMode.manual
-              ? 'Clinic address'
-              : 'Filled from your map selection',
-          icon: Icons.location_on_outlined,
-          readOnly: _locationMode == _LocationEntryMode.openStreetMap,
-        ),
-        _field(
-          controller: controller.notes,
-          label: 'Notes',
-          hint: 'Optional reminders for this visit',
-          icon: Icons.notes_rounded,
-          maxLines: 4,
-        ),
+        const SizedBox(height: 22),
       ],
     );
   }
@@ -181,9 +210,10 @@ class _AppointmentFormFieldsState extends State<AppointmentFormFields> {
     bool required = false,
     int maxLines = 1,
     bool readOnly = false,
+    double bottomPadding = 14,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.only(bottom: bottomPadding),
       child: TextFormField(
         controller: controller,
         maxLines: maxLines,
@@ -214,10 +244,12 @@ class _AppointmentFormFieldsState extends State<AppointmentFormFields> {
       ),
     );
     if (hospital == null || !mounted) return;
+    final hospitalName = hospital.name.trim();
+    final hospitalAddress = hospital.address.trim();
     setState(() {
       _selectedHospital = hospital;
-      widget.controller.clinic.text = hospital.name;
-      widget.controller.address.text = hospital.address;
+      widget.controller.clinic.text = hospitalName;
+      widget.controller.address.text = hospitalAddress;
     });
   }
 
@@ -252,44 +284,130 @@ class _HospitalEntryChoice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      padding: const EdgeInsets.all(15),
-      color: AppColors.lightGreen,
-      borderColor: const Color(0xFFC8E3D5),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'How would you like to add the hospital?',
-            style: AppTextStyles.cardTitle,
-          ),
-          const SizedBox(height: 5),
-          const Text(
-            'Type the details yourself or find a hospital on OpenStreetMap.',
-            style: AppTextStyles.bodyMuted,
-          ),
-          const SizedBox(height: 13),
-          SizedBox(
-            width: double.infinity,
-            child: SegmentedButton<_LocationEntryMode>(
-              showSelectedIcon: true,
-              selected: {selected},
-              onSelectionChanged: (selection) => onChanged(selection.first),
-              segments: const [
-                ButtonSegment(
-                  value: _LocationEntryMode.manual,
-                  icon: Icon(Icons.edit_location_alt_outlined),
-                  label: Text('Type manually'),
-                ),
-                ButtonSegment(
-                  value: _LocationEntryMode.openStreetMap,
-                  icon: Icon(Icons.map_outlined),
-                  label: Text('OpenStreetMap'),
-                ),
-              ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'How would you like to add the hospital?',
+          style: AppTextStyles.label,
+        ),
+        const SizedBox(height: 9),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
+            // Keep the two choices beside each other on standard phone widths.
+            // Stacking is reserved for genuinely constrained accessibility
+            // layouts, where two readable touch targets can no longer fit.
+            final vertical = constraints.maxWidth < 220 || textScale > 1.8;
+            final options = [
+              _LocationModeOption(
+                label: 'Type manually',
+                icon: Icons.edit_location_alt_outlined,
+                selected: selected == _LocationEntryMode.manual,
+                onTap: () => onChanged(_LocationEntryMode.manual),
+              ),
+              _LocationModeOption(
+                label: 'OpenStreetMap',
+                icon: Icons.map_outlined,
+                selected: selected == _LocationEntryMode.openStreetMap,
+                onTap: () => onChanged(_LocationEntryMode.openStreetMap),
+              ),
+            ];
+            return Container(
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                color: AppColors.secondary,
+                borderRadius: BorderRadius.circular(13),
+              ),
+              child: vertical
+                  ? Column(
+                      children: [
+                        options.first,
+                        const SizedBox(height: 3),
+                        options.last,
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        Expanded(child: options.first),
+                        const SizedBox(width: 3),
+                        Expanded(child: options.last),
+                      ],
+                    ),
+            );
+          },
+        ),
+        const SizedBox(height: 7),
+        const Text(
+          'You can type the details yourself or search nearby hospitals.',
+          style: AppTextStyles.small,
+        ),
+      ],
+    );
+  }
+}
+
+class _LocationModeOption extends StatelessWidget {
+  const _LocationModeOption({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      excludeSemantics: true,
+      child: Material(
+        color: selected ? AppColors.card : Colors.transparent,
+        borderRadius: BorderRadius.circular(10),
+        elevation: selected ? .8 : 0,
+        shadowColor: AppColors.shadow,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(10),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 44),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    icon,
+                    size: 18,
+                    color: selected
+                        ? AppColors.primaryGreen
+                        : AppColors.secondaryText,
+                  ),
+                  const SizedBox(width: 7),
+                  Flexible(
+                    child: Text(
+                      label,
+                      maxLines: 2,
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.label.copyWith(
+                        color: selected
+                            ? AppColors.primaryText
+                            : AppColors.secondaryText,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -309,11 +427,19 @@ class _MapHospitalPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasExistingName = existingHospitalName.trim().isNotEmpty;
-    return AppCard(
-      padding: const EdgeInsets.all(16),
-      borderColor: selectedHospital == null
-          ? AppColors.border
-          : AppColors.primaryGreen,
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: selectedHospital == null
+            ? AppColors.muted
+            : AppColors.primaryContainer,
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(
+          color: selectedHospital == null
+              ? AppColors.border
+              : AppColors.primaryGreen.withValues(alpha: .45),
+        ),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -324,7 +450,7 @@ class _MapHospitalPicker extends StatelessWidget {
                 height: 43,
                 decoration: BoxDecoration(
                   color: AppColors.lightGreen,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
                   Icons.local_hospital_rounded,
@@ -358,7 +484,7 @@ class _MapHospitalPicker extends StatelessWidget {
           const SizedBox(height: 13),
           SizedBox(
             width: double.infinity,
-            child: FilledButton.icon(
+            child: OutlinedButton.icon(
               onPressed: onPick,
               icon: const Icon(Icons.map_rounded),
               label: Text(
@@ -380,17 +506,19 @@ class _PickerField extends StatelessWidget {
     required this.value,
     required this.icon,
     required this.onTap,
+    this.bottomPadding = 14,
   });
 
   final String label;
   final String value;
   final IconData icon;
   final VoidCallback onTap;
+  final double bottomPadding;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.only(bottom: bottomPadding),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
@@ -403,6 +531,44 @@ class _PickerField extends StatelessWidget {
           child: Text(value),
         ),
       ),
+    );
+  }
+}
+
+class _AppointmentFormSection extends StatelessWidget {
+  const _AppointmentFormSection({
+    required this.title,
+    required this.description,
+    required this.children,
+  });
+
+  final String title;
+  final String description;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Text(title, style: AppTextStyles.cardTitle),
+        ),
+        const SizedBox(height: 3),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Text(description, style: AppTextStyles.bodyMuted),
+        ),
+        const SizedBox(height: 10),
+        AppCard(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: children,
+          ),
+        ),
+      ],
     );
   }
 }

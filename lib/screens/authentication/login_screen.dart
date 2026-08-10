@@ -129,26 +129,26 @@ class _LoginScreenState extends State<LoginScreen> {
             _AuthError(message: _errorMessage!),
           ],
           const SizedBox(height: 20),
-          if (_isSubmitting)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 12),
-                child: CircularProgressIndicator(),
-              ),
-            )
-          else
-            PrimaryButton(
-              label: 'Log In',
-              icon: Icons.login_rounded,
-              onPressed: _logIn,
-            ),
+          PrimaryButton(
+            label: 'Log In',
+            loadingLabel: 'Logging In…',
+            isLoading: _isSubmitting,
+            icon: Icons.login_rounded,
+            onPressed: _logIn,
+          ),
           const SizedBox(height: 20),
           Row(
             children: [
               const Expanded(child: Divider()),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Text('New to EverCare?', style: AppTextStyles.bodyMuted),
+              Flexible(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Text(
+                    'New to EverCare?',
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.bodyMuted,
+                  ),
+                ),
               ),
               const Expanded(child: Divider()),
             ],

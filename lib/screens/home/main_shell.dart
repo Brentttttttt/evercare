@@ -90,38 +90,54 @@ class _MainShellState extends State<MainShell>
     );
 
     return Scaffold(
-      body: Column(
+      body: Stack(
         children: [
-          EverCareHeader(
-            title: header.title,
-            subtitle: header.subtitle,
-            showNotifications: true,
-            onNotifications: () =>
-                Navigator.pushNamed(context, AppRoutes.notifications),
-          ),
-          Expanded(
-            child: SafeArea(
-              top: false,
-              child: FadeTransition(
-                opacity: Tween<double>(
-                  begin: .68,
-                  end: 1,
-                ).animate(contentAnimation),
-                child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: Offset(.035 * _transitionDirection, 0),
-                    end: Offset.zero,
-                  ).animate(contentAnimation),
-                  child: IndexedStack(index: _selectedIndex, children: pages),
+          Positioned.fill(
+            child: Column(
+              children: [
+                EverCareHeader(
+                  title: header.title,
+                  subtitle: header.subtitle,
+                  showNotifications: true,
+                  onNotifications: () =>
+                      Navigator.pushNamed(context, AppRoutes.notifications),
                 ),
+                Expanded(
+                  child: SafeArea(
+                    top: false,
+                    child: FadeTransition(
+                      opacity: Tween<double>(
+                        begin: .68,
+                        end: 1,
+                      ).animate(contentAnimation),
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                          begin: Offset(.035 * _transitionDirection, 0),
+                          end: Offset.zero,
+                        ).animate(contentAnimation),
+                        child: IndexedStack(
+                          index: _selectedIndex,
+                          children: pages,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: RepaintBoundary(
+              child: AppBottomNavigation(
+                selectedIndex: _selectedIndex,
+                onDestinationSelected: _selectTab,
               ),
             ),
           ),
         ],
-      ),
-      bottomNavigationBar: AppBottomNavigation(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: _selectTab,
       ),
     );
   }

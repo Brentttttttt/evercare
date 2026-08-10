@@ -3,8 +3,12 @@ import 'package:flutter/material.dart';
 import '../../models/emergency_contact.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
-import '../../widgets/app_page.dart';
 
+/// Calm, platform-style emergency surfaces shared by the emergency page.
+///
+/// These deliberately avoid heavy shadows and stacked borders: urgent actions
+/// stay visually prominent while saved information reads like an iOS grouped
+/// list.
 class EmergencyContactCard extends StatelessWidget {
   const EmergencyContactCard({
     required this.contact,
@@ -19,120 +23,86 @@ class EmergencyContactCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = contact.isPrimary
-        ? AppColors.danger
-        : AppColors.primaryGreen;
-    return AppCard(
-      borderColor: contact.isPrimary
-          ? AppColors.danger.withValues(alpha: .28)
-          : AppColors.border,
-      color: contact.isPrimary ? const Color(0xFFFFFBF7) : Colors.white,
+    return _EmergencySurface(
       child: Column(
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              CircleAvatar(
-                radius: contact.isPrimary ? 29 : 25,
-                backgroundColor: accent.withValues(alpha: .12),
-                foregroundColor: accent,
-                child: Text(
-                  contact.initials,
-                  style: TextStyle(
-                    fontSize: contact.isPrimary ? 17 : 15,
-                    fontWeight: FontWeight.w800,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 12, 14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 50,
+                  height: 50,
+                  alignment: Alignment.center,
+                  decoration: const BoxDecoration(
+                    color: AppColors.primaryContainer,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text(
+                    contact.initials,
+                    style: AppTextStyles.cardTitle.copyWith(
+                      color: AppColors.primaryContainerForeground,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 13),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            contact.name,
-                            style: AppTextStyles.cardTitle,
-                          ),
-                        ),
-                        if (contact.isPrimary)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 9,
-                              vertical: 5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFFE9E5),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: const Text(
-                              'PRIMARY',
-                              style: TextStyle(
-                                color: AppColors.danger,
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: .5,
-                              ),
-                            ),
-                          ),
+                const SizedBox(width: 13),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(contact.name, style: AppTextStyles.cardTitle),
+                      const SizedBox(height: 2),
+                      Text(
+                        contact.relationship,
+                        style: AppTextStyles.bodyMuted,
+                      ),
+                      if (contact.isPrimary) ...[
+                        const SizedBox(height: 7),
+                        const _PrimaryLabel(),
                       ],
-                    ),
-                    const SizedBox(height: 3),
-                    Text(contact.relationship, style: AppTextStyles.bodyMuted),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(Icons.phone_outlined, size: 16, color: accent),
-                        const SizedBox(width: 6),
-                        Text(
-                          contact.phoneNumber,
-                          style: AppTextStyles.body.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-          const SizedBox(height: 17),
-          if (contact.isPrimary) ...[
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: onCopyNumber,
-                style: FilledButton.styleFrom(
-                  backgroundColor: accent,
-                  padding: const EdgeInsets.symmetric(vertical: 13),
-                ),
-                icon: const Icon(Icons.copy_rounded, size: 18),
-                label: const Text('Copy Contact Number'),
+          const Divider(height: 1, indent: 16, color: AppColors.border),
+          ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 56),
+            child: Padding(
+              padding: const EdgeInsets.only(left: 16, right: 6),
+              child: Row(
+                children: [
+                  const _ListSymbol(icon: Icons.phone_outlined),
+                  const SizedBox(width: 11),
+                  Expanded(
+                    child: Text(
+                      contact.phoneNumber,
+                      style: AppTextStyles.body.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: onCopyNumber,
+                    tooltip: 'Copy ${contact.name}’s number',
+                    constraints: const BoxConstraints.tightFor(
+                      width: 44,
+                      height: 44,
+                    ),
+                    icon: const Icon(Icons.copy_rounded, size: 19),
+                  ),
+                ],
               ),
             ),
-          ] else
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: onCopyNumber,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: accent,
-                  side: BorderSide(color: accent.withValues(alpha: .35)),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-                icon: const Icon(Icons.copy_rounded, size: 17),
-                label: const Text('Copy Number'),
-              ),
-            ),
+          ),
           if (contact.isPrimary) ...[
-            const SizedBox(height: 7),
-            TextButton.icon(
-              onPressed: onDetails,
-              icon: const Icon(Icons.contact_page_outlined, size: 18),
-              label: const Text('View contact details'),
+            const Divider(height: 1, indent: 56, color: AppColors.border),
+            _DisclosureRow(
+              icon: Icons.contact_page_outlined,
+              label: 'View contact details',
+              onTap: onDetails,
             ),
           ],
         ],
@@ -157,64 +127,67 @@ class EmergencyInformationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      color: const Color(0xFFFFFBF4),
-      borderColor: const Color(0xFFF0DFC6),
+    return _EmergencySurface(
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFEEE1),
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: const Icon(
-              Icons.medical_information_outlined,
-              color: AppColors.danger,
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const _LargeListSymbol(
+                  icon: Icons.medical_information_outlined,
+                ),
+                const SizedBox(width: 13),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: AppTextStyles.cardTitle),
+                      const SizedBox(height: 3),
+                      Text(subtitle, style: AppTextStyles.bodyMuted),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 11),
-          Text(title, style: AppTextStyles.cardTitle),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            textAlign: TextAlign.center,
-            style: AppTextStyles.bodyMuted,
-          ),
-          if (items.isNotEmpty) const SizedBox(height: 16),
-          ...items.map(
-            (item) => Container(
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: Color(0xFFF0E8DC))),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(child: Text(item.$1, style: AppTextStyles.label)),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      item.$2,
-                      textAlign: TextAlign.right,
-                      style: AppTextStyles.body.copyWith(
-                        fontWeight: FontWeight.w700,
+          if (items.isNotEmpty) ...[
+            const Divider(height: 1, indent: 16, color: AppColors.border),
+            for (var index = 0; index < items.length; index++) ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 4,
+                      child: Text(items[index].$1, style: AppTextStyles.label),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 6,
+                      child: Text(
+                        items[index].$2,
+                        textAlign: TextAlign.right,
+                        style: AppTextStyles.body.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ),
-          const SizedBox(height: 15),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: onShowFullId,
-              icon: const Icon(Icons.badge_outlined),
-              label: const Text('Show Full Medical ID'),
-            ),
+              if (index != items.length - 1)
+                const Divider(height: 1, indent: 16, color: AppColors.border),
+            ],
+          ],
+          const Divider(height: 1, indent: 16, color: AppColors.border),
+          _DisclosureRow(
+            icon: Icons.badge_outlined,
+            label: 'Show Full Medical ID',
+            onTap: onShowFullId,
           ),
         ],
       ),
@@ -229,35 +202,184 @@ class EmergencyChecklistCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
+    return _EmergencySurface(
       child: Column(
-        children: items
-            .map(
-              (item) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 7),
+        children: [
+          for (var index = 0; index < items.length; index++) ...[
+            ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 58),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 11, 16, 11),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      width: 25,
-                      height: 25,
+                      width: 28,
+                      height: 28,
                       decoration: const BoxDecoration(
-                        color: AppColors.lightGreen,
+                        color: AppColors.primaryContainer,
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
                         Icons.check_rounded,
                         color: AppColors.primaryGreen,
-                        size: 16,
+                        size: 17,
                       ),
                     ),
-                    const SizedBox(width: 11),
-                    Expanded(child: Text(item, style: AppTextStyles.body)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(items[index], style: AppTextStyles.body),
+                      ),
+                    ),
                   ],
                 ),
               ),
-            )
-            .toList(),
+            ),
+            if (index != items.length - 1)
+              const Divider(height: 1, indent: 56, color: AppColors.border),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _EmergencySurface extends StatelessWidget {
+  const _EmergencySurface({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.card,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(
+          color: AppColors.border.withValues(alpha: .72),
+          width: .7,
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: child,
+    );
+  }
+}
+
+class _PrimaryLabel extends StatelessWidget {
+  const _PrimaryLabel();
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Primary emergency contact',
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: AppColors.primaryContainer,
+          borderRadius: BorderRadius.circular(99),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.check_circle_rounded,
+              size: 13,
+              color: AppColors.primary,
+            ),
+            SizedBox(width: 4),
+            Text(
+              'PRIMARY',
+              style: TextStyle(
+                color: AppColors.primaryContainerForeground,
+                fontSize: 10,
+                height: 1.2,
+                fontWeight: FontWeight.w700,
+                letterSpacing: .45,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ListSymbol extends StatelessWidget {
+  const _ListSymbol({required this.icon});
+
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Icon(icon, size: 21, color: AppColors.primaryGreen);
+  }
+}
+
+class _LargeListSymbol extends StatelessWidget {
+  const _LargeListSymbol({required this.icon});
+
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 46,
+      height: 46,
+      decoration: BoxDecoration(
+        color: AppColors.primaryContainer,
+        borderRadius: BorderRadius.circular(13),
+      ),
+      child: Icon(icon, color: AppColors.primaryGreen, size: 24),
+    );
+  }
+}
+
+class _DisclosureRow extends StatelessWidget {
+  const _DisclosureRow({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: label,
+      child: InkWell(
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 54),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                _ListSymbol(icon: icon),
+                const SizedBox(width: 11),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: AppTextStyles.body.copyWith(
+                      color: AppColors.primaryGreen,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: AppColors.mutedForeground,
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
