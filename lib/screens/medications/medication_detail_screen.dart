@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../models/medication.dart';
+import '../../models/medication_dose.dart';
 import '../../repositories/medication_repository.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
@@ -19,6 +20,9 @@ class MedicationDetailScreen extends StatefulWidget {
 
 class _MedicationDetailScreenState extends State<MedicationDetailScreen> {
   bool _deleting = false;
+  bool _completing = false;
+
+  bool get _busy => _deleting || _completing;
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +44,7 @@ class _MedicationDetailScreenState extends State<MedicationDetailScreen> {
       actions: [
         IconButton(
           tooltip: 'Edit medication',
-          onPressed: () => _edit(medication),
+          onPressed: _busy ? null : () => _edit(medication),
           icon: const Icon(Icons.edit_outlined),
         ),
       ],
@@ -95,15 +99,15 @@ class _MedicationDetailScreenState extends State<MedicationDetailScreen> {
                   value: medication.statusLabel,
                   icon: medication.isActive
                       ? Icons.check_circle_outline_rounded
+                      : medication.isCompleted
+                      ? Icons.task_alt_rounded
                       : Icons.pause_circle_outline_rounded,
                 ),
                 const Divider(),
                 LabeledValue(
-                  label: 'Frequency',
-                  value: medication.frequency.isEmpty
-                      ? 'Not provided'
-                      : medication.frequency,
-                  icon: Icons.repeat_rounded,
+                  label: 'Days to take',
+                  value: medication.scheduleDaysLabel,
+                  icon: Icons.calendar_view_week_rounded,
                 ),
                 const Divider(),
                 LabeledValue(
@@ -123,6 +127,14 @@ class _MedicationDetailScreenState extends State<MedicationDetailScreen> {
                   value: medication.endDateLabel,
                   icon: Icons.event_available_outlined,
                 ),
+                if (medication.completedAt != null) ...[
+                  const Divider(),
+                  LabeledValue(
+                    label: 'Completed on',
+                    value: _dateLabel(medication.completedAt!),
+                    icon: Icons.task_alt_rounded,
+                  ),
+                ],
                 const Divider(),
                 LabeledValue(
                   label: 'Instructions',
@@ -138,11 +150,29 @@ class _MedicationDetailScreenState extends State<MedicationDetailScreen> {
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
-              onPressed: () => _edit(medication),
+              onPressed: _busy ? null : () => _edit(medication),
               icon: const Icon(Icons.edit_outlined),
               label: const Text('Edit Medication'),
             ),
           ),
+          if (medication.isActive && !medication.isCompleted) ...[
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _busy ? null : () => _confirmComplete(medication),
+                icon: _completing
+                    ? const SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.task_alt_rounded),
+                label: Text(
+                  _completing ? 'Finishing…' : 'Mark Medication as Done',
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 10),
           SizedBox(
             width: double.infinity,
@@ -151,7 +181,7 @@ class _MedicationDetailScreenState extends State<MedicationDetailScreen> {
                 foregroundColor: AppColors.danger,
                 side: const BorderSide(color: AppColors.danger),
               ),
-              onPressed: _deleting ? null : () => _confirmDelete(medication),
+              onPressed: _busy ? null : () => _confirmDelete(medication),
               icon: _deleting
                   ? const SizedBox.square(
                       dimension: 18,
@@ -219,4 +249,67 @@ class _MedicationDetailScreenState extends State<MedicationDetailScreen> {
       );
     }
   }
+
+  Future<void> _confirmComplete(Medication medication) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        icon: const Icon(Icons.task_alt_rounded, color: AppColors.primaryGreen),
+        title: const Text('Mark medication as done?'),
+        content: Text(
+          '${medication.name} will move to Done and future reminders will stop. Past Taken and Missed records will be kept.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Keep Active'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Mark as Done'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final client = EverCareBackendScope.maybeClient(context);
+    if (client?.auth.currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sign in again before continuing.')),
+      );
+      return;
+    }
+    setState(() => _completing = true);
+    try {
+      await MedicationRepository(client!).markCompleted(medication.id);
+      if (mounted) Navigator.pop(context, true);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _completing = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not finish this medication. Please try again.'),
+        ),
+      );
+    }
+  }
+}
+
+String _dateLabel(DateTime value) {
+  final date = MedicationScheduleEngine.toPhilippineWallClock(value);
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  return '${months[date.month - 1]} ${date.day}, ${date.year}';
 }

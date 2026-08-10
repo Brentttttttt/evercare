@@ -135,6 +135,10 @@ class AppointmentCard extends StatelessWidget {
       background: AppColors.lightGreen,
       foreground: AppColors.darkGreen,
     ),
+    AppointmentStatus.missed => (
+      background: const Color(0xFFFFF3E8),
+      foreground: const Color(0xFF9A4F14),
+    ),
     AppointmentStatus.cancelled => (
       background: const Color(0xFFFFECEA),
       foreground: AppColors.danger,
@@ -146,6 +150,7 @@ IconData _statusIcon(AppointmentStatus status) {
   return switch (status) {
     AppointmentStatus.upcoming => Icons.calendar_month_rounded,
     AppointmentStatus.completed => Icons.event_available_rounded,
+    AppointmentStatus.missed => Icons.event_busy_outlined,
     AppointmentStatus.cancelled => Icons.event_busy_rounded,
   };
 }

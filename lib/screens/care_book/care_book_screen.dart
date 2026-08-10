@@ -7,22 +7,27 @@ import '../../widgets/care_photo_banner.dart';
 import 'care_book_widgets.dart';
 
 class CareBookScreen extends StatefulWidget {
-  const CareBookScreen({super.key});
+  const CareBookScreen({super.key, this.scrollController});
+
+  final ScrollController? scrollController;
 
   @override
   State<CareBookScreen> createState() => _CareBookScreenState();
 }
 
 class _CareBookScreenState extends State<CareBookScreen> {
-  final _scrollController = ScrollController();
+  final _ownedScrollController = ScrollController();
   final _readerKey = GlobalKey();
   int _selectedChapter = 0;
   bool _downloading = false;
   double _textScale = 1;
 
+  ScrollController get _scrollController =>
+      widget.scrollController ?? _ownedScrollController;
+
   @override
   void dispose() {
-    _scrollController.dispose();
+    _ownedScrollController.dispose();
     super.dispose();
   }
 

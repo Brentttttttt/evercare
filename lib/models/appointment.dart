@@ -1,4 +1,11 @@
-enum AppointmentStatus { upcoming, completed, cancelled }
+enum AppointmentStatus { upcoming, completed, missed, cancelled }
+
+/// The caregiver-facing state of a visit at a specific point in time.
+///
+/// `due` is intentionally derived instead of stored. A saved upcoming visit
+/// becomes due at its scheduled time and missed 24 hours later unless it was
+/// completed or cancelled.
+enum AppointmentVisitState { upcoming, due, completed, missed, cancelled }
 
 class Appointment {
   const Appointment({
@@ -12,6 +19,7 @@ class Appointment {
     required this.address,
     required this.notes,
     required this.status,
+    this.completedAt,
     this.createdAt,
     this.updatedAt,
   });
@@ -33,6 +41,7 @@ class Appointment {
         (value) => value.name == json['status'],
         orElse: () => AppointmentStatus.upcoming,
       ),
+      completedAt: _optionalDateTime(json['completed_at']),
       createdAt: _optionalDateTime(json['created_at']),
       updatedAt: _optionalDateTime(json['updated_at']),
     );
@@ -48,10 +57,16 @@ class Appointment {
   final String address;
   final String notes;
   final AppointmentStatus status;
+  final DateTime? completedAt;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
-  Appointment copyWith({DateTime? startsAt, AppointmentStatus? status}) {
+  Appointment copyWith({
+    DateTime? startsAt,
+    AppointmentStatus? status,
+    DateTime? completedAt,
+    bool clearCompletedAt = false,
+  }) {
     return Appointment(
       id: id,
       userId: userId,
@@ -63,6 +78,7 @@ class Appointment {
       address: address,
       notes: notes,
       status: status ?? this.status,
+      completedAt: clearCompletedAt ? null : completedAt ?? this.completedAt,
       createdAt: createdAt,
       updatedAt: updatedAt,
     );
@@ -71,8 +87,28 @@ class Appointment {
   String get statusLabel => switch (status) {
     AppointmentStatus.upcoming => 'Upcoming',
     AppointmentStatus.completed => 'Completed',
+    AppointmentStatus.missed => 'Missed',
     AppointmentStatus.cancelled => 'Cancelled',
   };
+
+  AppointmentVisitState visitStateAt(DateTime value) {
+    return switch (status) {
+      AppointmentStatus.completed => AppointmentVisitState.completed,
+      AppointmentStatus.cancelled => AppointmentVisitState.cancelled,
+      AppointmentStatus.missed => AppointmentVisitState.missed,
+      AppointmentStatus.upcoming => _scheduledStateAt(value),
+    };
+  }
+
+  AppointmentVisitState _scheduledStateAt(DateTime value) {
+    final now = value.toUtc();
+    final scheduled = startsAt.toUtc();
+    if (now.isBefore(scheduled)) return AppointmentVisitState.upcoming;
+    if (now.isBefore(scheduled.add(const Duration(days: 1)))) {
+      return AppointmentVisitState.due;
+    }
+    return AppointmentVisitState.missed;
+  }
 
   String get dateLabel {
     const months = [

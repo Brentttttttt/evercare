@@ -18,7 +18,9 @@ import 'emergency_contacts_screen.dart';
 import 'emergency_widgets.dart';
 
 class EmergencyScreen extends StatefulWidget {
-  const EmergencyScreen({super.key});
+  const EmergencyScreen({super.key, this.scrollController});
+
+  final ScrollController? scrollController;
 
   @override
   State<EmergencyScreen> createState() => _EmergencyScreenState();
@@ -55,6 +57,7 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
         .where((contact) => contact.id != primary?.id)
         .toList(growable: false);
     return SingleChildScrollView(
+      controller: widget.scrollController,
       padding: mainPagePadding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

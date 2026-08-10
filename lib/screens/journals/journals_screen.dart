@@ -15,7 +15,9 @@ import 'journal_entry_card.dart';
 import 'journal_entry_reader.dart';
 
 class JournalsScreen extends StatefulWidget {
-  const JournalsScreen({super.key});
+  const JournalsScreen({super.key, this.scrollController});
+
+  final ScrollController? scrollController;
 
   @override
   State<JournalsScreen> createState() => _JournalsScreenState();
@@ -62,6 +64,7 @@ class _JournalsScreenState extends State<JournalsScreen> {
   Widget build(BuildContext context) {
     final visibleEntries = _visibleEntries;
     return SingleChildScrollView(
+      controller: widget.scrollController,
       padding: mainPagePadding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

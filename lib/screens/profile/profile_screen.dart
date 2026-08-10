@@ -13,7 +13,9 @@ import '../../widgets/evercare_backend_scope.dart';
 import '../../widgets/section_header.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  const ProfileScreen({super.key, this.scrollController});
+
+  final ScrollController? scrollController;
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -108,6 +110,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final client = _client;
     final isSignedIn = client?.auth.currentUser != null;
     return SingleChildScrollView(
+      controller: widget.scrollController,
       padding: mainPagePadding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

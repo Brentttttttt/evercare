@@ -26,9 +26,10 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
   late final TextEditingController _name;
   late final TextEditingController _dosage;
   late final TextEditingController _purpose;
-  late final TextEditingController _frequency;
   late final TextEditingController _instructions;
+  final _scheduleDaysKey = GlobalKey<FormFieldState<Set<int>>>();
   final _reminderTimeKey = GlobalKey<FormFieldState<TimeOfDay>>();
+  late Set<int> _selectedDays;
   DateTime? _startDate;
   DateTime? _endDate;
   TimeOfDay? _scheduleTime;
@@ -44,8 +45,8 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
     _name = TextEditingController(text: item?.name);
     _dosage = TextEditingController(text: item?.dosage);
     _purpose = TextEditingController(text: item?.purpose);
-    _frequency = TextEditingController(text: item?.frequency);
     _instructions = TextEditingController(text: item?.instructions);
+    _selectedDays = {...?item?.scheduleDays};
     _startDate = item?.startDate;
     _endDate = item?.endDate;
     _scheduleTime = _parseTime(item?.scheduleTime);
@@ -57,7 +58,6 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
     _name.dispose();
     _dosage.dispose();
     _purpose.dispose();
-    _frequency.dispose();
     _instructions.dispose();
     super.dispose();
   }
@@ -114,14 +114,22 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
             _MedicationFormSection(
               icon: Icons.schedule_outlined,
               title: 'Schedule',
-              description: 'When this medicine should be taken.',
+              description: 'Choose the days and time for each reminder.',
               children: [
-                _field(
-                  controller: _frequency,
-                  label: 'Frequency',
-                  hint: 'e.g. Once daily',
-                  icon: Icons.repeat_rounded,
-                  required: true,
+                FormField<Set<int>>(
+                  key: _scheduleDaysKey,
+                  initialValue: _selectedDays,
+                  validator: (value) => value == null || value.isEmpty
+                      ? 'Choose at least one day.'
+                      : null,
+                  builder: (field) => _MedicationWeekdaySelector(
+                    selectedDays: _selectedDays,
+                    errorText: field.errorText,
+                    onChanged: (days) {
+                      setState(() => _selectedDays = {...days});
+                      field.didChange(_selectedDays);
+                    },
+                  ),
                 ),
                 _DateTile(
                   label: 'Start date',
@@ -307,7 +315,7 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
           name: _name.text,
           dosage: _dosage.text,
           purpose: _purpose.text,
-          frequency: _frequency.text,
+          scheduleDays: _selectedDays,
           instructions: _instructions.text,
           scheduleTime: time,
           startDate: _startDate,
@@ -320,7 +328,7 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
           name: _name.text,
           dosage: _dosage.text,
           purpose: _purpose.text,
-          frequency: _frequency.text,
+          scheduleDays: _selectedDays,
           instructions: _instructions.text,
           scheduleTime: time,
           startDate: _startDate,
@@ -340,6 +348,152 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
       );
     }
   }
+}
+
+class _MedicationWeekdaySelector extends StatelessWidget {
+  const _MedicationWeekdaySelector({
+    required this.selectedDays,
+    required this.onChanged,
+    this.errorText,
+  });
+
+  static const _days = <({int value, String label})>[
+    (value: DateTime.monday, label: 'Monday'),
+    (value: DateTime.tuesday, label: 'Tuesday'),
+    (value: DateTime.wednesday, label: 'Wednesday'),
+    (value: DateTime.thursday, label: 'Thursday'),
+    (value: DateTime.friday, label: 'Friday'),
+    (value: DateTime.saturday, label: 'Saturday'),
+    (value: DateTime.sunday, label: 'Sunday'),
+  ];
+  static const _quickChoices = <({String label, Set<int> days})>[
+    (
+      label: 'Every day',
+      days: {
+        DateTime.monday,
+        DateTime.tuesday,
+        DateTime.wednesday,
+        DateTime.thursday,
+        DateTime.friday,
+        DateTime.saturday,
+        DateTime.sunday,
+      },
+    ),
+    (
+      label: 'Weekdays',
+      days: {
+        DateTime.monday,
+        DateTime.tuesday,
+        DateTime.wednesday,
+        DateTime.thursday,
+        DateTime.friday,
+      },
+    ),
+    (label: 'Weekends', days: {DateTime.saturday, DateTime.sunday}),
+  ];
+
+  final Set<int> selectedDays;
+  final ValueChanged<Set<int>> onChanged;
+  final String? errorText;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Semantics(
+        container: true,
+        label: 'Medication reminder days',
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Days to take this medicine',
+              style: AppTextStyles.label.copyWith(color: AppColors.primaryText),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Choose one or more days. EverCare will show one reminder at the selected time on each chosen day.',
+              style: AppTextStyles.small.copyWith(
+                color: AppColors.secondaryText,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final choice in _quickChoices)
+                  ChoiceChip(
+                    label: Text(choice.label),
+                    selected: _sameDays(selectedDays, choice.days),
+                    showCheckmark: true,
+                    checkmarkColor: AppColors.darkGreen,
+                    selectedColor: AppColors.primaryContainer,
+                    side: BorderSide(
+                      color: _sameDays(selectedDays, choice.days)
+                          ? AppColors.primaryGreen
+                          : AppColors.border,
+                    ),
+                    materialTapTargetSize: MaterialTapTargetSize.padded,
+                    onSelected: (_) => onChanged({...choice.days}),
+                  ),
+              ],
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Divider(height: 1),
+            ),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final day in _days)
+                  Semantics(
+                    selected: selectedDays.contains(day.value),
+                    label: '${day.label} medication reminder',
+                    child: FilterChip(
+                      label: Text(day.label),
+                      selected: selectedDays.contains(day.value),
+                      showCheckmark: true,
+                      checkmarkColor: AppColors.darkGreen,
+                      selectedColor: AppColors.primaryContainer,
+                      side: BorderSide(
+                        color: selectedDays.contains(day.value)
+                            ? AppColors.primaryGreen
+                            : AppColors.border,
+                      ),
+                      materialTapTargetSize: MaterialTapTargetSize.padded,
+                      onSelected: (selected) {
+                        final updated = {...selectedDays};
+                        if (selected) {
+                          updated.add(day.value);
+                        } else {
+                          updated.remove(day.value);
+                        }
+                        onChanged(updated);
+                      },
+                    ),
+                  ),
+              ],
+            ),
+            if (errorText != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                errorText!,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+bool _sameDays(Set<int> first, Set<int> second) {
+  return first.length == second.length && first.containsAll(second);
 }
 
 class _MedicationSafetyNotice extends StatelessWidget {

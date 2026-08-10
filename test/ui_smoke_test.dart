@@ -6,6 +6,8 @@ import 'package:evercare/models/bp_monitor_packet.dart';
 import 'package:evercare/models/hospital_location.dart';
 import 'package:evercare/models/journal_entry.dart';
 import 'package:evercare/models/journal_photo.dart';
+import 'package:evercare/models/medication.dart';
+import 'package:evercare/models/medication_dose.dart';
 import 'package:evercare/routes/app_route_observer.dart';
 import 'package:evercare/routes/app_routes.dart';
 import 'package:evercare/services/bp_monitor_ble_service.dart';
@@ -33,6 +35,7 @@ import 'package:evercare/screens/journals/journal_entry_card.dart';
 import 'package:evercare/screens/journals/journal_entry_reader.dart';
 import 'package:evercare/screens/journals/journals_screen.dart';
 import 'package:evercare/screens/medications/add_medication_screen.dart';
+import 'package:evercare/screens/medications/medication_detail_screen.dart';
 import 'package:evercare/screens/medications/medication_screen.dart';
 import 'package:evercare/screens/notifications/notifications_screen.dart';
 import 'package:evercare/screens/onboarding/welcome_screen.dart';
@@ -465,6 +468,52 @@ void main() {
     await pumpPhoneScreen(tester, const MedicationScreen());
   });
 
+  testWidgets('due medication reminder exposes the Taken action', (
+    tester,
+  ) async {
+    const medication = Medication(
+      id: 'med-reminder',
+      userId: 'user-1',
+      name: 'Amlodipine',
+      dosage: '5 mg',
+      purpose: '',
+      frequency: 'Monday',
+      instructions: '',
+      scheduleTime: '09:00:00',
+      startDate: null,
+      endDate: null,
+      isActive: true,
+      scheduleDays: [DateTime.monday],
+    );
+    final now = DateTime.utc(2026, 8, 10, 1, 30);
+    final occurrence = MedicationDoseOccurrence(
+      medication: medication,
+      scheduledFor: DateTime.utc(2026, 8, 10, 1),
+      state: MedicationDoseState.due,
+    );
+    var markedTaken = false;
+
+    await pumpPhoneScreen(
+      tester,
+      MedicationReminderSection(
+        doses: [occurrence],
+        now: now,
+        onTaken: (_) => markedTaken = true,
+        takingDoseKeys: const {},
+        hasUnconfirmedSchedules: false,
+      ),
+      size: const Size(320, 720),
+      textScaleFactor: 1.2,
+    );
+
+    expect(find.text('Medication reminders'), findsOneWidget);
+    expect(find.text('Due now'), findsOneWidget);
+    expect(find.text('Taken'), findsOneWidget);
+    await tester.tap(find.text('Taken'));
+    expect(markedTaken, isTrue);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('grouped medication form fits a narrow phone', (tester) async {
     await pumpPhoneScreen(
       tester,
@@ -473,10 +522,55 @@ void main() {
     );
     expect(find.text('Medicine'), findsOneWidget);
     expect(find.text('Schedule'), findsOneWidget);
+    expect(find.text('Frequency'), findsNothing);
+    expect(find.text('Days to take this medicine'), findsOneWidget);
+    expect(find.text('Every day'), findsOneWidget);
+    expect(find.text('Weekdays'), findsOneWidget);
+    expect(find.text('Weekends'), findsOneWidget);
+    expect(find.text('Monday'), findsOneWidget);
+    expect(find.text('Sunday'), findsOneWidget);
     expect(find.text('Reminder time'), findsOneWidget);
     expect(find.text('Select reminder time'), findsOneWidget);
     expect(find.textContaining('Reminder time (optional)'), findsNothing);
     expect(find.text('Instructions and status'), findsOneWidget);
+  });
+
+  testWidgets('medication details expose a separate course done action', (
+    tester,
+  ) async {
+    const medication = Medication(
+      id: 'med-1',
+      userId: 'user-1',
+      name: 'Amlodipine',
+      dosage: '5 mg',
+      purpose: 'Blood pressure support',
+      frequency: 'Mon, Wed, Fri',
+      instructions: 'Take with water',
+      scheduleTime: '09:00:00',
+      startDate: null,
+      endDate: null,
+      isActive: true,
+      scheduleDays: [DateTime.monday, DateTime.wednesday, DateTime.friday],
+    );
+    await pumpPhoneScreen(
+      tester,
+      const MedicationDetailScreen(medication: medication),
+    );
+
+    expect(find.text('Days to take'), findsOneWidget);
+    expect(find.text('Mon, Wed, Fri'), findsOneWidget);
+    expect(find.text('Frequency'), findsNothing);
+    final finishButton = find.text('Mark Medication as Done');
+    await tester.ensureVisible(finishButton);
+    await tester.tap(finishButton);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Mark medication as done?'), findsOneWidget);
+    expect(find.text('Mark as Done'), findsOneWidget);
+    expect(
+      find.textContaining('Past Taken and Missed records'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('profile screen renders without overflow', (tester) async {
@@ -525,6 +619,88 @@ void main() {
     expect(find.text('Appointments'), findsWidgets);
   });
 
+  testWidgets('main pages reset to the top when revisited', (tester) async {
+    await pumpPhoneScreen(tester, const MainShell());
+    final homePage = find.byType(HomeDashboardScreen);
+    final homeScrollView = find
+        .descendant(of: homePage, matching: find.byType(SingleChildScrollView))
+        .first;
+    final homeScrollable = find
+        .descendant(of: homePage, matching: find.byType(Scrollable))
+        .first;
+
+    await tester.drag(homeScrollView, const Offset(0, -500));
+    await tester.pumpAndSettle();
+    expect(
+      tester.state<ScrollableState>(homeScrollable).position.pixels,
+      greaterThan(0),
+    );
+
+    final navigation = find.byType(AppBottomNavigation);
+    await tester.tap(
+      find.descendant(of: navigation, matching: find.text('Medicine')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.descendant(of: navigation, matching: find.text('Home')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.state<ScrollableState>(homeScrollable).position.pixels, 0);
+  });
+
+  testWidgets('returning from a detail route resets the main page', (
+    tester,
+  ) async {
+    await pumpPhoneScreen(tester, const MainShell());
+    final homePage = find.byType(HomeDashboardScreen);
+    final homeScrollView = find
+        .descendant(of: homePage, matching: find.byType(SingleChildScrollView))
+        .first;
+    final homeScrollable = find
+        .descendant(of: homePage, matching: find.byType(Scrollable))
+        .first;
+
+    await tester.drag(homeScrollView, const Offset(0, -500));
+    await tester.pumpAndSettle();
+    expect(
+      tester.state<ScrollableState>(homeScrollable).position.pixels,
+      greaterThan(0),
+    );
+
+    Navigator.of(tester.element(find.byType(MainShell))).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const Scaffold(body: Text('Temporary detail page')),
+      ),
+    );
+    await tester.pumpAndSettle();
+    Navigator.of(tester.element(find.text('Temporary detail page'))).pop();
+    await tester.pumpAndSettle();
+
+    expect(tester.state<ScrollableState>(homeScrollable).position.pixels, 0);
+  });
+
+  testWidgets('activating Home does not return a Future from setState', (
+    tester,
+  ) async {
+    var active = false;
+    late StateSetter updateHost;
+    await pumpPhoneScreen(
+      tester,
+      StatefulBuilder(
+        builder: (context, setState) {
+          updateHost = setState;
+          return HomeDashboardScreen(isActive: active, onSelectTab: (_) {});
+        },
+      ),
+    );
+
+    updateHost(() => active = true);
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('journals screen renders without overflow', (tester) async {
     await pumpPhoneScreen(tester, const JournalsScreen());
     expect(find.text('How are you feeling today?'), findsNothing);
@@ -560,9 +736,13 @@ void main() {
     );
     final happyParagraph = tester.renderObject<RenderParagraph>(happyLabel);
     final calmParagraph = tester.renderObject<RenderParagraph>(calmLabel);
+    final happyChip = tester.widget<ChoiceChip>(
+      find.ancestor(of: happyLabel, matching: find.byType(ChoiceChip)),
+    );
 
     expect(happyParagraph.text.style?.color, isNot(Colors.white));
     expect(calmParagraph.text.style?.color, isNot(Colors.white));
+    expect(happyChip.showCheckmark, isFalse);
   });
 
   testWidgets('journal editor protects unsaved writing', (tester) async {
@@ -914,6 +1094,23 @@ void main() {
       tester,
       AppointmentDetailScreen(appointment: _testAppointment),
     );
+    expect(find.text('Get Directions in Google Maps'), findsOneWidget);
+    expect(find.text('Find Contact Number & Details'), findsOneWidget);
+  });
+
+  testWidgets('appointment details show attendance action when due', (
+    tester,
+  ) async {
+    final dueAppointment = _testAppointment.copyWith(
+      startsAt: DateTime.now().subtract(const Duration(hours: 1)),
+    );
+    await pumpPhoneScreen(
+      tester,
+      AppointmentDetailScreen(appointment: dueAppointment),
+    );
+
+    expect(find.text('Due now'), findsOneWidget);
+    expect(find.text('Mark Appointment as Done'), findsOneWidget);
   });
 
   testWidgets('add appointment form renders without overflow', (tester) async {

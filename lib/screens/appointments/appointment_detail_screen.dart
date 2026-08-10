@@ -1,11 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/appointment.dart';
 import '../../repositories/appointment_repository.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_page.dart';
-import '../../widgets/appointment_card.dart';
 import '../../widgets/evercare_backend_scope.dart';
 import 'edit_appointment_screen.dart';
 
@@ -19,15 +21,36 @@ class AppointmentDetailScreen extends StatefulWidget {
       _AppointmentDetailScreenState();
 }
 
-class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
+class _AppointmentDetailScreenState extends State<AppointmentDetailScreen>
+    with WidgetsBindingObserver {
   Appointment? _appointment;
   bool _updating = false;
+  DateTime _now = DateTime.now().toUtc();
+  Timer? _clockTimer;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     final raw = widget.appointment;
     if (raw is Appointment) _appointment = raw;
+    _clockTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted) setState(() => _now = DateTime.now().toUtc());
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      setState(() => _now = DateTime.now().toUtc());
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _clockTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -45,78 +68,88 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
       );
     }
 
-    final statusColors = appointmentStatusColors(appointment.status);
-    final isUpcoming = appointment.status == AppointmentStatus.upcoming;
-    final isCompleted = appointment.status == AppointmentStatus.completed;
+    final visitState = appointment.visitStateAt(_now);
+    final statusColors = _visitStateColors(visitState);
+    final isUpcoming = visitState == AppointmentVisitState.upcoming;
+    final canMarkDone =
+        visitState == AppointmentVisitState.due ||
+        visitState == AppointmentVisitState.missed;
+    final hasHospitalLocation =
+        appointment.clinic.trim().isNotEmpty ||
+        appointment.address.trim().isNotEmpty;
 
     return DetailPage(
       title: 'Appointment Details',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppCard(
-            color: statusColors.background,
-            borderColor: statusColors.background,
-            child: Column(
-              children: [
-                Container(
-                  width: 66,
-                  height: 66,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    isCompleted
-                        ? Icons.event_available_rounded
-                        : appointment.status == AppointmentStatus.cancelled
-                        ? Icons.event_busy_rounded
-                        : Icons.calendar_month_rounded,
-                    size: 34,
-                    color: statusColors.foreground,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Text(
-                  appointment.title,
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.pageTitle.copyWith(fontSize: 23),
-                ),
-                const SizedBox(height: 7),
-                Text(
-                  appointment.doctorName,
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.body.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                if (appointment.specialty.isNotEmpty) ...[
-                  const SizedBox(height: 3),
-                  Text(
-                    appointment.specialty,
-                    textAlign: TextAlign.center,
-                    style: AppTextStyles.bodyMuted,
-                  ),
-                ],
-                const SizedBox(height: 14),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 13,
-                    vertical: 7,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  child: Text(
-                    appointment.statusLabel,
-                    style: AppTextStyles.small.copyWith(
+          SizedBox(
+            width: double.infinity,
+            child: AppCard(
+              color: statusColors.background,
+              borderColor: statusColors.background,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 66,
+                    height: 66,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(19),
+                    ),
+                    child: Icon(
+                      _visitStateIcon(visitState),
+                      size: 34,
                       color: statusColors.foreground,
-                      fontWeight: FontWeight.w800,
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 15),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          appointment.title,
+                          style: AppTextStyles.pageTitle.copyWith(fontSize: 23),
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          appointment.doctorName,
+                          style: AppTextStyles.body.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        if (appointment.specialty.isNotEmpty) ...[
+                          const SizedBox(height: 3),
+                          Text(
+                            appointment.specialty,
+                            style: AppTextStyles.bodyMuted,
+                          ),
+                        ],
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          child: Text(
+                            _visitStateLabel(visitState),
+                            style: AppTextStyles.small.copyWith(
+                              color: statusColors.foreground,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 19),
@@ -161,7 +194,87 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
               ],
             ),
           ),
-          if (appointment.status == AppointmentStatus.cancelled) ...[
+          if (hasHospitalLocation) ...[
+            const SizedBox(height: 19),
+            Text('Hospital location', style: AppTextStyles.sectionTitle),
+            const SizedBox(height: 11),
+            SizedBox(
+              width: double.infinity,
+              child: AppCard(
+                color: AppColors.paleBlue,
+                borderColor: AppColors.blue.withValues(alpha: .18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 46,
+                          height: 46,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: const Icon(
+                            Icons.location_on_rounded,
+                            color: AppColors.blue,
+                            size: 25,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                appointment.clinic.trim().isEmpty
+                                    ? 'Saved appointment location'
+                                    : appointment.clinic,
+                                style: AppTextStyles.cardTitle,
+                              ),
+                              if (appointment.address.trim().isNotEmpty) ...[
+                                const SizedBox(height: 3),
+                                Text(
+                                  appointment.address,
+                                  style: AppTextStyles.small,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 17),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: () => _openGoogleMapsDirections(appointment),
+                        icon: const Icon(Icons.directions_rounded),
+                        label: const Text('Get Directions in Google Maps'),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () =>
+                            _openGoogleMapsHospitalDetails(appointment),
+                        icon: const Icon(Icons.contact_phone_outlined),
+                        label: const Text('Find Contact Number & Details'),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Google Maps opens outside EverCare. Verify contact details and availability before traveling when possible.',
+                      style: AppTextStyles.small,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+          if (visitState == AppointmentVisitState.cancelled) ...[
             const SizedBox(height: 19),
             const AppCard(
               color: Color(0xFFFFF5F3),
@@ -178,6 +291,51 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
                     ),
                   ),
                 ],
+              ),
+            ),
+          ],
+          if (visitState == AppointmentVisitState.missed) ...[
+            const SizedBox(height: 19),
+            const AppCard(
+              color: Color(0xFFFFF8EE),
+              borderColor: Color(0xFFF1D7B3),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.history_toggle_off_rounded,
+                    color: Color(0xFF9A4F14),
+                  ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'No completion was recorded within 24 hours. If the visit happened, you can correct it below.',
+                      style: AppTextStyles.body,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          if (canMarkDone) ...[
+            const SizedBox(height: 21),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: _updating ? null : () => _markDone(appointment),
+                icon: _updating
+                    ? const SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.task_alt_rounded),
+                label: Text(
+                  _updating
+                      ? 'Saving…'
+                      : visitState == AppointmentVisitState.missed
+                      ? 'Mark Done Late'
+                      : 'Mark Appointment as Done',
+                ),
               ),
             ),
           ],
@@ -221,6 +379,53 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
           ],
         ],
       ),
+    );
+  }
+
+  Future<void> _markDone(Appointment appointment) async {
+    final wasMissed =
+        appointment.visitStateAt(_now) == AppointmentVisitState.missed;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        icon: const Icon(
+          Icons.task_alt_rounded,
+          color: AppColors.primaryGreen,
+          size: 34,
+        ),
+        title: Text(
+          wasMissed
+              ? 'Record this visit as completed?'
+              : 'Mark appointment as done?',
+        ),
+        content: Text(
+          wasMissed
+              ? 'This corrects the missed status and records that the patient attended the appointment.'
+              : 'Confirm that the patient attended this appointment.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Not Yet'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Mark as Done'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final repository = AppointmentRepository(
+      EverCareBackendScope.read(context),
+    );
+    await _performUpdate(
+      () => repository.markCompleted(appointment.id),
+      updated: appointment.copyWith(
+        status: AppointmentStatus.completed,
+        completedAt: DateTime.now(),
+      ),
+      successMessage: 'Appointment marked as done.',
     );
   }
 
@@ -335,6 +540,44 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
     );
   }
 
+  Future<void> _openGoogleMapsDirections(Appointment appointment) async {
+    final uri = Uri.https('www.google.com', '/maps/dir/', {
+      'api': '1',
+      'destination': _hospitalSearchQuery(appointment),
+      'travelmode': 'driving',
+    });
+    await _launchExternalGoogleUrl(
+      uri,
+      failureMessage: 'Could not open Google Maps directions.',
+    );
+  }
+
+  Future<void> _openGoogleMapsHospitalDetails(Appointment appointment) async {
+    final uri = Uri.https('www.google.com', '/maps/search/', {
+      'api': '1',
+      'query': _hospitalSearchQuery(appointment),
+    });
+    await _launchExternalGoogleUrl(
+      uri,
+      failureMessage: 'Could not open this hospital in Google Maps.',
+    );
+  }
+
+  Future<void> _launchExternalGoogleUrl(
+    Uri uri, {
+    required String failureMessage,
+  }) async {
+    try {
+      final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (opened || !mounted) return;
+    } catch (_) {
+      if (!mounted) return;
+    }
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(failureMessage)));
+  }
+
   Future<void> _performUpdate(
     Future<void> Function() action, {
     required Appointment updated,
@@ -369,6 +612,57 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
     }
   }
 }
+
+String _hospitalSearchQuery(Appointment appointment) {
+  return <String>[
+    if (appointment.clinic.trim().isNotEmpty) appointment.clinic.trim(),
+    if (appointment.address.trim().isNotEmpty) appointment.address.trim(),
+    'hospital',
+  ].join(', ');
+}
+
+({Color background, Color foreground}) _visitStateColors(
+  AppointmentVisitState state,
+) {
+  return switch (state) {
+    AppointmentVisitState.upcoming => (
+      background: AppColors.paleBlue,
+      foreground: AppColors.blue,
+    ),
+    AppointmentVisitState.due => (
+      background: AppColors.lightGreen,
+      foreground: AppColors.darkGreen,
+    ),
+    AppointmentVisitState.completed => (
+      background: AppColors.lightGreen,
+      foreground: AppColors.darkGreen,
+    ),
+    AppointmentVisitState.missed => (
+      background: const Color(0xFFFFF3E8),
+      foreground: const Color(0xFF9A4F14),
+    ),
+    AppointmentVisitState.cancelled => (
+      background: const Color(0xFFFFECEA),
+      foreground: AppColors.danger,
+    ),
+  };
+}
+
+String _visitStateLabel(AppointmentVisitState state) => switch (state) {
+  AppointmentVisitState.upcoming => 'Upcoming',
+  AppointmentVisitState.due => 'Due now',
+  AppointmentVisitState.completed => 'Completed',
+  AppointmentVisitState.missed => 'Missed',
+  AppointmentVisitState.cancelled => 'Cancelled',
+};
+
+IconData _visitStateIcon(AppointmentVisitState state) => switch (state) {
+  AppointmentVisitState.upcoming => Icons.calendar_month_rounded,
+  AppointmentVisitState.due => Icons.notifications_active_rounded,
+  AppointmentVisitState.completed => Icons.event_available_rounded,
+  AppointmentVisitState.missed => Icons.event_busy_outlined,
+  AppointmentVisitState.cancelled => Icons.block_rounded,
+};
 
 String _dateTimeLabel(DateTime value) {
   final hour = value.hour == 0

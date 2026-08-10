@@ -19,11 +19,16 @@ import '../../widgets/evercare_backend_scope.dart';
 import '../../widgets/section_header.dart';
 
 class HealthOverviewScreen extends StatefulWidget {
-  const HealthOverviewScreen({this.isActive = true, super.key});
+  const HealthOverviewScreen({
+    this.isActive = true,
+    this.scrollController,
+    super.key,
+  });
 
   /// The main shell uses an IndexedStack, so mounting alone does not mean the
   /// Health tab is visible. Auto-scan is leased only while this is true.
   final bool isActive;
+  final ScrollController? scrollController;
 
   @override
   State<HealthOverviewScreen> createState() => _HealthOverviewScreenState();
@@ -103,6 +108,7 @@ class _HealthOverviewScreenState extends State<HealthOverviewScreen>
   Widget build(BuildContext context) {
     final service = BpMonitorBleScope.watch(context);
     return SingleChildScrollView(
+      controller: widget.scrollController,
       padding: mainPagePadding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

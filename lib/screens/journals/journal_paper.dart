@@ -207,14 +207,14 @@ class JournalOptionChip extends StatelessWidget {
               label: labelWidget,
               avatar: avatar,
               selected: selected,
-              showCheckmark: true,
+              showCheckmark: icon == null,
               onSelected: onSelected,
             )
           : FilterChip(
               label: labelWidget,
               avatar: avatar,
               selected: selected,
-              showCheckmark: true,
+              showCheckmark: icon == null,
               onSelected: onSelected,
             ),
     );

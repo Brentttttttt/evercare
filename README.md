@@ -14,6 +14,8 @@ medically verified.
 
 - Supabase email/password accounts and private user profiles
 - Owner-scoped medications, appointments, journals, contacts, and notifications
+- Weekday medication schedules with Taken, Missed, and course-completion tracking
+- Appointment reminders with Done, late correction, and 24-hour Missed tracking
 - Real YK-IBPA1 Bluetooth Low Energy measurement capture
 - Intentional saving of completed BLE or manually entered BP readings
 - Saved BP history, trend, and seven-day summary
@@ -64,6 +66,28 @@ trigger, and Row Level Security policies. All personal tables require an
 authenticated user and are restricted to their owner. No seed records are
 uploaded.
 
+The medication-adherence migration adds Monday-to-Sunday schedules and reuses
+the private `medication_dose_events` table for individual Taken and Missed
+records. Older free-text frequency values are not converted into a medical
+schedule automatically; the caregiver must edit those records and confirm the
+correct weekdays before reminders begin.
+
+Medication reminders are currently in-app reminders. While the Medications
+page is open, and whenever the app resumes, a scheduled dose becomes Due at its
+saved Philippine time and Missed one hour later unless it was marked Taken.
+Late-night reminders remain visible across midnight. Taken, Missed, and course
+completion writes are validated against the Supabase server clock, and a
+Missed update cannot overwrite a Taken record from another device. EverCare
+does not claim to deliver a background operating-system notification while the
+app is closed.
+
+Appointments become Due at their saved visit time. If no completion is
+recorded, they become Missed exactly 24 hours later; a caregiver can still
+correct a genuinely completed visit with Mark Done Late. These transitions and
+completion timestamps are validated using the Supabase server clock. Missed
+appointments are reconciled when EverCare loads or resumes, so this is an
+in-app attendance reminder rather than a background operating-system alert.
+
 The checked-in URL and publishable key can be overridden per build:
 
 ```powershell
@@ -95,6 +119,11 @@ hosted infrastructure with an appropriate service agreement.
 Emergency hospital results can open directions or a hospital-details search
 using external Google Maps URLs. Maps URLs do not require an embedded Google
 SDK or API key; the OpenStreetMap map remains inside EverCare.
+
+Saved appointment details offer the same external Google Maps directions and
+hospital contact/details search using the stored hospital name and address.
+Phone numbers are not copied into EverCare, and users are reminded to verify
+external details and availability.
 
 OpenStreetMap data can be incomplete or outdated. Nearby results do not imply
 that a hospital is open, has emergency capacity, or is the best medical option.

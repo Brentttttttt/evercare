@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../repositories/dashboard_repository.dart';
@@ -12,16 +14,54 @@ import '../../widgets/evercare_backend_scope.dart';
 import '../../widgets/section_header.dart';
 
 class HomeDashboardScreen extends StatefulWidget {
-  const HomeDashboardScreen({required this.onSelectTab, super.key});
+  const HomeDashboardScreen({
+    required this.onSelectTab,
+    this.isActive = true,
+    this.scrollController,
+    super.key,
+  });
 
   final ValueChanged<int> onSelectTab;
+  final bool isActive;
+  final ScrollController? scrollController;
 
   @override
   State<HomeDashboardScreen> createState() => _HomeDashboardScreenState();
 }
 
-class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
+class _HomeDashboardScreenState extends State<HomeDashboardScreen>
+    with WidgetsBindingObserver {
   Future<DashboardSummary>? _summary;
+  Timer? _summaryTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _updateSummaryTimer();
+  }
+
+  @override
+  void didUpdateWidget(covariant HomeDashboardScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isActive == widget.isActive) return;
+    _updateSummaryTimer();
+    if (widget.isActive) _reloadSummary();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && widget.isActive) {
+      _reloadSummary();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _summaryTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   void didChangeDependencies() {
@@ -38,13 +78,24 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
   }
 
   void _reloadSummary() {
-    setState(() => _summary = _loadSummary());
+    setState(() {
+      _summary = _loadSummary();
+    });
+  }
+
+  void _updateSummaryTimer() {
+    _summaryTimer?.cancel();
+    if (!widget.isActive) return;
+    _summaryTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (mounted) _reloadSummary();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final bpMonitor = BpMonitorBleScope.watch(context);
     return SingleChildScrollView(
+      controller: widget.scrollController,
       padding: mainPagePadding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -303,6 +354,8 @@ class _DashboardOverview extends StatelessWidget {
             value: summary.nextMedicationName ?? 'Nothing scheduled',
             detail: summary.nextMedicationTime == null
                 ? 'Review medication schedule'
+                : summary.nextMedicationDueNow
+                ? 'Due now · Confirm in Medications'
                 : 'Scheduled · ${summary.nextMedicationTime}',
             onTap: onMedication,
           ),
@@ -312,7 +365,9 @@ class _DashboardOverview extends StatelessWidget {
             color: AppColors.blue,
             label: 'Next appointment',
             value: summary.nextAppointmentTitle ?? 'No upcoming visit',
-            detail: _appointmentLabel(summary.nextAppointmentAt),
+            detail: summary.nextAppointmentDueNow
+                ? 'Due now · Confirm in Appointments'
+                : _appointmentLabel(summary.nextAppointmentAt),
             onTap: onAppointment,
           ),
         ],

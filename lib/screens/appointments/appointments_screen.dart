@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -8,7 +10,6 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_page.dart';
 import '../../widgets/app_skeleton.dart';
-import '../../widgets/appointment_card.dart';
 import '../../widgets/care_photo_banner.dart';
 import '../../widgets/empty_state_card.dart';
 import '../../widgets/evercare_backend_scope.dart';
@@ -17,18 +18,45 @@ import 'add_appointment_screen.dart';
 import 'appointment_detail_screen.dart';
 
 class AppointmentsScreen extends StatefulWidget {
-  const AppointmentsScreen({super.key});
+  const AppointmentsScreen({
+    super.key,
+    this.isActive = true,
+    this.scrollController,
+  });
+
+  final bool isActive;
+  final ScrollController? scrollController;
 
   @override
   State<AppointmentsScreen> createState() => _AppointmentsScreenState();
 }
 
-class _AppointmentsScreenState extends State<AppointmentsScreen> {
+class _AppointmentsScreenState extends State<AppointmentsScreen>
+    with WidgetsBindingObserver {
   int _section = 0;
   SupabaseClient? _client;
   String? _userId;
   AppointmentRepository? _repository;
   Future<List<Appointment>>? _appointments;
+  List<Appointment> _latestAppointments = const [];
+  Timer? _clockTimer;
+  DateTime _now = DateTime.now().toUtc();
+  final Set<String> _completingIds = {};
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _updateClockTimer();
+  }
+
+  @override
+  void didUpdateWidget(covariant AppointmentsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isActive == widget.isActive) return;
+    _updateClockTimer();
+    if (widget.isActive) _reload();
+  }
 
   @override
   void didChangeDependencies() {
@@ -50,16 +78,74 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
   void _reload() {
     final repository = _repository;
     if (repository == null) return;
-    setState(() => _appointments = repository.fetchAll());
+    _now = DateTime.now().toUtc();
+    setState(() {
+      _appointments = repository.fetchAll();
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && widget.isActive) _reload();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _clockTimer?.cancel();
+    super.dispose();
+  }
+
+  void _updateClockTimer() {
+    _clockTimer?.cancel();
+    if (!widget.isActive) return;
+    _clockTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (!mounted) return;
+      final previous = _now;
+      final now = DateTime.now().toUtc();
+      final crossedMissedBoundary = _latestAppointments.any(
+        (appointment) =>
+            appointment.status == AppointmentStatus.upcoming &&
+            appointment.visitStateAt(previous) !=
+                AppointmentVisitState.missed &&
+            appointment.visitStateAt(now) == AppointmentVisitState.missed,
+      );
+      setState(() => _now = now);
+      if (crossedMissedBoundary) _reload();
+    });
+  }
+
+  Future<void> _markDone(Appointment appointment) async {
+    final repository = _repository;
+    if (repository == null || !_completingIds.add(appointment.id)) return;
+    setState(() {});
+    try {
+      await repository.markCompleted(appointment.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${appointment.title} marked as done.')),
+      );
+      _reload();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not mark this appointment as done. Try again.'),
+        ),
+      );
+    } finally {
+      _completingIds.remove(appointment.id);
+      if (mounted) setState(() {});
+    }
   }
 
   Future<void> _open(Appointment appointment) async {
-    final changed = await Navigator.of(context).push<bool>(
+    await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         builder: (_) => AppointmentDetailScreen(appointment: appointment),
       ),
     );
-    if (changed == true && mounted) _reload();
+    if (mounted) _reload();
   }
 
   Future<void> _add() async {
@@ -78,6 +164,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
     return Stack(
       children: [
         SingleChildScrollView(
+          controller: widget.scrollController,
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 204),
           child: Column(
@@ -115,12 +202,19 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                     if (snapshot.hasError) {
                       return _AppointmentsError(onRetry: _reload);
                     }
+                    final appointments = snapshot.data ?? const [];
+                    _latestAppointments = appointments;
                     return _AppointmentsContent(
-                      appointments: snapshot.data ?? const [],
+                      appointments: appointments,
+                      now: _now,
                       section: _section,
                       onSectionChanged: (value) =>
                           setState(() => _section = value),
                       onOpen: _open,
+                      onMarkDone: (appointment) {
+                        unawaited(_markDone(appointment));
+                      },
+                      completingIds: _completingIds,
                     );
                   },
                 ),
@@ -166,48 +260,74 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
 class _AppointmentsContent extends StatelessWidget {
   const _AppointmentsContent({
     required this.appointments,
+    required this.now,
     required this.section,
     required this.onSectionChanged,
     required this.onOpen,
+    required this.onMarkDone,
+    required this.completingIds,
   });
 
   final List<Appointment> appointments;
+  final DateTime now;
   final int section;
   final ValueChanged<int> onSectionChanged;
   final ValueChanged<Appointment> onOpen;
+  final ValueChanged<Appointment> onMarkDone;
+  final Set<String> completingIds;
 
   @override
   Widget build(BuildContext context) {
-    final upcoming =
-        appointments
-            .where((item) => item.status == AppointmentStatus.upcoming)
-            .toList()
-          ..sort((a, b) => a.startsAt.compareTo(b.startsAt));
+    final upcoming = appointments.where((item) {
+      final state = item.visitStateAt(now);
+      return state == AppointmentVisitState.upcoming ||
+          state == AppointmentVisitState.due;
+    }).toList()..sort((a, b) => a.startsAt.compareTo(b.startsAt));
     final completed =
         appointments
-            .where((item) => item.status == AppointmentStatus.completed)
+            .where(
+              (item) =>
+                  item.visitStateAt(now) == AppointmentVisitState.completed,
+            )
+            .toList()
+          ..sort((a, b) => b.startsAt.compareTo(a.startsAt));
+    final missed =
+        appointments
+            .where(
+              (item) => item.visitStateAt(now) == AppointmentVisitState.missed,
+            )
             .toList()
           ..sort((a, b) => b.startsAt.compareTo(a.startsAt));
     final cancelled =
         appointments
-            .where((item) => item.status == AppointmentStatus.cancelled)
+            .where(
+              (item) =>
+                  item.visitStateAt(now) == AppointmentVisitState.cancelled,
+            )
             .toList()
           ..sort((a, b) => b.startsAt.compareTo(a.startsAt));
     final visible = switch (section) {
       0 => upcoming,
       1 => completed,
+      2 => missed,
       _ => cancelled,
     };
+    final nextAppointment = upcoming.firstOrNull;
+    final nextState = nextAppointment?.visitStateAt(now);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionHeader(
-          title: 'Next appointment',
-          subtitle: 'Your nearest scheduled visit',
+        SectionHeader(
+          title: nextState == AppointmentVisitState.due
+              ? 'Appointment reminder'
+              : 'Next appointment',
+          subtitle: nextState == AppointmentVisitState.due
+              ? 'This visit is ready to be confirmed'
+              : 'Your nearest scheduled visit',
         ),
         const SizedBox(height: 12),
-        if (upcoming.isEmpty)
+        if (nextAppointment == null)
           const EmptyStateCard(
             title: 'No upcoming appointment',
             message: 'Your next scheduled visit will appear here.',
@@ -215,8 +335,11 @@ class _AppointmentsContent extends StatelessWidget {
           )
         else
           _NextAppointmentCard(
-            appointment: upcoming.first,
-            onTap: () => onOpen(upcoming.first),
+            appointment: nextAppointment,
+            state: nextState!,
+            busy: completingIds.contains(nextAppointment.id),
+            onTap: () => onOpen(nextAppointment),
+            onMarkDone: () => onMarkDone(nextAppointment),
           ),
         const SizedBox(height: 28),
         SectionHeader(
@@ -236,6 +359,7 @@ class _AppointmentsContent extends StatelessWidget {
               child: Text(switch (section) {
                 0 => 'Upcoming',
                 1 => 'Completed',
+                2 => 'Missed',
                 _ => 'Cancelled',
               }, style: AppTextStyles.cardTitle),
             ),
@@ -251,12 +375,14 @@ class _AppointmentsContent extends StatelessWidget {
             title: switch (section) {
               0 => 'No upcoming appointments',
               1 => 'No completed appointments',
+              2 => 'No missed appointments',
               _ => 'No cancelled appointments',
             },
             message: 'Appointments in this category will appear here.',
             icon: switch (section) {
               0 => Icons.event_outlined,
               1 => Icons.event_available_outlined,
+              2 => Icons.event_busy_outlined,
               _ => Icons.event_busy_outlined,
             },
           )
@@ -268,7 +394,10 @@ class _AppointmentsContent extends StatelessWidget {
                 for (var index = 0; index < visible.length; index++) ...[
                   _CompactAppointmentRow(
                     appointment: visible[index],
+                    state: visible[index].visitStateAt(now),
+                    busy: completingIds.contains(visible[index].id),
                     onTap: () => onOpen(visible[index]),
+                    onMarkDone: () => onMarkDone(visible[index]),
                   ),
                   if (index != visible.length - 1)
                     const Divider(height: 1, indent: 70),
@@ -290,43 +419,37 @@ class _AppointmentStatusFilter extends StatelessWidget {
   final int selected;
   final ValueChanged<int> onChanged;
 
-  static const _labels = ['Upcoming', 'Completed', 'Cancelled'];
+  static const _labels = ['Upcoming', 'Done', 'Missed', 'Cancelled'];
 
   @override
   Widget build(BuildContext context) {
-    final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
-    final useWrappedControls =
-        MediaQuery.sizeOf(context).width < 350 || textScale > 1.3;
     return Semantics(
       container: true,
       label: 'Filter appointments by status',
-      child: useWrappedControls
-          ? Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: List.generate(_labels.length, (index) {
-                final label = _labels[index];
-                return ChoiceChip(
-                  selected: selected == index,
-                  showCheckmark: false,
-                  label: Text(label),
-                  onSelected: (_) => onChanged(index),
-                );
-              }),
-            )
-          : SizedBox(
-              width: double.infinity,
-              child: SegmentedButton<int>(
-                segments: List.generate(
-                  _labels.length,
-                  (index) =>
-                      ButtonSegment(value: index, label: Text(_labels[index])),
-                ),
-                selected: {selected},
-                showSelectedIcon: false,
-                onSelectionChanged: (value) => onChanged(value.first),
-              ),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: List.generate(_labels.length, (index) {
+          final label = _labels[index];
+          final isSelected = selected == index;
+          return ChoiceChip(
+            selected: isSelected,
+            showCheckmark: false,
+            avatar: Icon(
+              switch (index) {
+                0 => Icons.calendar_today_outlined,
+                1 => Icons.check_circle_outline_rounded,
+                2 => Icons.event_busy_outlined,
+                _ => Icons.cancel_outlined,
+              },
+              size: 18,
+              color: isSelected ? AppColors.darkGreen : AppColors.secondaryText,
             ),
+            label: Text(label),
+            onSelected: (_) => onChanged(index),
+          );
+        }),
+      ),
     );
   }
 }
@@ -334,103 +457,179 @@ class _AppointmentStatusFilter extends StatelessWidget {
 class _CompactAppointmentRow extends StatelessWidget {
   const _CompactAppointmentRow({
     required this.appointment,
+    required this.state,
+    required this.busy,
     required this.onTap,
+    required this.onMarkDone,
   });
 
   final Appointment appointment;
+  final AppointmentVisitState state;
+  final bool busy;
   final VoidCallback onTap;
+  final VoidCallback onMarkDone;
 
   @override
   Widget build(BuildContext context) {
-    final colors = appointmentStatusColors(appointment.status);
+    final colors = _appointmentVisitColors(state);
+    final actionLabel = switch (state) {
+      AppointmentVisitState.due => 'Mark as Done',
+      AppointmentVisitState.missed => 'Mark Done Late',
+      _ => null,
+    };
     return Semantics(
-      button: true,
-      label:
-          '${appointment.title}, ${appointment.doctorName}, '
-          '${appointment.dateLabel} at ${appointment.timeLabel}, '
-          '${appointment.clinic}, ${appointment.statusLabel}',
-      excludeSemantics: true,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(14, 14, 10, 14),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: colors.background,
-                    borderRadius: BorderRadius.circular(12),
+      container: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Semantics(
+            button: true,
+            label:
+                '${appointment.title}, ${appointment.doctorName}, '
+                '${appointment.dateLabel} at ${appointment.timeLabel}, '
+                '${appointment.clinic}, ${_appointmentVisitLabel(state)}',
+            excludeSemantics: true,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onTap,
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    14,
+                    14,
+                    10,
+                    actionLabel == null ? 14 : 10,
                   ),
-                  child: Icon(
-                    switch (appointment.status) {
-                      AppointmentStatus.upcoming =>
-                        Icons.calendar_month_rounded,
-                      AppointmentStatus.completed =>
-                        Icons.event_available_rounded,
-                      AppointmentStatus.cancelled => Icons.event_busy_rounded,
-                    },
-                    size: 22,
-                    color: colors.foreground,
-                  ),
-                ),
-                const SizedBox(width: 13),
-                Expanded(
-                  child: Column(
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        appointment.title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTextStyles.cardTitle,
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        appointment.doctorName,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTextStyles.bodyMuted,
-                      ),
-                      if (appointment.specialty.isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          appointment.specialty,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTextStyles.small,
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: colors.background,
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                      ],
-                      const SizedBox(height: 9),
-                      _CompactAppointmentFact(
-                        icon: Icons.event_outlined,
-                        text:
-                            '${appointment.dateLabel} • ${appointment.timeLabel}',
+                        child: Icon(
+                          _appointmentVisitIcon(state),
+                          size: 22,
+                          color: colors.foreground,
+                        ),
                       ),
-                      const SizedBox(height: 6),
-                      _CompactAppointmentFact(
-                        icon: Icons.local_hospital_outlined,
-                        text: appointment.clinic,
+                      const SizedBox(width: 13),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              appointment.title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTextStyles.cardTitle,
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              appointment.doctorName,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTextStyles.bodyMuted,
+                            ),
+                            if (appointment.specialty.isNotEmpty) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                appointment.specialty,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTextStyles.small,
+                              ),
+                            ],
+                            const SizedBox(height: 9),
+                            _CompactAppointmentFact(
+                              icon: Icons.event_outlined,
+                              text:
+                                  '${appointment.dateLabel} • ${appointment.timeLabel}',
+                            ),
+                            const SizedBox(height: 6),
+                            _CompactAppointmentFact(
+                              icon: Icons.local_hospital_outlined,
+                              text: appointment.clinic,
+                            ),
+                            const SizedBox(height: 9),
+                            _AppointmentStatusBadge(state: state),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Padding(
+                        padding: EdgeInsets.only(top: 9),
+                        child: Icon(
+                          Icons.chevron_right_rounded,
+                          size: 22,
+                          color: AppColors.secondaryText,
+                        ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 4),
-                const Padding(
-                  padding: EdgeInsets.only(top: 9),
-                  child: Icon(
-                    Icons.chevron_right_rounded,
-                    size: 22,
-                    color: AppColors.secondaryText,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
+          if (actionLabel != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+              child: SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: busy ? null : onMarkDone,
+                  icon: busy
+                      ? const SizedBox.square(
+                          dimension: 17,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.check_rounded),
+                  label: Text(busy ? 'Saving…' : actionLabel),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AppointmentStatusBadge extends StatelessWidget {
+  const _AppointmentStatusBadge({required this.state});
+
+  final AppointmentVisitState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = _appointmentVisitColors(state);
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+        decoration: BoxDecoration(
+          color: colors.background,
+          borderRadius: BorderRadius.circular(9),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              _appointmentVisitIcon(state),
+              size: 15,
+              color: colors.foreground,
+            ),
+            const SizedBox(width: 5),
+            Text(
+              _appointmentVisitLabel(state),
+              style: AppTextStyles.small.copyWith(
+                color: colors.foreground,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -465,10 +664,19 @@ class _CompactAppointmentFact extends StatelessWidget {
 }
 
 class _NextAppointmentCard extends StatelessWidget {
-  const _NextAppointmentCard({required this.appointment, required this.onTap});
+  const _NextAppointmentCard({
+    required this.appointment,
+    required this.state,
+    required this.busy,
+    required this.onTap,
+    required this.onMarkDone,
+  });
 
   final Appointment appointment;
+  final AppointmentVisitState state;
+  final bool busy;
   final VoidCallback onTap;
+  final VoidCallback onMarkDone;
 
   @override
   Widget build(BuildContext context) {
@@ -491,6 +699,7 @@ class _NextAppointmentCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
                       width: 51,
@@ -526,6 +735,27 @@ class _NextAppointmentCard extends StatelessWidget {
                         ],
                       ),
                     ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 9,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: .14),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: .18),
+                        ),
+                      ),
+                      child: Text(
+                        _appointmentVisitLabel(state),
+                        style: AppTextStyles.small.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 19),
@@ -546,21 +776,50 @@ class _NextAppointmentCard extends StatelessWidget {
                 const SizedBox(height: 19),
                 Divider(color: Colors.white.withValues(alpha: .24), height: 1),
                 const SizedBox(height: 14),
-                const Row(
+                Row(
                   children: [
                     Expanded(
                       child: Text(
-                        'View appointment details',
-                        style: TextStyle(
+                        state == AppointmentVisitState.due
+                            ? 'Visit is due • open details'
+                            : 'View appointment details',
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
-                    Icon(Icons.chevron_right_rounded, color: Colors.white),
+                    const Icon(
+                      Icons.chevron_right_rounded,
+                      color: Colors.white,
+                    ),
                   ],
                 ),
+                if (state == AppointmentVisitState.due) ...[
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: busy ? null : onMarkDone,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: AppColors.darkGreen,
+                        disabledBackgroundColor: Colors.white.withValues(
+                          alpha: .65,
+                        ),
+                        disabledForegroundColor: AppColors.darkGreen,
+                      ),
+                      icon: busy
+                          ? const SizedBox.square(
+                              dimension: 17,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.check_rounded),
+                      label: Text(busy ? 'Saving…' : 'Mark as Done'),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -568,6 +827,53 @@ class _NextAppointmentCard extends StatelessWidget {
       ),
     );
   }
+}
+
+({Color background, Color foreground}) _appointmentVisitColors(
+  AppointmentVisitState state,
+) {
+  return switch (state) {
+    AppointmentVisitState.upcoming => (
+      background: AppColors.paleBlue,
+      foreground: AppColors.blue,
+    ),
+    AppointmentVisitState.due => (
+      background: AppColors.warningContainer,
+      foreground: AppColors.warning,
+    ),
+    AppointmentVisitState.completed => (
+      background: AppColors.lightGreen,
+      foreground: AppColors.darkGreen,
+    ),
+    AppointmentVisitState.missed => (
+      background: AppColors.destructiveContainer,
+      foreground: AppColors.danger,
+    ),
+    AppointmentVisitState.cancelled => (
+      background: AppColors.muted,
+      foreground: AppColors.secondaryText,
+    ),
+  };
+}
+
+String _appointmentVisitLabel(AppointmentVisitState state) {
+  return switch (state) {
+    AppointmentVisitState.upcoming => 'Upcoming',
+    AppointmentVisitState.due => 'Due now',
+    AppointmentVisitState.completed => 'Completed',
+    AppointmentVisitState.missed => 'Missed',
+    AppointmentVisitState.cancelled => 'Cancelled',
+  };
+}
+
+IconData _appointmentVisitIcon(AppointmentVisitState state) {
+  return switch (state) {
+    AppointmentVisitState.upcoming => Icons.calendar_month_rounded,
+    AppointmentVisitState.due => Icons.notifications_active_rounded,
+    AppointmentVisitState.completed => Icons.event_available_rounded,
+    AppointmentVisitState.missed => Icons.event_busy_rounded,
+    AppointmentVisitState.cancelled => Icons.block_outlined,
+  };
 }
 
 class _BottomActionScrim extends StatelessWidget {

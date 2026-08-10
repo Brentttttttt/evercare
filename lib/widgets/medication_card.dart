@@ -17,7 +17,8 @@ class MedicationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final active = medication.isActive;
+    final active = medication.isActive && !medication.isCompleted;
+    final positive = active || medication.isCompleted;
     return AppCard(
       onTap: onTap,
       child: Row(
@@ -27,12 +28,12 @@ class MedicationCard extends StatelessWidget {
             width: 50,
             height: 50,
             decoration: BoxDecoration(
-              color: active ? AppColors.lightGreen : const Color(0xFFFFF4E1),
+              color: positive ? AppColors.lightGreen : const Color(0xFFFFF4E1),
               borderRadius: BorderRadius.circular(15),
             ),
             child: Icon(
               Icons.medication_rounded,
-              color: active ? AppColors.primaryGreen : AppColors.warning,
+              color: positive ? AppColors.primaryGreen : AppColors.warning,
               size: 24,
             ),
           ),
@@ -52,6 +53,10 @@ class MedicationCard extends StatelessWidget {
                   runSpacing: 8,
                   children: [
                     _Pill(
+                      label: medication.scheduleDaysLabel,
+                      icon: Icons.calendar_view_week_rounded,
+                    ),
+                    _Pill(
                       label: medication.scheduleLabel,
                       icon: Icons.schedule_rounded,
                     ),
@@ -59,8 +64,10 @@ class MedicationCard extends StatelessWidget {
                       label: medication.statusLabel,
                       icon: active
                           ? Icons.check_circle
+                          : medication.isCompleted
+                          ? Icons.task_alt_rounded
                           : Icons.pause_circle_outline_rounded,
-                      positive: active,
+                      positive: positive,
                     ),
                   ],
                 ),

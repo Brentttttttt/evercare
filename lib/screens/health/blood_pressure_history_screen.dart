@@ -33,7 +33,11 @@ class _BloodPressureHistoryScreenState
     return BloodPressureRepository(client).list();
   }
 
-  void _reload() => setState(() => _readings = _load());
+  void _reload() {
+    setState(() {
+      _readings = _load();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
