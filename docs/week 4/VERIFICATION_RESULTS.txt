@@ -1,0 +1,33 @@
+EVERCARE WEEK 4 CRUD — VERIFICATION RESULTS
+===========================================
+
+Prepared: August 12, 2026
+Entity: Journal Entries
+Persistence: Supabase PostgreSQL and private Supabase Storage
+
+AUTOMATED CHECKS
+----------------
+[PASS] Windows debug application build
+[PASS] flutter analyze — No issues found
+[PASS] flutter test — 99 tests passed
+[PASS] Source ZIP content check — 251 entries
+[PASS] Source ZIP excludes .git, .dart_tool, build caches, local.properties,
+       IDE folders, APKs, environment files, and signing files
+
+LIVE CRUD CHECK
+---------------
+[PASS] CREATE — temporary Week 4 journal entry saved through the production UI
+[PASS] READ — saved entry returned from Supabase and opened in the diary reader
+[PASS] UPDATE — title/body changes saved and returned in the journal list
+[PASS] DELETE — permanent-delete confirmation shown and record removed
+[PASS] CLEANUP — temporary classroom record no longer remains in the account
+
+SECURITY AND VALIDATION
+-----------------------
+[PASS] Required title and journal body validation
+[PASS] Trimmed input and duplicate-submit prevention
+[PASS] Unsaved-change protection and destructive-delete confirmation
+[PASS] Owner-scoped repository queries and Supabase Row Level Security
+[PASS] Private journal photo bucket with owner-only Storage policies
+
+Repository: https://github.com/Brentttttttt/evercare
