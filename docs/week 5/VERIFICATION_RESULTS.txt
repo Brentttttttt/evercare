@@ -1,0 +1,55 @@
+EVERCARE - WEEK 5 API INTEGRATION VERIFICATION
+==============================================
+
+Verified: August 15, 2026 (Asia/Manila)
+Repository: https://github.com/Brentttttttt/evercare
+Commit audited: 418cc8e
+
+LIVE HTTP EVIDENCE
+------------------
+Nominatim Search API
+  Method: GET
+  Endpoint: https://nominatim.openstreetmap.org/search
+  Query: hospital, Bulacan, Philippines
+  Result: HTTP 200; 15 JSON place records
+
+Overpass API
+  Method: POST
+  Endpoint used: https://overpass-api.de/api/interpreter
+  Public demo center: 14.8333, 120.8833 (Guiguinto area)
+  Radius: 15,000 meters
+  Result: HTTP 200; 75 JSON elements
+  UI behavior: EverCare deduplicates, sorts by distance, and displays up to 25
+  nearby hospital results.
+
+PROJECT VERIFICATION
+--------------------
+flutter analyze
+  PASS - No issues found.
+
+flutter test
+  PASS - 99 tests passed.
+
+flutter test test/services/hospital_finder_service_test.dart
+  PASS - 10 tests passed.
+
+flutter build windows --debug
+  PASS - build/windows/x64/runner/Debug/evercare.exe created successfully.
+
+REQUIREMENT CHECK
+-----------------
+[PASS] External API integrated
+[PASS] HTTP GET requests implemented
+[PASS] HTTP POST request implemented where applicable
+[PASS] JSON responses parsed and validated
+[PASS] Retrieved data displayed dynamically in the UI
+[PASS] Loading, empty, permission, invalid-data, timeout, and HTTP error states handled
+[PASS] API purpose, endpoints, request methods, and features documented
+[PASS] Genuine implementation, UI, and JSON screenshots included
+[PASS] GitHub repository link included instead of a source ZIP
+
+PRIVACY AND SAFETY
+------------------
+No API key is required. Evidence contains no patient or account data. Public
+OpenStreetMap data may be incomplete or outdated and does not verify hospital
+availability, capacity, phone numbers, or quality of care.

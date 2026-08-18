@@ -1,0 +1,1071 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API 0.7.62.11 87bfad18",
+  "osm3s": {
+    "timestamp_osm_base": "2026-08-15T02:13:50Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+  },
+  "elements": [
+    {
+      "type": "node",
+      "id": 589717017,
+      "lat": 14.7384585,
+      "lon": 120.9580669,
+      "tags": {
+        "amenity": "hospital",
+        "name": "B A Hospital",
+        "source": "GPS"
+      }
+    },
+    {
+      "type": "node",
+      "id": 597011693,
+      "lat": 14.906521,
+      "lon": 120.8695972,
+      "tags": {
+        "amenity": "hospital",
+        "healthcare": "hospital",
+        "name": "F M Cruz Ortopedic",
+        "source": "GPS"
+      }
+    },
+    {
+      "type": "node",
+      "id": 597116607,
+      "lat": 14.7445042,
+      "lon": 120.9110293,
+      "tags": {
+        "addr:street": "Tawiran Road",
+        "amenity": "hospital",
+        "name": "Tawiran Public Clinic"
+      }
+    },
+    {
+      "type": "node",
+      "id": 882518123,
+      "lat": 14.8500309,
+      "lon": 120.8226957,
+      "tags": {
+        "amenity": "hospital",
+        "name": "EENT Hospital"
+      }
+    },
+    {
+      "type": "node",
+      "id": 882518130,
+      "lat": 14.851879,
+      "lon": 120.8190497,
+      "tags": {
+        "amenity": "hospital",
+        "name": "Santos Clinic"
+      }
+    },
+    {
+      "type": "node",
+      "id": 2907521653,
+      "lat": 14.8393048,
+      "lon": 120.8661074,
+      "tags": {
+        "amenity": "hospital",
+        "healthcare": "hospital",
+        "name": "Magpoc Maternity Clinic"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3045276160,
+      "lat": 14.8502435,
+      "lon": 120.8220702,
+      "tags": {
+        "amenity": "hospital",
+        "name": "Malolos Eye Center"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3045276161,
+      "lat": 14.8501744,
+      "lon": 120.8222762,
+      "tags": {
+        "amenity": "hospital",
+        "name": "Malolos Maternity Hospital",
+        "police": "police station"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3047200696,
+      "lat": 14.8504787,
+      "lon": 120.804522,
+      "tags": {
+        "amenity": "hospital",
+        "name": "Malolos Klinika & Laboratorio"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3054644016,
+      "lat": 14.9024985,
+      "lon": 120.844542,
+      "tags": {
+        "addr:city": "Pulilan",
+        "addr:street": "Pulilan Regional Road",
+        "amenity": "hospital",
+        "name": "Good Shepherd Hospital"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3062007808,
+      "lat": 14.8656746,
+      "lon": 120.8211693,
+      "tags": {
+        "amenity": "hospital",
+        "name": "Malolos Veterinary Clinic"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3062591012,
+      "lat": 14.9019537,
+      "lon": 120.886442,
+      "tags": {
+        "amenity": "hospital",
+        "name": "San Nicolas Dental Clinic"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3097107345,
+      "lat": 14.8605135,
+      "lon": 120.8063264,
+      "tags": {
+        "amenity": "hospital",
+        "name": "Habilities Center for Intervention (Therapy Center)"
+      }
+    },
+    {
+      "type": "node",
+      "id": 3097964953,
+      "lat": 14.8556153,
+      "lon": 120.8118866,
+      "tags": {
+        "addr:city": "Malolos",
+        "addr:postcode": "3000",
+        "addr:street": "Sapphire Street",
+        "amenity": "hospital",
+        "name": "Physical Medicine & Rehabilitation Malolos"
+      }
+    },
+    {
+      "type": "node",
+      "id": 5737752391,
+      "lat": 14.7497264,
+      "lon": 120.9571535,
+      "tags": {
+        "amenity": "hospital",
+        "healthcare": "hospital"
+      }
+    },
+    {
+      "type": "node",
+      "id": 7010447078,
+      "lat": 14.829329,
+      "lon": 120.8295098,
+      "tags": {
+        "amenity": "hospital",
+        "healthcare": "hospital"
+      }
+    },
+    {
+      "type": "way",
+      "id": 124180553,
+      "center": {
+        "lat": 14.8394006,
+        "lon": 120.7522043
+      },
+      "tags": {
+        "addr:city": "Hagonoy",
+        "amenity": "hospital",
+        "building": "yes",
+        "emergency": "yes",
+        "name": "Divine Word Hospital"
+      }
+    },
+    {
+      "type": "way",
+      "id": 164577919,
+      "center": {
+        "lat": 14.8094362,
+        "lon": 120.9477087
+      },
+      "tags": {
+        "amenity": "hospital",
+        "healthcare": "hospital",
+        "name": "Mateo Diagnostic Hospital"
+      }
+    },
+    {
+      "type": "way",
+      "id": 205714643,
+      "center": {
+        "lat": 14.8351956,
+        "lon": 120.8914682
+      },
+      "tags": {
+        "amenity": "hospital",
+        "name": "Ospital Ng Guiguinto"
+      }
+    },
+    {
+      "type": "way",
+      "id": 264898870,
+      "center": {
+        "lat": 14.8409208,
+        "lon": 120.8117157
+      },
+      "tags": {
+        "addr:city": "Malolos",
+        "addr:street": "F. Estrella Street",
+        "amenity": "hospital",
+        "beds": "28",
+        "name": "Santos General Hospital",
+        "operator:type": "private",
+        "ref": "DOH000000000004199"
+      }
+    },
+    {
+      "type": "way",
+      "id": 282854038,
+      "center": {
+        "lat": 14.7515761,
+        "lon": 120.9552475
+      },
+      "tags": {
+        "addr:city": "Meycauayan",
+        "addr:postcode": "3020",
+        "addr:street": "MacArthur Highway",
+        "amenity": "hospital",
+        "building": "hospital",
+        "check_date": "2023-12-30",
+        "emergency": "yes",
+        "name": "Nazarenus Hospital",
+        "previously": "node:255063538",
+        "ref:doh": "5986"
+      }
+    },
+    {
+      "type": "way",
+      "id": 292038834,
+      "center": {
+        "lat": 14.7371903,
+        "lon": 120.9579768
+      },
+      "tags": {
+        "amenity": "hospital",
+        "building": "yes",
+        "healthcare": "hospital",
+        "name": "The Lord's Hospital"
+      }
+    },
+    {
+      "type": "way",
+      "id": 292038922,
+      "center": {
+        "lat": 14.7339116,
+        "lon": 120.957462
+      },
+      "tags": {
+        "addr:place": "Meycauayan",
+        "amenity": "hospital",
+        "building": "yes",
+        "healthcare": "hospital",
+        "name": "St. Francis Hospital"
+      }
+    },
+    {
+      "type": "way",
+      "id": 300440806,
+      "center": {
+        "lat": 14.8502133,
+        "lon": 120.8221659
+      },
+      "tags": {
+        "amenity": "hospital",
+        "healthcare": "hospital",
+        "name": "Malolos Maternity Hospital"
+      }
+    },
+    {
+      "type": "way",
+      "id": 300444412,
+      "center": {
+        "lat": 14.8518781,
+        "lon": 120.8190321
+      },
+      "tags": {
+        "amenity": "hospital"
+      }
+    },
+    {
+      "type": "way",
+      "id": 300448295,
+      "center": {
+        "lat": 14.8520039,
+        "lon": 120.8174779
+      },
+      "tags": {
+        "addr:city": "Malolos",
+        "addr:full": "Dr. Peralta Street, Guinhawa Subdivision, Malolos, Bulacan",
+        "addr:street": "Doctor Peralta Avenue",
+        "amenity": "hospital",
+        "building": "yes",
+        "contact:phone": "(044) 794 4744;(044) 794 7135;",
+        "contact:website": "http://sacredheartmalolos.com/",
+        "emergency": "yes",
+        "healthcare": "hospital",
+        "name": "Sacred Heart Hospital of Malolos",
+        "wheelchair": "yes"
+      }
+    },
+    {
+      "type": "way",
+      "id": 300448296,
+      "center": {
+        "lat": 14.8521692,
+        "lon": 120.817713
+      },
+      "tags": {
+        "addr:city": "Malolos",
+        "addr:full": "Dr. Peralta Street, Guinhawa Subdivision, Malolos, Bulacan",
+        "addr:street": "Doctor Peralta Avenue",
+        "amenity": "hospital",
+        "building": "yes",
+        "contact:phone": "(044) 794 4744;(044) 794 7135;",
+        "contact:website": "http://sacredheartmalolos.com/",
+        "emergency": "yes",
+        "healthcare": "hospital",
+        "name": "Sacred Heart Hospital of Malolos",
+        "wheelchair": "yes"
+      }
+    },
+    {
+      "type": "way",
+      "id": 300475358,
+      "center": {
+        "lat": 14.8583597,
+        "lon": 120.8161108
+      },
+      "tags": {
+        "amenity": "hospital",
+        "building": "hospital",
+        "name": "Malolos Physical Therapy and Rehabilitation Center"
+      }
+    },
+    {
+      "type": "way",
+      "id": 300715337,
+      "center": {
+        "lat": 14.8674288,
+        "lon": 120.8213959
+      },
+      "tags": {
+        "amenity": "hospital",
+        "name": "Dr. Ofelia L Mendoza Maternity and General Hospital"
+      }
+    },
+    {
+      "type": "way",
+      "id": 300732262,
+      "center": {
+        "lat": 14.8865408,
+        "lon": 120.8648399
+      },
+      "tags": {
+        "amenity": "hospital",
+        "check_date": "2026-06-10",
+        "name": "La Consolacion University General Hospital"
+      }
+    },
+    {
+      "type": "way",
+      "id": 300807547,
+      "center": {
+        "lat": 14.8451778,
+        "lon": 120.8130812
+      },
+      "tags": {
+        "amenity": "hospital",
+        "name": "Ofelia L. Mendoza Maternity and General Hospital"
+      }
+    },
+    {
+      "type": "way",
+      "id": 300931494,
+      "center": {
+        "lat": 14.8377201,
+        "lon": 120.8135018
+      },
+      "tags": {
+        "amenity": "hospital",
+        "name": "Mary Immaculate Maternity and General Hospital"
+      }
+    },
+    {
+      "type": "way",
+      "id": 300938081,
+      "center": {
+        "lat": 14.8463693,
+        "lon": 120.8346475
+      },
+      "tags": {
+        "amenity": "hospital",
+        "name": "Graman Medical and Maternity Hospital"
+      }
+    },
+    {
+      "type": "way",
+      "id": 301020880,
+      "center": {
+        "lat": 14.8709314,
+        "lon": 120.821308
+      },
+      "tags": {
+        "amenity": "hospital",
+        "name": "Santisima Trinidad General Hospital"
+      }
+    },
+    {
+      "type": "way",
+      "id": 301177378,
+      "center": {
+        "lat": 14.8408632,
+        "lon": 120.8611904
+      },
+      "tags": {
+        "addr:city": "Guiguinto",
+        "addr:street": "Doña Remedios Trinidad Highway",
+        "amenity": "hospital",
+        "healthcare": "hospital",
+        "name": "Bulacan Polymedic Hospital"
+      }
+    },
+    {
+      "type": "way",
+      "id": 301416942,
+      "center": {
+        "lat": 14.9076522,
+        "lon": 120.771239
+      },
+      "tags": {
+        "amenity": "hospital",
+        "name": "Calumpit District Hospital"
+      }
+    },
+    {
+      "type": "way",
+      "id": 301730164,
+      "center": {
+        "lat": 14.8859416,
+        "lon": 120.8446579
+      },
+      "tags": {
+        "amenity": "hospital",
+        "name": "Mary The Queen Maternity & General Hospital"
+      }
+    },
+    {
+      "type": "way",
+      "id": 302012437,
+      "center": {
+        "lat": 14.8373827,
+        "lon": 120.7895052
+      },
+      "tags": {
+        "addr:postcode": "3001",
+        "addr:province": "Bulacan",
+        "addr:street": "Paombong Provincial Road",
+        "addr:town": "Hagonoy",
+        "amenity": "hospital",
+        "beds": "17",
+        "contact:email": "sanpascualbaylongeneralhospital@yahoo.com",
+        "contact:phone": "+63 446652818",
+        "healthcare": "hospital",
+        "name": "San Pascual Baylon Maternity and General Hospital",
+        "old_name": "San Pascual Baylon General Hospital",
+        "operator:type": "private",
+        "ref": "DOH000000000001805"
+      }
+    },
+    {
+      "type": "way",
+      "id": 302172528,
+      "center": {
+        "lat": 14.8863266,
+        "lon": 120.8633919
+      },
+      "tags": {
+        "addr:city": "Plaridel",
+        "addr:province": "Bulacan",
+        "addr:street": "Governor Padilla Street",
+        "amenity": "hospital",
+        "building": "hospital",
+        "healthcare": "hospital",
+        "name": "La Consolacion University General Hospital"
+      }
+    },
+    {
+      "type": "way",
+      "id": 302181051,
+      "center": {
+        "lat": 14.8887826,
+        "lon": 120.8666506
+      },
+      "tags": {
+        "amenity": "hospital",
+        "name": "Marcelo - Padilla Children's & Medical Hospital"
+      }
+    },
+    {
+      "type": "way",
+      "id": 302984763,
+      "center": {
+        "lat": 14.7612039,
+        "lon": 120.9477515
+      },
+      "tags": {
+        "amenity": "hospital",
+        "building": "yes",
+        "healthcare": "hospital",
+        "name": "St. Michael Hospital"
+      }
+    },
+    {
+      "type": "way",
+      "id": 303026515,
+      "center": {
+        "lat": 14.8110606,
+        "lon": 120.8423564
+      },
+      "tags": {
+        "amenity": "hospital",
+        "name": "Doc Rommel Cruz Hospital"
+      }
+    },
+    {
+      "type": "way",
+      "id": 303419303,
+      "center": {
+        "lat": 14.7929097,
+        "lon": 120.8799144
+      },
+      "tags": {
+        "addr:place": "Bagumbayan",
+        "amenity": "hospital",
+        "healthcare": "hospital",
+        "name": "G. H. del Pilar Hospital",
+        "source": "Benta Serbisyo"
+      }
+    },
+    {
+      "type": "way",
+      "id": 303750180,
+      "center": {
+        "lat": 14.783941,
+        "lon": 120.9329149
+      },
+      "tags": {
+        "addr:postcode": "3018",
+        "addr:street": "MacArthur Highway",
+        "amenity": "hospital",
+        "building": "yes",
+        "building:levels": "3",
+        "healthcare": "hospital",
+        "name": "Mount Carmel Medical Center",
+        "opening_hours": "Mo-Sa 08:00-17:00"
+      }
+    },
+    {
+      "type": "way",
+      "id": 354208590,
+      "center": {
+        "lat": 14.8086385,
+        "lon": 120.9454557
+      },
+      "tags": {
+        "amenity": "hospital",
+        "healthcare": "hospital",
+        "name": "Bulacan Memorial Medical Group Hospital"
+      }
+    },
+    {
+      "type": "way",
+      "id": 354429846,
+      "center": {
+        "lat": 14.7644218,
+        "lon": 120.9887687
+      },
+      "tags": {
+        "addr:city": "Meycauayan",
+        "addr:postcode": "3020",
+        "addr:street": "Meycauayan-Iba Road",
+        "amenity": "hospital",
+        "name": "Marymount Hospital",
+        "operator:type": "private",
+        "ref:doh": "31937"
+      }
+    },
+    {
+      "type": "way",
+      "id": 354709202,
+      "center": {
+        "lat": 14.8211894,
+        "lon": 120.9625432
+      },
+      "tags": {
+        "amenity": "hospital",
+        "building": "yes",
+        "healthcare": "hospital",
+        "name": "Mendoza General Hospital"
+      }
+    },
+    {
+      "type": "way",
+      "id": 397040242,
+      "center": {
+        "lat": 14.8940287,
+        "lon": 120.8661273
+      },
+      "tags": {
+        "addr:city": "Pulilan",
+        "addr:postcode": "3005",
+        "addr:street": "Doña Remedios Trinidad Highway",
+        "amenity": "hospital",
+        "name": "Our Lady of Mercy General Hosptal",
+        "previously": "node:597013126",
+        "source": "GPS"
+      }
+    },
+    {
+      "type": "way",
+      "id": 559634072,
+      "center": {
+        "lat": 14.8801062,
+        "lon": 120.86445
+      },
+      "tags": {
+        "amenity": "hospital",
+        "building": "hospital",
+        "name": "Plaridel County Hospital"
+      }
+    },
+    {
+      "type": "way",
+      "id": 791047068,
+      "center": {
+        "lat": 14.8870162,
+        "lon": 120.8667661
+      },
+      "tags": {
+        "addr:street": "Governor Padilla Street",
+        "amenity": "hospital",
+        "healthcare": "hospital",
+        "name": "Reina del Cielo Maternity & General Hospital",
+        "old_name": "Mary the Queen Maternity & General Hospital"
+      }
+    },
+    {
+      "type": "way",
+      "id": 792424969,
+      "center": {
+        "lat": 14.9561351,
+        "lon": 120.9017266
+      },
+      "tags": {
+        "addr:street": "Mariano Ponce Street",
+        "amenity": "hospital",
+        "building": "hospital",
+        "name": "Marcelo Hospital"
+      }
+    },
+    {
+      "type": "way",
+      "id": 792424970,
+      "center": {
+        "lat": 14.9562836,
+        "lon": 120.9019018
+      },
+      "tags": {
+        "amenity": "hospital",
+        "healthcare": "hospital",
+        "name": "Marcelo Hospital Grounds and Parking Lot"
+      }
+    },
+    {
+      "type": "way",
+      "id": 801814584,
+      "center": {
+        "lat": 14.8652417,
+        "lon": 120.9356351
+      },
+      "tags": {
+        "addr:street": "Balagtas-Pandi Road",
+        "amenity": "hospital",
+        "healthcare": "hospital",
+        "name": "Pandi District Hospital"
+      }
+    },
+    {
+      "type": "way",
+      "id": 876024841,
+      "center": {
+        "lat": 14.8261853,
+        "lon": 120.9805346
+      },
+      "tags": {
+        "addr:city": "Santa Maria",
+        "addr:street": "Santa Maria - San Jose Road",
+        "amenity": "hospital",
+        "building": "hospital",
+        "building:levels": "2",
+        "name": "Dr. Cabuco Hospital"
+      }
+    },
+    {
+      "type": "way",
+      "id": 982092608,
+      "center": {
+        "lat": 14.7343989,
+        "lon": 120.9685504
+      },
+      "tags": {
+        "amenity": "hospital"
+      }
+    },
+    {
+      "type": "way",
+      "id": 1104981743,
+      "center": {
+        "lat": 14.7955185,
+        "lon": 120.928874
+      },
+      "tags": {
+        "addr:town": "Bocaue",
+        "amenity": "hospital",
+        "healthcare": "hospital",
+        "name": "Saint Paul Hospital"
+      }
+    },
+    {
+      "type": "way",
+      "id": 1118718035,
+      "center": {
+        "lat": 14.818276,
+        "lon": 120.9041582
+      },
+      "tags": {
+        "building": "yes",
+        "healthcare": "hospital",
+        "name": "United Balagtas Doctors Hospital"
+      }
+    },
+    {
+      "type": "way",
+      "id": 1122933582,
+      "center": {
+        "lat": 14.8517095,
+        "lon": 120.8177625
+      },
+      "tags": {
+        "addr:city": "Malolos",
+        "addr:full": "Dr. Peralta Street, Guinhawa Subdivision, Malolos, Bulacan",
+        "addr:street": "Doctor Peralta Avenue",
+        "amenity": "hospital",
+        "building": "yes",
+        "contact:phone": "(044) 794 4744;(044) 794 7135;",
+        "contact:website": "http://sacredheartmalolos.com/",
+        "emergency": "yes",
+        "healthcare": "hospital",
+        "name": "Sacred Heart Hospital of Malolos",
+        "wheelchair": "yes"
+      }
+    },
+    {
+      "type": "way",
+      "id": 1151696678,
+      "center": {
+        "lat": 14.9064974,
+        "lon": 120.8696362
+      },
+      "tags": {
+        "amenity": "hospital",
+        "emergency": "yes",
+        "healthcare": "hospital",
+        "healthcare:speciality": "orthopaedics",
+        "name": "FM Cruz Orthopedic & General Hospital"
+      }
+    },
+    {
+      "type": "way",
+      "id": 1159138489,
+      "center": {
+        "lat": 14.8223897,
+        "lon": 120.9677962
+      },
+      "tags": {
+        "amenity": "hospital",
+        "name": "Saint Mary's Hospital"
+      }
+    },
+    {
+      "type": "way",
+      "id": 1161573906,
+      "center": {
+        "lat": 14.829385,
+        "lon": 120.9050979
+      },
+      "tags": {
+        "amenity": "hospital",
+        "name": "Grace Memorial Hospital"
+      }
+    },
+    {
+      "type": "way",
+      "id": 1189558025,
+      "center": {
+        "lat": 14.8185056,
+        "lon": 120.9042278
+      },
+      "tags": {
+        "amenity": "hospital",
+        "emergency": "yes",
+        "healthcare": "hospital",
+        "name": "United Balagtas Doctors Hospital"
+      }
+    },
+    {
+      "type": "way",
+      "id": 1192253013,
+      "center": {
+        "lat": 14.9540636,
+        "lon": 120.9181123
+      },
+      "tags": {
+        "amenity": "hospital",
+        "name": "Santo Niño Hospital"
+      }
+    },
+    {
+      "type": "way",
+      "id": 1280804610,
+      "center": {
+        "lat": 14.9567077,
+        "lon": 120.9124878
+      },
+      "tags": {
+        "amenity": "hospital",
+        "healthcare": "hospital",
+        "healthcare:speciality": "ophthalmology;otolaryngology;orthodontics",
+        "name": "ST. VINCENT EYE, EAR, NOSE AND THROAT HOSPITAL"
+      }
+    },
+    {
+      "type": "way",
+      "id": 1288233312,
+      "center": {
+        "lat": 14.7783147,
+        "lon": 120.9376675
+      },
+      "tags": {
+        "amenity": "hospital",
+        "building": "hospital",
+        "name": "Bocaue Specialists Medical Center"
+      }
+    },
+    {
+      "type": "way",
+      "id": 1290448946,
+      "center": {
+        "lat": 14.7967928,
+        "lon": 120.9435785
+      },
+      "tags": {
+        "amenity": "hospital",
+        "check_date": "2024-03-21",
+        "name": "Joni Villanueva General Hospital",
+        "name:etymology": "Eleanor Villanueva Tugna",
+        "operator": "Department of Health",
+        "operator:type": "government",
+        "operator:wikidata": "Q3545669",
+        "start_date": "2021-05-31",
+        "wikidata": "Q120721916",
+        "wikipedia": "en:Joni Villanueva General Hospital"
+      }
+    },
+    {
+      "type": "way",
+      "id": 1357713699,
+      "center": {
+        "lat": 14.8859904,
+        "lon": 120.8586711
+      },
+      "tags": {
+        "addr:housenumber": "1149",
+        "addr:street": "Governor Padilla Street",
+        "amenity": "hospital",
+        "beds": "15",
+        "bubbleid": "249762548",
+        "contact:phone": "+63 447607685; +63 447951236",
+        "healthcare": "hospital",
+        "name": "Doctor Peralta Hospital",
+        "ref": "DOH000000000007492"
+      }
+    },
+    {
+      "type": "way",
+      "id": 1366178290,
+      "center": {
+        "lat": 14.9579283,
+        "lon": 120.9036786
+      },
+      "tags": {
+        "addr:street": "Mariano Ponce Street",
+        "amenity": "hospital",
+        "healthcare": "hospital",
+        "name": "Castro Maternity and General Hospital"
+      }
+    },
+    {
+      "type": "way",
+      "id": 1420095839,
+      "center": {
+        "lat": 14.957553,
+        "lon": 120.8905518
+      },
+      "tags": {
+        "amenity": "hospital",
+        "healthcare": "hospital",
+        "healthcare:speciality": "general;dialysis",
+        "name": "Baliwag Malasakit Center"
+      }
+    },
+    {
+      "type": "way",
+      "id": 1436870313,
+      "center": {
+        "lat": 14.9528532,
+        "lon": 120.8843461
+      },
+      "tags": {
+        "addr:city": "Baliuag",
+        "addr:street": "Doña Remedios Trinidad Highway",
+        "amenity": "hospital",
+        "contact:email": "alliedcareexpertsbaliwag@gmail.com",
+        "contact:phone": "+63933 873 7688;+6344 8161000 loc. 204;+63917 517 4354",
+        "healthcare": "hospital",
+        "name": "Alied Care Experts Medical Center Baliuag",
+        "opening_hours": "24/7",
+        "operator:type": "private",
+        "website": "https://alliedcarebaliwag.com/"
+      }
+    },
+    {
+      "type": "way",
+      "id": 1441486261,
+      "center": {
+        "lat": 14.9572948,
+        "lon": 120.8997085
+      },
+      "tags": {
+        "addr:city": "Baliwag",
+        "addr:housenumber": "5",
+        "addr:street": "Benigno S. Aquino Avenue",
+        "amenity": "hospital",
+        "emergency": "yes",
+        "healthcare": "hospital",
+        "name": "De Jesus General Hospital"
+      }
+    },
+    {
+      "type": "relation",
+      "id": 14708560,
+      "center": {
+        "lat": 14.7963069,
+        "lon": 120.9247831
+      },
+      "tags": {
+        "amenity": "hospital",
+        "emergency": "yes",
+        "healthcare": "hospital",
+        "name": "Dr. Yanga General Hospital",
+        "type": "multipolygon"
+      }
+    },
+    {
+      "type": "relation",
+      "id": 16128987,
+      "center": {
+        "lat": 14.726627,
+        "lon": 120.9597998
+      },
+      "tags": {
+        "addr:city": "Meycauayan",
+        "addr:postcode": "3020",
+        "addr:street": "Hulo - Banga Road",
+        "amenity": "hospital",
+        "beds": "53",
+        "contact:phone": "+63448407918",
+        "emergency": "yes",
+        "healthcare": "hospital",
+        "healthcare:speciality": "general;orthopaedics;ophthalmology;paediatrics;psychiatry;surgery;radiology",
+        "mapillary": "1827726094054278",
+        "name": "Meycauayan Doctors Hospital",
+        "operator:type": "private",
+        "ref": "DOH000000000023616",
+        "type": "multipolygon"
+      }
+    },
+    {
+      "type": "relation",
+      "id": 18358615,
+      "center": {
+        "lat": 14.8188642,
+        "lon": 120.959774
+      },
+      "tags": {
+        "addr:street": "Jose Corazon de Jesus Street",
+        "amenity": "hospital",
+        "beds": "150",
+        "contact:email": "rmmmh@bulacan.gov.ph",
+        "contact:phone": "+63 446413038",
+        "healthcare": "hospital",
+        "healthcare:speciality": "general",
+        "name": "Rogaciano M. Mercado Memorial Hospital",
+        "ref": "DOH000000000001672",
+        "type": "multipolygon"
+      }
+    },
+    {
+      "type": "relation",
+      "id": 20228879,
+      "center": {
+        "lat": 14.8586118,
+        "lon": 120.816467
+      },
+      "tags": {
+        "alt_name": "Bulacan Provincial Hospital",
+        "amenity": "hospital",
+        "contact:email": "bmc@bulacan.gov.ph",
+        "contact:phone": "+639234051309;+639155214322",
+        "description": "VAWC",
+        "emergency": "yes",
+        "healthcare": "hospital",
+        "name": "Bulacan Medical Center",
+        "operator": "Provincial Government of Bulacan",
+        "operator:type": "government",
+        "type": "multipolygon",
+        "website": "https://www.bulacan.gov.ph/government/bmc.php"
+      }
+    }
+  ]
+}

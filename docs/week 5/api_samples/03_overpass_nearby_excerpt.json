@@ -1,0 +1,48 @@
+{
+  "evidence": "Live public OpenStreetMap data captured for EverCare Week 5",
+  "endpoint": "https://overpass-api.de/api/interpreter",
+  "method": "POST",
+  "capturedAt": "2026-08-15T10:15:26.7746832+08:00",
+  "publicDemoCenter": {
+    "latitude": 14.8333,
+    "longitude": 120.8833
+  },
+  "radiusMeters": 15000,
+  "resultCount": 75,
+  "elements": [
+    {
+      "type": "node",
+      "id": 589717017,
+      "lat": 14.7384585,
+      "lon": 120.9580669,
+      "tags": {
+        "amenity": "hospital",
+        "name": "B A Hospital",
+        "source": "GPS"
+      }
+    },
+    {
+      "type": "node",
+      "id": 597011693,
+      "lat": 14.906521,
+      "lon": 120.8695972,
+      "tags": {
+        "amenity": "hospital",
+        "healthcare": "hospital",
+        "name": "F M Cruz Ortopedic",
+        "source": "GPS"
+      }
+    },
+    {
+      "type": "node",
+      "id": 597116607,
+      "lat": 14.7445042,
+      "lon": 120.9110293,
+      "tags": {
+        "addr:street": "Tawiran Road",
+        "amenity": "hospital",
+        "name": "Tawiran Public Clinic"
+      }
+    }
+  ]
+}

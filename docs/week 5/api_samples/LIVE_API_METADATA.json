@@ -1,0 +1,19 @@
+{
+  "capturedAt": "2026-08-15T10:15:26.7746832+08:00",
+  "project": "EverCare",
+  "repository": "https://github.com/Brentttttttt/evercare",
+  "nominatim": {
+    "endpoint": "https://nominatim.openstreetmap.org/search",
+    "method": "GET",
+    "status": 200,
+    "query": "hospital, Bulacan, Philippines",
+    "resultCount": 15
+  },
+  "overpass": {
+    "endpoint": "https://overpass-api.de/api/interpreter",
+    "method": "POST",
+    "status": 200,
+    "resultCount": 75,
+    "fallbackFailures": []
+  }
+}
