@@ -6,6 +6,7 @@ import 'dart:collection';
 /// medically verified interpretation of the device protocol.
 class BpMonitorResult {
   BpMonitorResult({
+    required this.rawSystolic,
     required this.systolic,
     required this.diastolic,
     required this.pulse,
@@ -21,6 +22,11 @@ class BpMonitorResult {
   }) : rawBytes = UnmodifiableListView<int>(List<int>.from(rawBytes)),
        metadataBytes = UnmodifiableListView<int>(List<int>.from(metadataBytes));
 
+  /// The systolic value read directly from the result packet.
+  final int rawSystolic;
+
+  /// The app-side calibrated systolic value used in caregiver-facing UI,
+  /// saved BLE records, trends, and AI requests.
   final int systolic;
   final int diastolic;
   final int pulse;

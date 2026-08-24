@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/blood_pressure_reading.dart';
 import '../models/bp_monitor_result.dart';
+import '../services/bp_monitor_calibration.dart';
 
 class BloodPressureRepository {
   const BloodPressureRepository(this._client);
@@ -44,6 +45,11 @@ class BloodPressureRepository {
             'validationStatus': result.validationStatus,
             'deviceIdentifier': result.deviceIdentifier,
             'metadataBytes': result.metadataBytes,
+            'rawSystolic': result.rawSystolic,
+            'appSystolic': result.systolic,
+            'systolicOffsetMmHg':
+                BpMonitorCalibration.ykIbpa1SystolicOffsetMmHg,
+            'systolicCalibrationVersion': BpMonitorCalibration.version,
           },
           'is_medically_verified': false,
         }, onConflict: 'user_id,source,measured_at,raw_packet_hex')

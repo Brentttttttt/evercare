@@ -361,6 +361,12 @@ inspector_port = 8083
 # The Deno major version to use.
 deno_version = 2
 
+[functions.health-bp-insight]
+verify_jwt = true
+
+[functions.care-book-ai]
+verify_jwt = true
+
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 

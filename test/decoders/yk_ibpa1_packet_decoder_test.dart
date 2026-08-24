@@ -34,17 +34,21 @@ void main() {
       );
 
       expect(result, isNotNull);
-      expect(result!.systolic, 70);
+      expect(result!.rawSystolic, 70);
+      expect(result.systolic, 60);
       expect(result.diastolic, 36);
       expect(result.pulse, 50);
       expect(result.receivedAt, receivedAt);
       expect(result.packetIndex, 42);
       expect(result.deviceIdentifier, 'test-device-id');
       expect(result.deviceName, 'YK-IBPA1');
-      expect(result.decoderVersion, 'yk_ibpa1_provisional_v1');
+      expect(
+        result.decoderVersion,
+        'yk_ibpa1_provisional_v2_systolic_minus_10',
+      );
       expect(
         result.validationStatus,
-        'awaiting_additional_reference_measurements',
+        'local_systolic_offset_applied_not_medically_verified',
       );
       expect(result.rawBytes, confirmedPacket);
       expect(result.rawHex, '81 46 24 32 00 00 19 03 15 0A 11 00 00 00 00');

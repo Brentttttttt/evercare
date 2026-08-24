@@ -1089,6 +1089,17 @@ class BpMonitorBleService extends ChangeNotifier {
         );
         return;
       }
+
+      _measurementTimeoutTimer?.cancel();
+      _measurementCompletedAt = receivedAt;
+      _measurementState = BpMonitorMeasurementState.failed;
+      _measurementFailureMessage =
+          'The monitor returned a systolic value that cannot be corrected safely. Measure again with the physical monitor.';
+      _setStage(
+        BpMonitorBleStage.measurementFailed,
+        'Measurement was not shown because its systolic value could not be corrected safely. Try again.',
+      );
+      return;
     }
 
     // Unknown and short packets remain available in an active development

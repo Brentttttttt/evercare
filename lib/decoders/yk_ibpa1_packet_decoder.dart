@@ -1,5 +1,6 @@
 import '../models/bp_monitor_packet.dart';
 import '../models/bp_monitor_result.dart';
+import '../services/bp_monitor_calibration.dart';
 
 /// Provisional packet decoder for the YK-IBPA1 blood-pressure monitor.
 ///
@@ -11,9 +12,10 @@ class YkIbpa1PacketDecoder {
 
   static const int progressPacketType = 0x80;
   static const int completedResultPacketType = 0x81;
-  static const String decoderVersion = 'yk_ibpa1_provisional_v1';
+  static const String decoderVersion =
+      'yk_ibpa1_provisional_v2_systolic_minus_10';
   static const String validationStatus =
-      'awaiting_additional_reference_measurements';
+      'local_systolic_offset_applied_not_medically_verified';
 
   /// Returns a completed result only for a packet beginning with `0x81` and
   /// containing the three confirmed result bytes.
@@ -29,8 +31,15 @@ class YkIbpa1PacketDecoder {
     }
 
     final rawBytes = List<int>.from(bytes);
+    final rawSystolic = rawBytes[1];
+    if (!BpMonitorCalibration.canApplyYkIbpa1SystolicCorrection(rawSystolic)) {
+      return null;
+    }
     return BpMonitorResult(
-      systolic: rawBytes[1],
+      rawSystolic: rawSystolic,
+      systolic: BpMonitorCalibration.applyYkIbpa1SystolicCorrection(
+        rawSystolic,
+      ),
       diastolic: rawBytes[2],
       pulse: rawBytes[3],
       receivedAt: receivedAt,

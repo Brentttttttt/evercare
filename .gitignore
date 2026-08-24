@@ -50,6 +50,11 @@ app.*.map.json
 /.vscode/
 /tmp/
 
+# Edge Function secrets must remain server-side.
+/supabase/functions/.env
+/supabase/functions/.env.*
+!/supabase/functions/.env.example
+
 # Microsoft Office temporary lock files
 ~$*.docx
 ~$*.pptx

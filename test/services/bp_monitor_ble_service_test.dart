@@ -104,7 +104,8 @@ void main() {
       expect(service.measurementCompletedAt, originalCompletionTime);
       expect(service.measurementCompletedAt, firstAt);
       expect(service.currentResult!.receivedAt, firstAt);
-      expect(service.currentResult!.systolic, 70);
+      expect(service.currentResult!.rawSystolic, 70);
+      expect(service.currentResult!.systolic, 60);
       expect(service.currentResult!.diastolic, 36);
       expect(service.currentResult!.pulse, 50);
     },

@@ -201,7 +201,7 @@ class _ProvisionalResultDetails extends StatelessWidget {
             ),
             const SizedBox(height: 13),
             Text(
-              'SYS ${result.systolic} · DIA ${result.diastolic} · Pulse ${result.pulse}',
+              'RAW SYS ${result.rawSystolic} · APP SYS ${result.systolic} · DIA ${result.diastolic} · Pulse ${result.pulse}',
               style: AppTextStyles.sectionTitle,
             ),
             const SizedBox(height: 8),

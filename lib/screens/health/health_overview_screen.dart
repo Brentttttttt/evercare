@@ -3,12 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart'
     show BluetoothAdapterState;
 
+import '../../models/blood_pressure_assessment.dart';
 import '../../models/bp_monitor_device.dart';
 import '../../models/bp_monitor_result.dart';
+import '../../models/evercare_ai.dart';
 import '../../repositories/blood_pressure_repository.dart';
 import '../../routes/app_route_observer.dart';
 import '../../routes/app_routes.dart';
 import '../../services/bp_monitor_ble_service.dart';
+import '../../services/bp_monitor_calibration.dart';
+import '../../services/evercare_ai_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_motion.dart';
 import '../../theme/app_text_styles.dart';
@@ -910,15 +914,24 @@ class _CompletedReadingSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final assessment = BloodPressureAssessment.fromValues(
+      systolic: result.systolic,
+      diastolic: result.diastolic,
+      pulse: result.pulse,
+    );
     return Column(
       children: [
-        _BloodPressureResultCard(result: result),
+        _BloodPressureResultCard(result: result, assessment: assessment),
         const SizedBox(height: 12),
         _BloodPressureDetailsLayout(result: result),
         const SizedBox(height: 12),
-        const _BleResultBanner(),
+        _SystolicCalibrationNote(result: result),
         const SizedBox(height: 12),
-        const _ReadingInsightCard(),
+        _ReadingInsightCard(assessment: assessment),
+        const SizedBox(height: 12),
+        _HealthAiInsightCard(result: result, assessment: assessment),
+        const SizedBox(height: 12),
+        const _BleResultBanner(),
         const SizedBox(height: 12),
         _BloodPressureActionBar(result: result),
       ],
@@ -927,9 +940,13 @@ class _CompletedReadingSection extends StatelessWidget {
 }
 
 class _BloodPressureResultCard extends StatelessWidget {
-  const _BloodPressureResultCard({required this.result});
+  const _BloodPressureResultCard({
+    required this.result,
+    required this.assessment,
+  });
 
   final BpMonitorResult result;
+  final BloodPressureAssessment assessment;
 
   @override
   Widget build(BuildContext context) {
@@ -1055,9 +1072,11 @@ class _BloodPressureResultCard extends StatelessWidget {
                         if (stackContent) ...[
                           readingDetails,
                           const SizedBox(height: 14),
-                          const Align(
+                          Align(
                             alignment: Alignment.centerLeft,
-                            child: _BloodPressureStatusIndicator(),
+                            child: _BloodPressureStatusIndicator(
+                              assessment: assessment,
+                            ),
                           ),
                         ] else
                           Row(
@@ -1065,7 +1084,9 @@ class _BloodPressureResultCard extends StatelessWidget {
                             children: [
                               Expanded(child: readingDetails),
                               const SizedBox(width: 12),
-                              const _BloodPressureStatusIndicator(),
+                              _BloodPressureStatusIndicator(
+                                assessment: assessment,
+                              ),
                             ],
                           ),
                       ],
@@ -1133,14 +1154,16 @@ class _BloodPressureResultCard extends StatelessWidget {
 }
 
 class _BloodPressureStatusIndicator extends StatelessWidget {
-  const _BloodPressureStatusIndicator();
+  const _BloodPressureStatusIndicator({required this.assessment});
+
+  final BloodPressureAssessment assessment;
 
   @override
   Widget build(BuildContext context) {
     final textScale = MediaQuery.textScalerOf(context).scale(1);
     final diameter = (108 + ((textScale - 1) * 58)).clamp(108, 166).toDouble();
     final indicator = Semantics(
-      label: 'Status: Reading received',
+      label: 'Status: ${assessment.label}',
       excludeSemantics: true,
       child: Container(
         width: diameter,
@@ -1150,7 +1173,7 @@ class _BloodPressureStatusIndicator extends StatelessWidget {
           shape: BoxShape.circle,
           color: Colors.white.withValues(alpha: .96),
           border: Border.all(
-            color: AppColors.primaryGreen.withValues(alpha: .68),
+            color: _assessmentColor(assessment).withValues(alpha: .68),
             width: 3,
           ),
           boxShadow: [
@@ -1164,22 +1187,24 @@ class _BloodPressureStatusIndicator extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: AppColors.lightGreen.withValues(alpha: .78),
+            color: _assessmentColor(assessment).withValues(alpha: .12),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.monitor_heart_rounded,
-                color: AppColors.primaryGreen,
+              Icon(
+                _assessmentIcon(assessment),
+                color: _assessmentColor(assessment),
                 size: 27,
               ),
               const SizedBox(height: 4),
               Text(
-                'Reading\nreceived',
+                assessment.shortLabel,
                 textAlign: TextAlign.center,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
                 style: AppTextStyles.small.copyWith(
-                  color: AppColors.darkGreen,
+                  color: _assessmentColor(assessment),
                   fontWeight: FontWeight.w800,
                   height: 1.1,
                 ),
@@ -1465,42 +1490,51 @@ class _MeasurementInfoItem extends StatelessWidget {
   }
 }
 
-class _ReadingInsightCard extends StatelessWidget {
-  const _ReadingInsightCard();
+class _SystolicCalibrationNote extends StatelessWidget {
+  const _SystolicCalibrationNote({required this.result});
+
+  final BpMonitorResult result;
 
   @override
   Widget build(BuildContext context) {
+    final offset = BpMonitorCalibration.ykIbpa1SystolicOffsetMmHg;
     return AppCard(
-      color: AppColors.warningContainer,
-      borderColor: AppColors.warning.withValues(alpha: .24),
+      color: AppColors.accent,
+      borderColor: AppColors.primaryGreen.withValues(alpha: .22),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: SizedBox(
-              width: 64,
-              height: 78,
-              child: Image.asset(
-                'assets/images/bp_result_care_v1.png',
-                fit: BoxFit.cover,
-                alignment: Alignment.centerRight,
-                cacheWidth: 260,
-                filterQuality: FilterQuality.medium,
-                excludeFromSemantics: true,
-              ),
+          Container(
+            width: 40,
+            height: 40,
+            decoration: const BoxDecoration(
+              color: AppColors.lightGreen,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.tune_rounded,
+              color: AppColors.primaryGreen,
+              size: 22,
             ),
           ),
-          const SizedBox(width: 13),
+          const SizedBox(width: 11),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Caregiver insight', style: AppTextStyles.cardTitle),
-                const SizedBox(height: 5),
+                const Text(
+                  'App-corrected systolic',
+                  style: AppTextStyles.cardTitle,
+                ),
+                const SizedBox(height: 4),
                 Text(
-                  'Review this result together with the patient’s previous readings. Consult a healthcare professional if readings remain unusual or the patient feels unwell.',
-                  style: AppTextStyles.bodyMuted.copyWith(height: 1.38),
+                  'EverCare displays ${result.systolic} mmHg after applying $offset mmHg to the YK-IBPA1 packet value of ${result.rawSystolic} mmHg.',
+                  style: AppTextStyles.bodyMuted.copyWith(height: 1.36),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Project calibration note: this local offset was requested after the team reported comparison against automatic and manual monitors in a hospital setting with clinician oversight. The raw packet is preserved; this does not medically validate the device or replace repeat measurements and professional advice.',
+                  style: AppTextStyles.small.copyWith(height: 1.38),
                 ),
               ],
             ),
@@ -1510,6 +1544,299 @@ class _ReadingInsightCard extends StatelessWidget {
     );
   }
 }
+
+class _ReadingInsightCard extends StatelessWidget {
+  const _ReadingInsightCard({required this.assessment});
+
+  final BloodPressureAssessment assessment;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _assessmentColor(assessment);
+    return AppCard(
+      color: color.withValues(alpha: .08),
+      borderColor: color.withValues(alpha: .28),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: .13),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(_assessmentIcon(assessment), color: color, size: 23),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Reading status · ${assessment.label}',
+                  style: AppTextStyles.cardTitle,
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  assessment.summary,
+                  style: AppTextStyles.bodyMuted.copyWith(height: 1.38),
+                ),
+                const SizedBox(height: 9),
+                Text(
+                  assessment.nextStep,
+                  style: AppTextStyles.small.copyWith(
+                    color: AppColors.foreground,
+                    fontWeight: FontWeight.w600,
+                    height: 1.36,
+                  ),
+                ),
+                const SizedBox(height: 7),
+                const Text(
+                  'Adult category guidance only—not a diagnosis or medical verification.',
+                  style: AppTextStyles.small,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HealthAiInsightCard extends StatefulWidget {
+  const _HealthAiInsightCard({required this.result, required this.assessment});
+
+  final BpMonitorResult result;
+  final BloodPressureAssessment assessment;
+
+  @override
+  State<_HealthAiInsightCard> createState() => _HealthAiInsightCardState();
+}
+
+class _HealthAiInsightCardState extends State<_HealthAiInsightCard> {
+  HealthAiInsight? _insight;
+  bool _loading = false;
+  bool _attempted = false;
+  bool _failed = false;
+
+  String get _resultKey =>
+      '${widget.result.receivedAt.toUtc().toIso8601String()}|${widget.result.rawHex}';
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _requestAutomaticallyIfAvailable();
+  }
+
+  @override
+  void didUpdateWidget(covariant _HealthAiInsightCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final oldKey =
+        '${oldWidget.result.receivedAt.toUtc().toIso8601String()}|${oldWidget.result.rawHex}';
+    if (oldKey == _resultKey) return;
+    _insight = null;
+    _failed = false;
+    _attempted = false;
+    _requestAutomaticallyIfAvailable();
+  }
+
+  void _requestAutomaticallyIfAvailable() {
+    if (_attempted || _loading) return;
+    final client = EverCareBackendScope.maybeClient(context);
+    if (client?.auth.currentUser == null) return;
+    _requestInsight();
+  }
+
+  Future<void> _requestInsight() async {
+    final client = EverCareBackendScope.maybeClient(context);
+    if (client?.auth.currentUser == null) return;
+    setState(() {
+      _attempted = true;
+      _loading = true;
+      _failed = false;
+    });
+    try {
+      final insight = await EverCareAiService(
+        client!,
+      ).explainBloodPressure(widget.result);
+      if (!mounted) return;
+      setState(() => _insight = insight);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _failed = true);
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final signedIn =
+        EverCareBackendScope.maybeClient(context)?.auth.currentUser != null;
+    final color = _assessmentColor(widget.assessment);
+    return AppCard(
+      color: AppColors.card,
+      borderColor: color.withValues(alpha: .28),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.purple.withValues(alpha: .11),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.auto_awesome_rounded,
+                  color: AppColors.purple,
+                  size: 21,
+                ),
+              ),
+              const SizedBox(width: 11),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('EverCare AI insight', style: AppTextStyles.cardTitle),
+                    SizedBox(height: 2),
+                    Text(
+                      'Plain-language guidance for this one reading',
+                      style: AppTextStyles.small,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 13),
+          if (!signedIn)
+            const Text(
+              'Sign in to receive a private AI explanation. The reading status above remains available without AI.',
+              style: AppTextStyles.bodyMuted,
+            )
+          else if (_loading)
+            const Row(
+              children: [
+                SizedBox.square(
+                  dimension: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                SizedBox(width: 10),
+                Text(
+                  'Analyzing the corrected reading…',
+                  style: AppTextStyles.bodyMuted,
+                ),
+              ],
+            )
+          else if (_insight case final insight?)
+            _AiInsightContent(insight: insight)
+          else if (_failed)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'EverCare AI is unavailable right now. The reading status above is still available.',
+                  style: AppTextStyles.bodyMuted,
+                ),
+                const SizedBox(height: 8),
+                TextButton.icon(
+                  onPressed: _requestInsight,
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: const Text('Try AI insight again'),
+                ),
+              ],
+            )
+          else
+            TextButton.icon(
+              onPressed: _requestInsight,
+              icon: const Icon(Icons.auto_awesome_rounded),
+              label: const Text('Get AI insight'),
+            ),
+          const SizedBox(height: 10),
+          const Text(
+            'Only the corrected systolic value, diastolic value, and pulse are sent for this explanation—never the raw packet or identity. AI guidance is educational, not medical advice.',
+            style: AppTextStyles.small,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AiInsightContent extends StatelessWidget {
+  const _AiInsightContent({required this.insight});
+
+  final HealthAiInsight insight;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(insight.headline, style: AppTextStyles.cardTitle),
+        const SizedBox(height: 5),
+        Text(insight.explanation, style: AppTextStyles.bodyMuted),
+        if (insight.tips.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          for (final tip in insight.tips)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 5),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.only(top: 7),
+                    child: Icon(
+                      Icons.circle,
+                      size: 5,
+                      color: AppColors.primaryGreen,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(tip, style: AppTextStyles.bodyMuted)),
+                ],
+              ),
+            ),
+        ],
+        const SizedBox(height: 7),
+        Text(
+          insight.nextStep,
+          style: AppTextStyles.small.copyWith(
+            fontWeight: FontWeight.w700,
+            color: AppColors.foreground,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(insight.disclaimer, style: AppTextStyles.small),
+      ],
+    );
+  }
+}
+
+Color _assessmentColor(BloodPressureAssessment assessment) =>
+    switch (assessment.category) {
+      BloodPressureCategory.normal => AppColors.primaryGreen,
+      BloodPressureCategory.elevated => AppColors.warning,
+      BloodPressureCategory.hypertensionStage1 => AppColors.warning,
+      BloodPressureCategory.hypertensionStage2 => AppColors.danger,
+      BloodPressureCategory.severeHypertension => AppColors.danger,
+      BloodPressureCategory.lowerThanUsual => AppColors.blue,
+    };
+
+IconData _assessmentIcon(BloodPressureAssessment assessment) =>
+    switch (assessment.category) {
+      BloodPressureCategory.normal => Icons.favorite_rounded,
+      BloodPressureCategory.elevated => Icons.monitor_heart_outlined,
+      BloodPressureCategory.hypertensionStage1 => Icons.monitor_heart_rounded,
+      BloodPressureCategory.hypertensionStage2 => Icons.priority_high_rounded,
+      BloodPressureCategory.severeHypertension => Icons.emergency_rounded,
+      BloodPressureCategory.lowerThanUsual => Icons.water_drop_outlined,
+    };
 
 class _BloodPressureTrendCard extends StatelessWidget {
   const _BloodPressureTrendCard({required this.result});

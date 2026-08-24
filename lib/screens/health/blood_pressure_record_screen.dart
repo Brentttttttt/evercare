@@ -185,6 +185,17 @@ class _BloodPressureRecordScreenState extends State<BloodPressureRecordScreen> {
                   value: '${record.systolic} mmHg',
                   icon: Icons.arrow_upward_rounded,
                 ),
+                if (record.hasSystolicCalibration &&
+                    record.rawSystolic != null &&
+                    record.systolicOffsetMmHg != null) ...[
+                  const Divider(),
+                  LabeledValue(
+                    label: 'BLE systolic calibration',
+                    value:
+                        'App ${record.systolic} mmHg · packet ${record.rawSystolic} mmHg · ${record.systolicOffsetMmHg} mmHg',
+                    icon: Icons.tune_rounded,
+                  ),
+                ],
                 const Divider(),
                 LabeledValue(
                   label: 'Diastolic pressure',

@@ -264,7 +264,7 @@ void main() {
       service: service,
     );
 
-    expect(find.text('70'), findsOneWidget);
+    expect(find.text('60'), findsOneWidget);
     expect(find.text('36'), findsOneWidget);
     expect(find.text('50'), findsOneWidget);
     expect(find.text('Received directly through BLE'), findsOneWidget);
@@ -289,7 +289,7 @@ void main() {
         return asset is AssetImage &&
             asset.assetName == 'assets/images/bp_result_care_v1.png';
       }),
-      findsNWidgets(2),
+      findsOneWidget,
     );
     expect(find.text('144'), findsNothing);
     expect(find.text('106'), findsNothing);

@@ -12,6 +12,7 @@ class BloodPressureReading {
     this.decoderName,
     this.rawPacketHex,
     this.notes,
+    this.captureMetadata = const {},
   });
 
   factory BloodPressureReading.fromMap(Map<String, dynamic> map) {
@@ -27,6 +28,9 @@ class BloodPressureReading {
       decoderName: map['decoder_name'] as String?,
       rawPacketHex: map['raw_packet_hex'] as String?,
       notes: map['notes'] as String?,
+      captureMetadata: map['capture_metadata'] is Map
+          ? Map<String, dynamic>.from(map['capture_metadata'] as Map)
+          : const {},
       isMedicallyVerified: map['is_medically_verified'] as bool? ?? false,
     );
   }
@@ -42,12 +46,31 @@ class BloodPressureReading {
   final String? decoderName;
   final String? rawPacketHex;
   final String? notes;
+  final Map<String, dynamic> captureMetadata;
   final bool isMedicallyVerified;
 
   String get reading => '$systolic/$diastolic mmHg';
   String get statusLabel =>
       isMedicallyVerified ? 'Clinician verified' : 'Not medically verified';
-  String get sourceLabel => source == 'ble' ? 'Bluetooth (BLE)' : 'Manual';
+  String get sourceLabel => source == 'ble'
+      ? hasSystolicCalibration
+            ? 'Bluetooth (BLE) · app-corrected systolic'
+            : 'Bluetooth (BLE)'
+      : 'Manual';
+
+  bool get hasSystolicCalibration =>
+      source == 'ble' &&
+      captureMetadata['systolicCalibrationVersion'] is String;
+
+  int? get rawSystolic {
+    final value = captureMetadata['rawSystolic'];
+    return value is num ? value.toInt() : null;
+  }
+
+  int? get systolicOffsetMmHg {
+    final value = captureMetadata['systolicOffsetMmHg'];
+    return value is num ? value.toInt() : null;
+  }
 
   String get dateLabel {
     const months = [

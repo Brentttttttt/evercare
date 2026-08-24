@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../data/care_book_data.dart';
+import '../../models/care_book_chapter.dart';
 import '../../services/care_book_service.dart';
 import '../../widgets/app_page.dart';
 import '../../widgets/care_photo_banner.dart';
+import 'care_book_ai_chat_sheet.dart';
 import 'care_book_widgets.dart';
 
 class CareBookScreen extends StatefulWidget {
@@ -58,6 +60,11 @@ class _CareBookScreenState extends State<CareBookScreen> {
             },
             onDownload: _downloading ? null : _downloadHandbook,
           ),
+          const SizedBox(height: 12),
+          CareBookAssistantCard(
+            chapter: chapter,
+            onTap: () => _openAiAssistant(chapter),
+          ),
           const SizedBox(height: 22),
           CareBookChapterNavigator(
             chapter: chapter,
@@ -106,6 +113,16 @@ class _CareBookScreenState extends State<CareBookScreen> {
   void _selectChapter(int index) {
     setState(() => _selectedChapter = index);
     _scrollToReader();
+  }
+
+  Future<void> _openAiAssistant(CareBookChapter chapter) {
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (_) => CareBookAiChatSheet(selectedChapter: chapter),
+    );
   }
 
   Future<void> _showTableOfContents() async {
