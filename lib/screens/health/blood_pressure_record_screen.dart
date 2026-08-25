@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../models/blood_pressure_assessment.dart';
 import '../../models/blood_pressure_reading.dart';
 import '../../repositories/blood_pressure_repository.dart';
 import '../../theme/app_colors.dart';
@@ -115,65 +116,93 @@ class _BloodPressureRecordScreenState extends State<BloodPressureRecordScreen> {
   @override
   Widget build(BuildContext context) {
     final record = widget.record;
+    final assessment = BloodPressureAssessment.fromValues(
+      systolic: record.systolic,
+      diastolic: record.diastolic,
+      pulse: record.pulse,
+    );
     final canEdit = _repository != null && !_working;
     return DetailPage(
-      title: 'Record Details',
+      title: 'Blood Pressure Details',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppCard(
-            color: AppColors.lightGreen,
-            borderColor: AppColors.lightGreen,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          Semantics(
+            container: true,
+            label:
+                '${record.dateLabel}, ${record.timeLabel}. '
+                '${assessment.friendlyStatus}. ${assessment.label}. '
+                'Upper number ${record.systolic} millimeters of mercury. '
+                'Lower number ${record.diastolic} millimeters of mercury. '
+                'Pulse ${record.pulse} beats per minute. ${record.statusLabel}.',
+            child: ExcludeSemantics(
+              child: AppCard(
+                color: AppColors.lightGreen,
+                borderColor: AppColors.lightGreen,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        '${record.dateLabel} · ${record.timeLabel}',
-                        style: AppTextStyles.label,
-                      ),
-                    ),
-                    BloodPressureStatusBadge(status: record.statusLabel),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Expanded(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          '${record.systolic} / ${record.diastolic}',
-                          style: AppTextStyles.metric.copyWith(fontSize: 37),
-                        ),
-                      ),
-                    ),
-                    const Padding(
-                      padding: EdgeInsets.only(left: 7, bottom: 3),
-                      child: Text('mmHg', style: AppTextStyles.label),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.favorite_rounded,
-                      size: 20,
-                      color: AppColors.danger,
-                    ),
-                    const SizedBox(width: 7),
                     Text(
-                      'Pulse ${record.pulse} BPM',
-                      style: AppTextStyles.cardTitle,
+                      '${record.dateLabel} · ${record.timeLabel}',
+                      style: AppTextStyles.label,
+                    ),
+                    const SizedBox(height: 8),
+                    BloodPressureStatusBadge(status: record.statusLabel),
+                    const SizedBox(height: 17),
+                    Text(
+                      assessment.friendlyStatus,
+                      style: AppTextStyles.sectionTitle,
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      assessment.label,
+                      style: AppTextStyles.bodyMuted.copyWith(
+                        color: bloodPressureRangeColor(assessment),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 17),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              '${record.systolic} / ${record.diastolic}',
+                              style: AppTextStyles.metric.copyWith(
+                                fontSize: 37,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.only(left: 7, bottom: 3),
+                          child: Text('mmHg', style: AppTextStyles.label),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.favorite_rounded,
+                          size: 20,
+                          color: AppColors.danger,
+                        ),
+                        const SizedBox(width: 7),
+                        Expanded(
+                          child: Text(
+                            'Pulse ${record.pulse} BPM',
+                            style: AppTextStyles.cardTitle,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
+              ),
             ),
           ),
           const SizedBox(height: 18),
@@ -181,7 +210,7 @@ class _BloodPressureRecordScreenState extends State<BloodPressureRecordScreen> {
             child: Column(
               children: [
                 LabeledValue(
-                  label: 'Systolic pressure',
+                  label: 'Upper number (systolic)',
                   value: '${record.systolic} mmHg',
                   icon: Icons.arrow_upward_rounded,
                 ),
@@ -198,7 +227,7 @@ class _BloodPressureRecordScreenState extends State<BloodPressureRecordScreen> {
                 ],
                 const Divider(),
                 LabeledValue(
-                  label: 'Diastolic pressure',
+                  label: 'Lower number (diastolic)',
                   value: '${record.diastolic} mmHg',
                   icon: Icons.arrow_downward_rounded,
                 ),
@@ -232,7 +261,23 @@ class _BloodPressureRecordScreenState extends State<BloodPressureRecordScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          const AppCard(
+          AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'What this reading means',
+                  style: AppTextStyles.cardTitle,
+                ),
+                const SizedBox(height: 9),
+                BloodPressureFriendlyGuidance(assessment: assessment),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          const BloodPressureReadingDisclaimer(),
+          const SizedBox(height: 12),
+          AppCard(
             color: Color(0xFFFFF8EB),
             borderColor: Color(0xFFF5DFAF),
             child: Row(
@@ -241,29 +286,47 @@ class _BloodPressureRecordScreenState extends State<BloodPressureRecordScreen> {
                 Icon(Icons.info_outline_rounded, color: AppColors.warning),
                 SizedBox(width: 11),
                 Expanded(
-                  child: Text(
-                    'This record was saved by the user and has not been medically verified. Contact a qualified professional for interpretation.',
-                    style: AppTextStyles.bodyMuted,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Verification status',
+                        style: AppTextStyles.cardTitle,
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        record.isMedicallyVerified
+                            ? 'This saved reading is marked as clinician verified in EverCare.'
+                            : 'This saved reading is not marked as clinician verified.',
+                        style: AppTextStyles.bodyMuted,
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 18),
-          FilledButton.icon(
-            onPressed: canEdit ? _editNotes : null,
-            icon: const Icon(Icons.edit_note_rounded),
-            label: Text(_working ? 'Saving…' : 'Edit Notes'),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: canEdit ? _editNotes : null,
+              icon: const Icon(Icons.edit_note_rounded),
+              label: Text(_working ? 'Saving…' : 'Edit Notes'),
+            ),
           ),
           const SizedBox(height: 10),
-          OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.danger,
-              side: const BorderSide(color: AppColors.danger),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.danger,
+                side: const BorderSide(color: AppColors.danger),
+              ),
+              onPressed: canEdit ? _delete : null,
+              icon: const Icon(Icons.delete_outline_rounded),
+              label: const Text('Delete Record'),
             ),
-            onPressed: canEdit ? _delete : null,
-            icon: const Icon(Icons.delete_outline_rounded),
-            label: const Text('Delete Record'),
           ),
         ],
       ),

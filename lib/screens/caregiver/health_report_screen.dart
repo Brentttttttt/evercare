@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../models/blood_pressure_assessment.dart';
 import '../../models/blood_pressure_reading.dart';
 import '../../repositories/blood_pressure_repository.dart';
 import '../../theme/app_colors.dart';
@@ -87,6 +88,12 @@ class _ReportContent extends StatelessWidget {
     final averageDiastolic = _average(readings.map((item) => item.diastolic));
     final averagePulse = _average(readings.map((item) => item.pulse));
     final newest = readings.first;
+    final newestAssessment = BloodPressureAssessment.fromValues(
+      systolic: newest.systolic,
+      diastolic: newest.diastolic,
+      pulse: newest.pulse,
+    );
+    final newestRangeColor = bloodPressureRangeColor(newestAssessment);
     final bleCount = readings.where((item) => item.source == 'ble').length;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -126,6 +133,35 @@ class _ReportContent extends StatelessWidget {
             ],
           ),
         ),
+        const SizedBox(height: 16),
+        AppCard(
+          color: newestRangeColor.withValues(alpha: .08),
+          borderColor: newestRangeColor.withValues(alpha: .24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('LATEST SAVED READING', style: AppTextStyles.eyebrow),
+              const SizedBox(height: 8),
+              Text(
+                newestAssessment.friendlyStatus,
+                style: AppTextStyles.sectionTitle,
+              ),
+              const SizedBox(height: 3),
+              Text(
+                newestAssessment.label,
+                style: AppTextStyles.bodyMuted.copyWith(
+                  color: newestRangeColor,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                '${newest.systolic}/${newest.diastolic} mmHg · Pulse ${newest.pulse} BPM',
+                style: AppTextStyles.cardTitle,
+              ),
+            ],
+          ),
+        ),
         const SizedBox(height: 22),
         const SectionHeader(title: 'Measured summary'),
         const SizedBox(height: 11),
@@ -134,14 +170,14 @@ class _ReportContent extends StatelessWidget {
             children: [
               _ReportValue(
                 icon: Icons.arrow_upward_rounded,
-                label: 'Average systolic pressure',
+                label: 'Average upper number (systolic)',
                 value: '$averageSystolic mmHg',
                 color: AppColors.danger,
               ),
               const Divider(),
               _ReportValue(
                 icon: Icons.arrow_downward_rounded,
-                label: 'Average diastolic pressure',
+                label: 'Average lower number (diastolic)',
                 value: '$averageDiastolic mmHg',
                 color: AppColors.blue,
               ),
@@ -191,12 +227,6 @@ class _ReportContent extends StatelessWidget {
           child: Column(
             children: [
               LabeledValue(
-                label: 'Latest saved reading',
-                value: '${newest.systolic}/${newest.diastolic} mmHg',
-                icon: Icons.schedule_rounded,
-              ),
-              const Divider(),
-              LabeledValue(
                 label: 'Bluetooth measurements',
                 value: '$bleCount of ${readings.length}',
                 icon: Icons.bluetooth_connected_rounded,
@@ -212,7 +242,9 @@ class _ReportContent extends StatelessWidget {
         ),
         const SizedBox(height: 14),
         const Text(
-          'Calculated only from your saved measurements. These values are not medically verified and this report does not provide medical advice.',
+          'This report summarizes your saved measurements only and is not a '
+          'medical diagnosis. Verification status is shown with each saved '
+          'reading in Blood Pressure History.',
           style: AppTextStyles.bodyMuted,
         ),
       ],
@@ -240,24 +272,50 @@ class _ReportValue extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: .11),
-              borderRadius: BorderRadius.circular(13),
-            ),
-            child: Icon(icon, color: color),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final stackText =
+            constraints.maxWidth < 320 ||
+            MediaQuery.textScalerOf(context).scale(1) > 1.3;
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: .11),
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: Icon(icon, color: color),
+              ),
+              const SizedBox(width: 13),
+              Expanded(
+                child: stackText
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(label, style: AppTextStyles.body),
+                          const SizedBox(height: 3),
+                          Text(value, style: AppTextStyles.cardTitle),
+                        ],
+                      )
+                    : Row(
+                        children: [
+                          Expanded(
+                            child: Text(label, style: AppTextStyles.body),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(value, style: AppTextStyles.cardTitle),
+                        ],
+                      ),
+              ),
+            ],
           ),
-          const SizedBox(width: 13),
-          Expanded(child: Text(label, style: AppTextStyles.body)),
-          Text(value, style: AppTextStyles.cardTitle),
-        ],
-      ),
+        );
+      },
     );
   }
 }

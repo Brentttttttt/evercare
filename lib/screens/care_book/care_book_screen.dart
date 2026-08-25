@@ -3,10 +3,11 @@ import 'package:flutter/material.dart';
 import '../../data/care_book_data.dart';
 import '../../models/care_book_chapter.dart';
 import '../../services/care_book_service.dart';
-import '../../widgets/app_page.dart';
 import '../../widgets/care_photo_banner.dart';
 import 'care_book_ai_chat_sheet.dart';
 import 'care_book_widgets.dart';
+
+const _careBookPagePadding = EdgeInsets.fromLTRB(20, 20, 20, 216);
 
 class CareBookScreen extends StatefulWidget {
   const CareBookScreen({super.key, this.scrollController});
@@ -37,76 +38,89 @@ class _CareBookScreenState extends State<CareBookScreen> {
   Widget build(BuildContext context) {
     final chapters = CareBookData.chapters;
     final chapter = chapters[_selectedChapter];
-    return SingleChildScrollView(
-      controller: _scrollController,
-      padding: mainPagePadding,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const CarePhotoBanner(
-            assetPath: 'assets/images/care_book_reading.png',
-            semanticLabel:
-                'A caregiver and an older man reading a caregiving book together',
-            title: 'Care knowledge, shared with warmth',
-            subtitle: 'Simple guidance for safer and more confident care.',
-            height: 156,
-          ),
-          const SizedBox(height: 18),
-          CareBookCover(
-            downloading: _downloading,
-            onStartReading: () {
-              setState(() => _selectedChapter = 0);
-              _scrollToReader();
-            },
-            onDownload: _downloading ? null : _downloadHandbook,
-          ),
-          const SizedBox(height: 12),
-          CareBookAssistantCard(
-            chapter: chapter,
-            onTap: () => _openAiAssistant(chapter),
-          ),
-          const SizedBox(height: 22),
-          CareBookChapterNavigator(
-            chapter: chapter,
-            totalChapters: chapters.length,
-            onBrowse: _showTableOfContents,
-          ),
-          const SizedBox(height: 12),
-          KeyedSubtree(
-            key: _readerKey,
-            child: CareBookReader(
-              chapter: chapter,
-              totalChapters: chapters.length,
-              textScale: _textScale,
-              onPrevious: _selectedChapter == 0
-                  ? null
-                  : () => _selectChapter(_selectedChapter - 1),
-              onNext: _selectedChapter == chapters.length - 1
-                  ? null
-                  : () => _selectChapter(_selectedChapter + 1),
-              onTextSmaller: () => setState(
-                () => _textScale = (_textScale - .1).clamp(.9, 1.2).toDouble(),
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        SingleChildScrollView(
+          controller: _scrollController,
+          padding: _careBookPagePadding,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const CarePhotoBanner(
+                assetPath: 'assets/images/care_book_reading.png',
+                semanticLabel:
+                    'A caregiver and an older man reading a caregiving book together',
+                title: 'Care knowledge, shared with warmth',
+                subtitle: 'Simple guidance for safer and more confident care.',
+                height: 156,
               ),
-              onTextLarger: () => setState(
-                () => _textScale = (_textScale + .1).clamp(.9, 1.2).toDouble(),
+              const SizedBox(height: 18),
+              CareBookCover(
+                downloading: _downloading,
+                onStartReading: () {
+                  setState(() => _selectedChapter = 0);
+                  _scrollToReader();
+                },
+                onDownload: _downloading ? null : _downloadHandbook,
               ),
-            ),
+              const SizedBox(height: 22),
+              CareBookChapterNavigator(
+                chapter: chapter,
+                totalChapters: chapters.length,
+                onBrowse: _showTableOfContents,
+              ),
+              const SizedBox(height: 12),
+              KeyedSubtree(
+                key: _readerKey,
+                child: CareBookReader(
+                  chapter: chapter,
+                  totalChapters: chapters.length,
+                  textScale: _textScale,
+                  onPrevious: _selectedChapter == 0
+                      ? null
+                      : () => _selectChapter(_selectedChapter - 1),
+                  onNext: _selectedChapter == chapters.length - 1
+                      ? null
+                      : () => _selectChapter(_selectedChapter + 1),
+                  onTextSmaller: () => setState(
+                    () => _textScale = (_textScale - .1)
+                        .clamp(.9, 1.2)
+                        .toDouble(),
+                  ),
+                  onTextLarger: () => setState(
+                    () => _textScale = (_textScale + .1)
+                        .clamp(.9, 1.2)
+                        .toDouble(),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 26),
+              CareBookReferenceCard(
+                downloading: _downloading,
+                onDownloadLocal: _downloading ? null : _downloadHandbook,
+                onOpenOfficialSource: () => _openReference(
+                  CareBookService.officialSource,
+                  'Official Source Website',
+                ),
+                onOpenGettingStarted: () => _openReference(
+                  CareBookService.gettingStartedGuide,
+                  'Getting Started With Caregiving',
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 26),
-          CareBookReferenceCard(
-            downloading: _downloading,
-            onDownloadLocal: _downloading ? null : _downloadHandbook,
-            onOpenOfficialSource: () => _openReference(
-              CareBookService.officialSource,
-              'Official Source Website',
-            ),
-            onOpenGettingStarted: () => _openReference(
-              CareBookService.gettingStartedGuide,
-              'Getting Started With Caregiving',
-            ),
+        ),
+        Positioned(
+          left: 16,
+          right: 16,
+          bottom: 96,
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: CareBookAiLauncher(onTap: () => _openAiAssistant(chapter)),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -120,7 +134,9 @@ class _CareBookScreenState extends State<CareBookScreen> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      showDragHandle: true,
+      showDragHandle: false,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: .34),
       builder: (_) => CareBookAiChatSheet(selectedChapter: chapter),
     );
   }

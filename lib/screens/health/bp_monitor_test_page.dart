@@ -199,10 +199,25 @@ class _ProvisionalResultDetails extends StatelessWidget {
               'Development comparison only — not medically verified.',
               style: AppTextStyles.bodyMuted,
             ),
+            const SizedBox(height: 5),
+            const Text(
+              'SYS means the upper number (systolic). DIA means the lower '
+              'number (diastolic).',
+              style: AppTextStyles.small,
+            ),
             const SizedBox(height: 13),
-            Text(
-              'RAW SYS ${result.rawSystolic} · APP SYS ${result.systolic} · DIA ${result.diastolic} · Pulse ${result.pulse}',
-              style: AppTextStyles.sectionTitle,
+            Semantics(
+              label:
+                  'Raw systolic upper number ${result.rawSystolic}. '
+                  'App-corrected systolic upper number ${result.systolic}. '
+                  'Diastolic lower number ${result.diastolic}. '
+                  'Pulse ${result.pulse} beats per minute.',
+              child: ExcludeSemantics(
+                child: Text(
+                  'RAW SYS ${result.rawSystolic} · APP SYS ${result.systolic} · DIA ${result.diastolic} · Pulse ${result.pulse}',
+                  style: AppTextStyles.sectionTitle,
+                ),
+              ),
             ),
             const SizedBox(height: 8),
             Text(

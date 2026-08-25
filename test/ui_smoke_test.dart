@@ -19,6 +19,7 @@ import 'package:evercare/screens/appointments/edit_appointment_screen.dart';
 import 'package:evercare/screens/authentication/login_screen.dart';
 import 'package:evercare/screens/authentication/registration_screen.dart';
 import 'package:evercare/screens/caregiver/health_report_screen.dart';
+import 'package:evercare/screens/care_book/care_book_ai_chat_sheet.dart';
 import 'package:evercare/screens/care_book/care_book_screen.dart';
 import 'package:evercare/screens/emergency/emergency_screen.dart';
 import 'package:evercare/screens/hospitals/hospital_finder_screen.dart';
@@ -27,6 +28,7 @@ import 'package:evercare/screens/health/blood_pressure_record_screen.dart';
 import 'package:evercare/screens/health/blood_pressure_trend_screen.dart';
 import 'package:evercare/screens/health/bp_monitor_test_page.dart';
 import 'package:evercare/screens/health/health_overview_screen.dart';
+import 'package:evercare/screens/health/health_bp_ai_chat_sheet.dart';
 import 'package:evercare/screens/health/manual_health_record_screen.dart';
 import 'package:evercare/screens/home/home_dashboard_screen.dart';
 import 'package:evercare/screens/home/main_shell.dart';
@@ -45,6 +47,8 @@ import 'package:evercare/screens/settings/settings_screen.dart';
 import 'package:evercare/theme/app_theme.dart';
 import 'package:evercare/theme/app_motion.dart';
 import 'package:evercare/widgets/app_bottom_navigation.dart';
+import 'package:evercare/widgets/blood_pressure_widgets.dart';
+import 'package:evercare/widgets/bp_level_visual.dart';
 import 'package:evercare/widgets/bp_monitor_ble_scope.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -87,6 +91,32 @@ const _confirmedMonitorResult = <int>[
   0x15,
   0x0A,
   0x11,
+  0x00,
+  0x00,
+  0x00,
+  0x00,
+];
+
+// Raw systolic 128 is corrected by the app to 118. Diastolic 95 alone
+// determines the Stage 2 measurement range.
+const _diastolicStage2MonitorResult = <int>[
+  0x81,
+  0x80,
+  0x5F,
+  0x4B,
+  0x00,
+  0x00,
+  0x00,
+  0x00,
+];
+
+// Raw systolic 191 is corrected by the app to 181, preserving the existing
+// severely elevated / urgent handling path.
+const _severeMonitorResult = <int>[
+  0x81,
+  0xBF,
+  0x50,
+  0x4B,
   0x00,
   0x00,
   0x00,
@@ -237,6 +267,26 @@ void main() {
     expect(find.text('Synced today at 8:45 AM'), findsNothing);
   });
 
+  testWidgets('home latest BLE card uses friendly reading wording', (
+    tester,
+  ) async {
+    final service = BpMonitorBleService();
+    service.processNotificationForTesting(
+      _diastolicStage2MonitorResult,
+      receivedAt: DateTime(2026, 8, 25, 12, 30),
+    );
+
+    await pumpPhoneScreen(
+      tester,
+      HomeDashboardScreen(onSelectTab: (_) {}),
+      service: service,
+    );
+
+    expect(find.text('This reading needs some attention'), findsOneWidget);
+    expect(find.text('Stage 2 blood pressure range'), findsOneWidget);
+    expect(find.text('118/95'), findsOneWidget);
+  });
+
   testWidgets('health overview renders without overflow', (tester) async {
     await pumpPhoneScreen(tester, const HealthOverviewScreen());
     expect(
@@ -268,7 +318,8 @@ void main() {
     expect(find.text('36'), findsOneWidget);
     expect(find.text('50'), findsOneWidget);
     expect(find.text('Received directly through BLE'), findsOneWidget);
-    expect(find.text('Reading received'), findsOneWidget);
+    expect(find.text('This reading is lower than usual'), findsOneWidget);
+    expect(find.text('Lower-than-usual blood pressure reading'), findsWidgets);
     expect(find.text('Bluetooth (BLE)'), findsOneWidget);
     expect(find.text(service.currentResult!.deviceName), findsWidgets);
     expect(
@@ -279,6 +330,14 @@ void main() {
     );
     expect(find.textContaining('July 30, 2026'), findsWidgets);
     expect(find.textContaining('06:30 PM'), findsWidgets);
+    expect(find.byKey(const Key('bp-hero-card')), findsOneWidget);
+    expect(find.byKey(const Key('bp-metric-sys')), findsOneWidget);
+    expect(find.byKey(const Key('bp-metric-dia')), findsOneWidget);
+    expect(find.byKey(const Key('bp-metric-pulse')), findsOneWidget);
+    expect(find.byKey(const Key('bp-meaning-card')), findsOneWidget);
+    expect(find.byKey(const Key('evercare-ai-card')), findsOneWidget);
+    expect(find.byKey(healthBpAiChatButtonKey), findsOneWidget);
+    expect(find.byKey(evercareAiMascotKey), findsOneWidget);
     expect(
       find.byWidgetPredicate((widget) {
         if (widget is! Image) return false;
@@ -287,7 +346,7 @@ void main() {
             ? provider.imageProvider
             : provider;
         return asset is AssetImage &&
-            asset.assetName == 'assets/images/bp_result_care_v1.png';
+            asset.assetName == 'assets/health/bp_levels/bp_lower_hero.webp';
       }),
       findsOneWidget,
     );
@@ -303,6 +362,112 @@ void main() {
     final historyRect = tester.getRect(find.text('View History'));
     final trendRect = tester.getRect(find.text('View Trend'));
     expect((historyRect.top - trendRect.top).abs(), lessThan(2));
+  });
+
+  testWidgets('health insight opens a chat for the current corrected reading', (
+    tester,
+  ) async {
+    final service = BpMonitorBleService();
+    service.processNotificationForTesting(
+      _diastolicStage2MonitorResult,
+      receivedAt: DateTime(2026, 8, 25, 12, 30),
+    );
+
+    await pumpPhoneScreen(
+      tester,
+      const HealthOverviewScreen(),
+      service: service,
+    );
+
+    final chatButton = find.byKey(healthBpAiChatButtonKey);
+    await tester.ensureVisible(chatButton);
+    await tester.pumpAndSettle();
+    await tester.tap(chatButton);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(healthBpAiChatSheetKey), findsOneWidget);
+    expect(find.text('Ask about this reading'), findsOneWidget);
+    expect(find.textContaining('118/95 mmHg'), findsWidgets);
+    expect(find.byKey(healthBpAiChatHeaderMascotKey), findsOneWidget);
+    expect(find.byKey(healthBpAiChatAssistantMascotKey), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('health result explains a diastolic-only Stage 2 measurement range', (
+    tester,
+  ) async {
+    final service = BpMonitorBleService();
+    service.processNotificationForTesting(
+      _diastolicStage2MonitorResult,
+      receivedAt: DateTime(2026, 8, 25, 12, 30),
+    );
+
+    await pumpPhoneScreen(
+      tester,
+      const HealthOverviewScreen(),
+      service: service,
+    );
+
+    expect(find.text('This reading needs some attention'), findsOneWidget);
+    expect(find.text('Needs Attention'), findsOneWidget);
+    expect(find.text('Stage 2 blood pressure range'), findsWidgets);
+    expect(
+      find.byWidgetPredicate((widget) {
+        if (widget is! Image) return false;
+        final provider = widget.image;
+        final asset = provider is ResizeImage
+            ? provider.imageProvider
+            : provider;
+        return asset is AssetImage &&
+            asset.assetName == 'assets/health/bp_levels/bp_stage2_hero.webp';
+      }),
+      findsOneWidget,
+    );
+    expect(find.text('Upper number'), findsOneWidget);
+    expect(find.text('Lower number'), findsOneWidget);
+    expect(
+      find.textContaining(
+        'upper number (systolic) is 118 mmHg, which is within the normal range',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining(
+        'lower number (diastolic) is 95 mmHg, which falls within the Stage 2 range',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('use whichever value falls into the higher category'),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining(
+        'lower number (diastolic) determines the Stage 2 range for this measurement',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        'This result describes this reading only and is not a medical diagnosis.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('You have Stage 2'), findsNothing);
+    expect(find.textContaining('High blood pressure · Stage 2'), findsNothing);
+
+    await tester.ensureVisible(find.byTooltip('More about this result'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('More about this result'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text(
+        'Blood pressure can change throughout the day. Repeated measurements and evaluation by a qualified healthcare professional are used when assessing high blood pressure.',
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Close'));
+    await tester.pumpAndSettle();
   });
 
   testWidgets('completed reading cards fit a narrow scaled phone', (
@@ -326,7 +491,7 @@ void main() {
     expect(find.text('Recent trend'), findsOneWidget);
     expect(find.text('View History'), findsOneWidget);
     expect(find.text('View Trend'), findsOneWidget);
-    expect(find.text('COMPLETED READING'), findsOneWidget);
+    expect(find.text('Completed reading'), findsOneWidget);
     expect(
       find.text(
         'Decoder is provisional. Raw packet metadata is preserved and available through BLE Diagnostics.',
@@ -349,7 +514,7 @@ void main() {
     final timeRect = tester.getRect(find.text('Time measured'));
     final monitorRect = tester.getRect(find.text('Connected monitor'));
     final sourceRect = tester.getRect(find.text('Measurement source'));
-    final statusRect = tester.getRect(find.text('Result status'));
+    final statusRect = tester.getRect(find.text('Capture status'));
     expect((timeRect.top - monitorRect.top).abs(), lessThan(2));
     expect(monitorRect.left, greaterThan(timeRect.left));
     expect((sourceRect.top - statusRect.top).abs(), lessThan(2));
@@ -397,6 +562,66 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('completed reading stays readable at 200 percent text', (
+    tester,
+  ) async {
+    final service = BpMonitorBleService();
+    service.processNotificationForTesting(
+      _diastolicStage2MonitorResult,
+      receivedAt: DateTime(2026, 8, 25, 12, 30),
+    );
+
+    await pumpPhoneScreen(
+      tester,
+      const HealthOverviewScreen(),
+      service: service,
+      size: const Size(320, 700),
+      textScaleFactor: 2,
+    );
+    await tester.pump(AppMotion.page);
+
+    expect(find.text('Needs Attention'), findsOneWidget);
+    expect(find.text('Upper number'), findsOneWidget);
+    expect(find.text('Lower number'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('severely elevated result keeps urgent safety guidance', (
+    tester,
+  ) async {
+    final service = BpMonitorBleService();
+    service.processNotificationForTesting(
+      _severeMonitorResult,
+      receivedAt: DateTime(2026, 8, 25, 13, 5),
+    );
+
+    await pumpPhoneScreen(
+      tester,
+      const HealthOverviewScreen(),
+      service: service,
+      size: const Size(320, 700),
+      textScaleFactor: 1.3,
+    );
+
+    expect(find.text('This reading needs urgent attention'), findsOneWidget);
+    expect(find.text('Severely elevated blood pressure reading'), findsWidgets);
+    expect(find.textContaining('seek urgent clinical advice'), findsOneWidget);
+    expect(find.textContaining('local emergency services'), findsOneWidget);
+    expect(
+      find.byWidgetPredicate((widget) {
+        if (widget is! Image) return false;
+        final provider = widget.image;
+        final asset = provider is ResizeImage
+            ? provider.imageProvider
+            : provider;
+        return asset is AssetImage &&
+            asset.assetName == 'assets/health/bp_levels/bp_severe_hero.webp';
+      }),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('health auto-connect lease pauses under another page', (
     tester,
   ) async {
@@ -440,7 +665,35 @@ void main() {
     await pumpPhoneScreen(
       tester,
       BloodPressureRecordScreen(record: _testReading),
+      size: const Size(320, 700),
+      textScaleFactor: 2,
     );
+    expect(
+      find.text('Your reading is higher than recommended'),
+      findsOneWidget,
+    );
+    expect(find.text('Upper number (systolic)'), findsOneWidget);
+    expect(find.text('Lower number (diastolic)'), findsOneWidget);
+  });
+
+  testWidgets('saved reading card fits a narrow phone at large text', (
+    tester,
+  ) async {
+    await pumpPhoneScreen(
+      tester,
+      SingleChildScrollView(
+        child: BloodPressureRecordCard(record: _testReading, onTap: () {}),
+      ),
+      size: const Size(320, 700),
+      textScaleFactor: 2,
+    );
+
+    expect(
+      find.text('Your reading is higher than recommended'),
+      findsOneWidget,
+    );
+    expect(find.text('Stage 1 blood pressure range'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('blood-pressure trend renders without overflow', (tester) async {
@@ -894,10 +1147,71 @@ void main() {
   testWidgets('care book screen renders without overflow', (tester) async {
     await pumpPhoneScreen(tester, const CareBookScreen());
     expect(find.text('The EverCare\nCare Book'), findsNothing);
+    expect(find.text('Need help while reading?'), findsOneWidget);
+    expect(find.text('Ask Care Guide'), findsOneWidget);
+    expect(find.byKey(careBookAiLauncherKey), findsOneWidget);
+    expect(find.byKey(careBookAiLauncherButtonKey), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(careBookAiLauncherButtonKey),
+        matching: find.byType(AiMascotAvatar),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Official NIA Reference'), findsOneWidget);
     expect(find.text('Official Source Website'), findsOneWidget);
     expect(find.text('Getting Started With Caregiving'), findsOneWidget);
     expect(find.text('Download Original NIA PDF'), findsOneWidget);
+
+    final promptRect = tester.getRect(find.byKey(careBookAiLauncherLabelKey));
+    final buttonRect = tester.getRect(find.byKey(careBookAiLauncherButtonKey));
+    expect(promptRect.right, lessThan(buttonRect.left));
+    expect(buttonRect.size, const Size.square(70));
+
+    await tester.tap(find.byKey(careBookAiLauncherButtonKey));
+    await tester.pumpAndSettle();
+    expect(find.byKey(careBookAiSheetKey), findsOneWidget);
+    expect(find.byKey(careBookAiHeaderMascotKey), findsOneWidget);
+    expect(find.byKey(careBookAiAssistantAvatarKey), findsOneWidget);
+    expect(find.text('Care Guide'), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Care Book AI launcher stays fixed at 200 percent text', (
+    tester,
+  ) async {
+    await pumpPhoneScreen(
+      tester,
+      const CareBookScreen(),
+      size: const Size(320, 700),
+      textScaleFactor: 2,
+    );
+
+    final prompt = find.byKey(careBookAiLauncherLabelKey);
+    final button = find.byKey(careBookAiLauncherButtonKey);
+    final launcher = find.byKey(careBookAiLauncherKey);
+    final beforePrompt = tester.getRect(prompt);
+    final beforeButton = tester.getRect(button);
+    final beforeLauncher = tester.getRect(launcher);
+    expect(beforePrompt.left, greaterThanOrEqualTo(0));
+    expect(beforePrompt.right, lessThan(beforeButton.left));
+    expect(beforeButton.right, lessThanOrEqualTo(320));
+    expect(beforeButton.size, const Size.square(70));
+    expect(beforeLauncher.bottom, closeTo(604, .1));
+
+    final scrollable = tester.state<ScrollableState>(
+      find.byType(Scrollable).first,
+    );
+    scrollable.position.jumpTo(500);
+    await tester.pump();
+
+    final afterPrompt = tester.getRect(prompt);
+    final afterButton = tester.getRect(button);
+    final afterLauncher = tester.getRect(launcher);
+    expect((afterPrompt.top - beforePrompt.top).abs(), lessThan(1));
+    expect((afterLauncher.top - beforeLauncher.top).abs(), lessThan(1));
+    expect(afterButton.size, beforeButton.size);
+    expect(tester.takeException(), isNull);
   });
 
   test('bundled caregiver handbook is available for download', () async {

@@ -132,7 +132,8 @@ class _ManualHealthRecordScreenState extends State<ManualHealthRecordScreen> {
                   SizedBox(width: 11),
                   Expanded(
                     child: Text(
-                      'Enter a measurement you actually took. Saved entries are user-provided and are not medically verified.',
+                      'Enter the upper number, lower number, and pulse exactly '
+                      'as shown on the monitor. Saved entries are user-provided.',
                       style: AppTextStyles.bodyMuted,
                     ),
                   ),
@@ -142,7 +143,7 @@ class _ManualHealthRecordScreenState extends State<ManualHealthRecordScreen> {
             const SizedBox(height: 22),
             AppTextField(
               controller: _systolic,
-              label: 'Systolic pressure',
+              label: 'Upper number (systolic)',
               hint: 'mmHg',
               icon: Icons.arrow_upward_rounded,
               keyboardType: TextInputType.number,
@@ -150,7 +151,7 @@ class _ManualHealthRecordScreenState extends State<ManualHealthRecordScreen> {
             ),
             AppTextField(
               controller: _diastolic,
-              label: 'Diastolic pressure',
+              label: 'Lower number (diastolic)',
               hint: 'mmHg',
               icon: Icons.arrow_downward_rounded,
               keyboardType: TextInputType.number,

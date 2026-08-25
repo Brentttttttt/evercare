@@ -73,7 +73,8 @@ class _BloodPressureHistoryScreenState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'These are user-saved measurements and are not medically verified.',
+                'Each card explains the range of one saved reading. Check its '
+                'badge to see whether the measurement is clinician verified.',
                 style: AppTextStyles.bodyMuted,
               ),
               const SizedBox(height: 18),

@@ -42,7 +42,9 @@ export function optionsResponse(): Response {
   return new Response("ok", { headers: corsHeaders });
 }
 
-export async function readJsonBody(req: Request): Promise<Record<string, unknown>> {
+export async function readJsonBody(
+  req: Request,
+): Promise<Record<string, unknown>> {
   try {
     const body = await req.json();
     if (body == null || typeof body !== "object" || Array.isArray(body)) {
@@ -67,7 +69,10 @@ export async function requireUserId(req: Request): Promise<string> {
   const publishableKey = getSupabasePublishableKey();
   if (!supabaseUrl || !publishableKey) {
     console.error("Supabase function authentication is not configured.");
-    throw new PublicFunctionError(503, "AI service is temporarily unavailable.");
+    throw new PublicFunctionError(
+      503,
+      "AI service is temporarily unavailable.",
+    );
   }
 
   const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
@@ -76,8 +81,17 @@ export async function requireUserId(req: Request): Promise<string> {
       apikey: publishableKey,
     },
   });
-  if (!response.ok) {
+  if (response.status === 401 || response.status === 403) {
     throw new PublicFunctionError(401, "Your sign-in session has expired.");
+  }
+  if (!response.ok) {
+    console.error(
+      `Supabase Auth user lookup failed with HTTP ${response.status}.`,
+    );
+    throw new PublicFunctionError(
+      503,
+      "Account verification is temporarily unavailable.",
+    );
   }
   const user = await response.json();
   if (typeof user?.id !== "string" || user.id.length === 0) {
@@ -87,19 +101,22 @@ export async function requireUserId(req: Request): Promise<string> {
 }
 
 function getSupabasePublishableKey(): string | undefined {
-  const direct =
-    Deno.env.get("SUPABASE_ANON_KEY") ??
-    Deno.env.get("SUPABASE_PUBLISHABLE_KEY");
+  const direct = Deno.env.get("SUPABASE_PUBLISHABLE_KEY");
   if (direct) return direct;
 
   const rawKeys = Deno.env.get("SUPABASE_PUBLISHABLE_KEYS");
-  if (!rawKeys) return undefined;
-  try {
-    const keys = JSON.parse(rawKeys) as Record<string, unknown>;
-    return typeof keys.default === "string" ? keys.default : undefined;
-  } catch (_) {
-    return undefined;
+  if (rawKeys) {
+    try {
+      const keys = JSON.parse(rawKeys) as Record<string, unknown>;
+      if (typeof keys.default === "string") return keys.default;
+    } catch (_) {
+      console.error("SUPABASE_PUBLISHABLE_KEYS is not valid JSON.");
+    }
   }
+
+  // Compatibility fallback for projects that have not migrated from the
+  // legacy JWT-based anon key.
+  return Deno.env.get("SUPABASE_ANON_KEY");
 }
 
 /// A lightweight per-isolate cooldown that avoids accidental repeated taps.
@@ -175,18 +192,86 @@ export function requiredInteger(
   return value;
 }
 
-type ChatMessage = { role: "system" | "user"; content: string };
+export type ConversationHistoryMessage = {
+  role: "user" | "assistant";
+  content: string;
+};
+
+/// Accepts a small, in-memory conversation window from the app. System roles,
+/// arbitrary metadata, and unbounded transcripts are rejected so callers
+/// cannot expand the AI data boundary silently.
+export function optionalConversationHistory(
+  value: unknown,
+): ConversationHistoryMessage[] {
+  if (value == null) return [];
+  if (!Array.isArray(value) || value.length > 8) {
+    throw new PublicFunctionError(
+      400,
+      "history must contain 8 messages or fewer.",
+    );
+  }
+
+  let totalCharacters = 0;
+  return value.map((item, index) => {
+    if (item == null || typeof item !== "object" || Array.isArray(item)) {
+      throw new PublicFunctionError(
+        400,
+        `history item ${index + 1} must be an object.`,
+      );
+    }
+    const record = item as Record<string, unknown>;
+    const keys = Object.keys(record);
+    if (
+      keys.length !== 2 || !keys.includes("role") ||
+      !keys.includes("content")
+    ) {
+      throw new PublicFunctionError(
+        400,
+        `history item ${index + 1} has unsupported fields.`,
+      );
+    }
+    if (record.role !== "user" && record.role !== "assistant") {
+      throw new PublicFunctionError(
+        400,
+        `history item ${index + 1} has an invalid role.`,
+      );
+    }
+    const content = requiredText(
+      record.content,
+      `history item ${index + 1} content`,
+      600,
+    );
+    totalCharacters += content.length;
+    if (totalCharacters > 3200) {
+      throw new PublicFunctionError(
+        400,
+        "history must contain 3200 characters or fewer.",
+      );
+    }
+    return { role: record.role, content };
+  });
+}
+
+type ChatMessage = {
+  role: "system" | "user" | "assistant";
+  content: string;
+};
+type ReasoningEffort = "low" | "medium" | "high";
 
 export async function requestGroqStructuredJson({
   schemaName,
   schema,
   messages,
-  maxCompletionTokens = 500,
+  maxCompletionTokens = 700,
+  reasoningEffort = "low",
+  temperature = 0.2,
 }: {
   schemaName: string;
   schema: Record<string, unknown>;
   messages: ChatMessage[];
   maxCompletionTokens?: number;
+  reasoningEffort?: ReasoningEffort;
+  temperature?: number;
 }): Promise<Record<string, unknown>> {
   const apiKey = Deno.env.get("GROQ_API_KEY");
   if (!apiKey) {
@@ -205,7 +290,10 @@ export async function requestGroqStructuredJson({
       body: JSON.stringify({
         model: Deno.env.get("GROQ_MODEL") ?? "openai/gpt-oss-20b",
         messages,
-        temperature: 0.2,
+        // GPT-OSS completion tokens include reasoning tokens. Low reasoning
+        // keeps these short, leaving enough of the budget for strict JSON.
+        reasoning_effort: reasoningEffort,
+        temperature,
         max_completion_tokens: maxCompletionTokens,
         response_format: {
           type: "json_schema",
@@ -232,14 +320,20 @@ export async function requestGroqStructuredJson({
       );
     }
     console.error(`Groq request failed with HTTP ${response.status}.`);
-    throw new PublicFunctionError(503, "EverCare AI is temporarily unavailable.");
+    throw new PublicFunctionError(
+      503,
+      "EverCare AI is temporarily unavailable.",
+    );
   }
 
   const payload = await response.json();
   const content = payload?.choices?.[0]?.message?.content;
   if (typeof content !== "string") {
     console.error("Groq returned a completion without text content.");
-    throw new PublicFunctionError(503, "EverCare AI returned an invalid response.");
+    throw new PublicFunctionError(
+      503,
+      "EverCare AI returned an invalid response.",
+    );
   }
   try {
     const parsed = JSON.parse(content);
@@ -249,7 +343,10 @@ export async function requestGroqStructuredJson({
     return parsed as Record<string, unknown>;
   } catch (_) {
     console.error("Groq structured output could not be parsed.");
-    throw new PublicFunctionError(503, "EverCare AI returned an invalid response.");
+    throw new PublicFunctionError(
+      503,
+      "EverCare AI returned an invalid response.",
+    );
   }
 }
 
@@ -263,7 +360,10 @@ export function modelText(
   }
   const text = value.trim();
   if (text.length === 0 || text.length > maximumLength) {
-    throw new PublicFunctionError(503, `EverCare AI returned invalid ${field}.`);
+    throw new PublicFunctionError(
+      503,
+      `EverCare AI returned invalid ${field}.`,
+    );
   }
   return text;
 }

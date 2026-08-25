@@ -32,4 +32,6 @@ flutter:
   assets:
     - assets/logo/evercare_app_icon.png
     - assets/images/
+    - assets/health/bp_levels/
+    - assets/ai_mascot/
     - assets/care_book/caregivers-book.pdf

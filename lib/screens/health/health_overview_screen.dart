@@ -17,10 +17,13 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_motion.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_page.dart';
+import '../../widgets/blood_pressure_widgets.dart';
+import '../../widgets/bp_level_visual.dart';
 import '../../widgets/bp_monitor_ble_scope.dart';
 import '../../widgets/care_photo_banner.dart';
 import '../../widgets/evercare_backend_scope.dart';
 import '../../widgets/section_header.dart';
+import 'health_bp_ai_chat_sheet.dart';
 
 class HealthOverviewScreen extends StatefulWidget {
   const HealthOverviewScreen({
@@ -137,30 +140,29 @@ class _HealthOverviewScreenState extends State<HealthOverviewScreen>
             'Connect, measure, and review readings in one secure place.',
             style: AppTextStyles.bodyMuted,
           ),
-          const SizedBox(height: 22),
-          const CarePhotoBanner(
-            assetPath: 'assets/images/bp_monitor_home.png',
-            semanticLabel:
-                'A caregiver helping an older adult use an upper-arm blood pressure monitor',
-            title: 'Measure with confidence',
-            subtitle:
-                'Connect the real monitor and keep the patient calm and still.',
-            height: 150,
-          ),
-          const SizedBox(height: 16),
-          _MonitorConnectionCard(service: service),
-          const SizedBox(height: 20),
-          if (service.currentResult case final result?)
-            _CompletedReadingSection(result: result)
-          else ...[
+          if (service.currentResult case final result?) ...[
+            const SizedBox(height: 22),
+            _CompletedReadingSection(result: result, service: service),
+          ] else ...[
+            const SizedBox(height: 22),
+            const CarePhotoBanner(
+              assetPath: 'assets/images/bp_monitor_home.png',
+              semanticLabel:
+                  'A caregiver helping an older adult use an upper-arm blood pressure monitor',
+              title: 'Measure with confidence',
+              subtitle:
+                  'Connect the real monitor and keep the patient calm and still.',
+              height: 150,
+            ),
+            const SizedBox(height: 16),
+            _MonitorConnectionCard(service: service),
+            const SizedBox(height: 20),
             const SectionHeader(
               title: 'Latest reading',
               subtitle: 'Only completed monitor results appear here.',
             ),
             const SizedBox(height: 12),
             const _NoResultCard(),
-          ],
-          if (service.currentResult == null) ...[
             const SizedBox(height: 12),
             AppCard(
               onTap: () =>
@@ -908,9 +910,10 @@ class _NoResultCard extends StatelessWidget {
 }
 
 class _CompletedReadingSection extends StatelessWidget {
-  const _CompletedReadingSection({required this.result});
+  const _CompletedReadingSection({required this.result, required this.service});
 
   final BpMonitorResult result;
+  final BpMonitorBleService service;
 
   @override
   Widget build(BuildContext context) {
@@ -923,21 +926,37 @@ class _CompletedReadingSection extends StatelessWidget {
       children: [
         _BloodPressureResultCard(result: result, assessment: assessment),
         const SizedBox(height: 12),
+        _ReadingInsightCard(assessment: assessment),
+        const SizedBox(height: 12),
+        _HealthAiInsightCard(
+          key: ValueKey<String>(_healthAiResultKey(result)),
+          result: result,
+          assessment: assessment,
+        ),
+        const SizedBox(height: 12),
+        const BloodPressureReadingDisclaimer(),
+        const SizedBox(height: 12),
+        _BloodPressureActionBar(result: result),
+        const SizedBox(height: 12),
+        _MonitorConnectionCard(service: service),
+        const SizedBox(height: 12),
         _BloodPressureDetailsLayout(result: result),
         const SizedBox(height: 12),
         _SystolicCalibrationNote(result: result),
         const SizedBox(height: 12),
-        _ReadingInsightCard(assessment: assessment),
-        const SizedBox(height: 12),
-        _HealthAiInsightCard(result: result, assessment: assessment),
-        const SizedBox(height: 12),
         const _BleResultBanner(),
-        const SizedBox(height: 12),
-        _BloodPressureActionBar(result: result),
       ],
     );
   }
 }
+
+String _healthAiResultKey(BpMonitorResult result) => [
+  result.receivedAt.toUtc().toIso8601String(),
+  result.rawHex,
+  result.systolic,
+  result.diastolic,
+  result.pulse,
+].join('|');
 
 class _BloodPressureResultCard extends StatelessWidget {
   const _BloodPressureResultCard({
@@ -951,6 +970,7 @@ class _BloodPressureResultCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppCard(
+      key: const Key('bp-hero-card'),
       padding: EdgeInsets.zero,
       borderColor: AppColors.primaryGreen.withValues(alpha: .24),
       child: Column(
@@ -959,140 +979,131 @@ class _BloodPressureResultCard extends StatelessWidget {
           LayoutBuilder(
             builder: (context, constraints) {
               final textScale = MediaQuery.textScalerOf(context).scale(1);
-              final stackContent =
-                  constraints.maxWidth < 330 || textScale > 1.2;
-              final readingDetails = Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Reading received',
-                    style: AppTextStyles.sectionTitle.copyWith(
-                      color: AppColors.darkGreen,
-                      fontSize: 22,
-                    ),
-                  ),
-                  const SizedBox(height: 7),
-                  Text(
-                    'Your blood pressure reading was received successfully.',
-                    style: AppTextStyles.bodyMuted.copyWith(
-                      color: AppColors.mutedForeground,
-                    ),
-                  ),
-                  const SizedBox(height: 11),
-                  Wrap(
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: 7,
-                    runSpacing: 4,
-                    children: [
-                      const Icon(
-                        Icons.schedule_rounded,
-                        size: 18,
-                        color: AppColors.darkGreen,
-                      ),
-                      Text(
-                        '${_formatMeasurementDate(result.receivedAt)}  ·  ${_formatMeasurementTime(result.receivedAt)}',
-                        style: AppTextStyles.small.copyWith(
-                          color: AppColors.darkGreen,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              );
+              final separateArtwork =
+                  constraints.maxWidth < 440 || textScale > 1.25;
 
-              return Stack(
-                children: [
-                  Positioned.fill(
-                    child: Image.asset(
-                      'assets/images/bp_result_care_v1.png',
-                      fit: BoxFit.cover,
-                      alignment: Alignment.center,
-                      cacheWidth: 1200,
-                      filterQuality: FilterQuality.medium,
-                      excludeFromSemantics: true,
+              if (separateArtwork) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      height: 166,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          BpLevelVisual(category: assessment.category),
+                          const DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [Color(0x12FFFFFF), Color(0x520E2C20)],
+                                stops: [0.45, 1],
+                              ),
+                            ),
+                          ),
+                          const Positioned(
+                            left: 14,
+                            right: 14,
+                            top: 14,
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: _CompletedReadingBadge(),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  const Positioned.fill(
-                    child: DecoratedBox(
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+                      child: LayoutBuilder(
+                        builder: (context, detailsConstraints) {
+                          final sideBySide =
+                              detailsConstraints.maxWidth >= 330 &&
+                              textScale <= 1.15;
+                          final details = _HeroReadingDetails(
+                            result: result,
+                            assessment: assessment,
+                          );
+                          if (!sideBySide) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                details,
+                                const SizedBox(height: 14),
+                                _BloodPressureStatusIndicator(
+                                  assessment: assessment,
+                                ),
+                              ],
+                            );
+                          }
+                          return Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Expanded(child: details),
+                              const SizedBox(width: 14),
+                              _BloodPressureStatusIndicator(
+                                assessment: assessment,
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                );
+              }
+
+              return SizedBox(
+                height: 300,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    BpLevelVisual(category: assessment.category),
+                    const DecoratedBox(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           begin: Alignment.centerLeft,
                           end: Alignment.centerRight,
                           colors: [
-                            AppColors.card,
-                            Color(0xFAFFFFFF),
-                            Color(0xD9FFFFFF),
-                            Color(0x32FFFFFF),
+                            Color(0xFFFFFFFF),
+                            Color(0xFCFFFFFF),
+                            Color(0xE8FFFFFF),
+                            Color(0x42FFFFFF),
                           ],
-                          stops: [0, .42, .72, 1],
+                          stops: [0, .36, .62, 1],
                         ),
                       ),
                     ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(18),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 11,
-                            vertical: 7,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.lightGreen.withValues(alpha: .94),
-                            borderRadius: BorderRadius.circular(999),
-                            border: Border.all(
-                              color: AppColors.primaryGreen.withValues(
-                                alpha: .13,
-                              ),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
+                    Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: SizedBox(
+                          width: constraints.maxWidth * .57,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Icon(
-                                Icons.check_circle_rounded,
-                                size: 17,
-                                color: AppColors.primaryGreen,
-                              ),
-                              const SizedBox(width: 7),
-                              Flexible(
-                                child: Text(
-                                  'COMPLETED READING',
-                                  style: AppTextStyles.eyebrow.copyWith(
-                                    color: AppColors.darkGreen,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        if (stackContent) ...[
-                          readingDetails,
-                          const SizedBox(height: 14),
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: _BloodPressureStatusIndicator(
-                              assessment: assessment,
-                            ),
-                          ),
-                        ] else
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Expanded(child: readingDetails),
-                              const SizedBox(width: 12),
-                              _BloodPressureStatusIndicator(
+                              const _CompletedReadingBadge(),
+                              const Spacer(),
+                              _HeroReadingDetails(
+                                result: result,
                                 assessment: assessment,
                               ),
                             ],
                           ),
-                      ],
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                    Positioned(
+                      right: 20,
+                      bottom: 18,
+                      child: _BloodPressureStatusIndicator(
+                        assessment: assessment,
+                      ),
+                    ),
+                  ],
+                ),
               );
             },
           ),
@@ -1103,8 +1114,11 @@ class _BloodPressureResultCard extends StatelessWidget {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 const gap = 10.0;
-                final threeColumns = constraints.maxWidth >= 390;
-                final twoColumns = !threeColumns && constraints.maxWidth >= 230;
+                final largeText =
+                    MediaQuery.textScalerOf(context).scale(1) > 1.3;
+                final threeColumns = !largeText && constraints.maxWidth >= 390;
+                final twoColumns =
+                    !largeText && !threeColumns && constraints.maxWidth >= 230;
                 final columns = threeColumns ? 3 : (twoColumns ? 2 : 1);
                 final baseWidth =
                     (constraints.maxWidth - (gap * (columns - 1))) / columns;
@@ -1114,30 +1128,40 @@ class _BloodPressureResultCard extends StatelessWidget {
                   runSpacing: gap,
                   children: [
                     _BloodPressureValueTile(
+                      tileKey: const Key('bp-metric-sys'),
                       width: baseWidth,
                       icon: Icons.arrow_upward_rounded,
                       iconColor: AppColors.primaryGreen,
                       label: 'SYS',
+                      helperLabel: 'Upper number',
+                      tooltipMessage:
+                          'SYS (Systolic)\nYour upper blood pressure number.',
                       value: result.systolic.toString(),
                       unit: 'mmHg',
                       semanticLabel:
                           'Systolic pressure, ${result.systolic} millimeters of mercury',
                     ),
                     _BloodPressureValueTile(
+                      tileKey: const Key('bp-metric-dia'),
                       width: baseWidth,
                       icon: Icons.arrow_downward_rounded,
                       iconColor: AppColors.blue,
                       label: 'DIA',
+                      helperLabel: 'Lower number',
+                      tooltipMessage:
+                          'DIA (Diastolic)\nYour lower blood pressure number.',
                       value: result.diastolic.toString(),
                       unit: 'mmHg',
                       semanticLabel:
                           'Diastolic pressure, ${result.diastolic} millimeters of mercury',
                     ),
                     _BloodPressureValueTile(
+                      tileKey: const Key('bp-metric-pulse'),
                       width: twoColumns ? constraints.maxWidth : baseWidth,
                       icon: Icons.favorite_rounded,
                       iconColor: AppColors.danger,
                       label: 'Pulse',
+                      helperLabel: 'Heart rate',
                       value: result.pulse.toString(),
                       unit: 'BPM',
                       semanticLabel: 'Pulse, ${result.pulse} beats per minute',
@@ -1153,6 +1177,118 @@ class _BloodPressureResultCard extends StatelessWidget {
   }
 }
 
+class _CompletedReadingBadge extends StatelessWidget {
+  const _CompletedReadingBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+      decoration: BoxDecoration(
+        color: const Color(0xF5F4FBF7),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: AppColors.primaryGreen.withValues(alpha: .18),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.darkGreen.withValues(alpha: .08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.check_circle_rounded,
+            size: 18,
+            color: AppColors.primaryGreen,
+          ),
+          const SizedBox(width: 7),
+          Flexible(
+            child: Text(
+              'Completed reading',
+              style: AppTextStyles.label.copyWith(
+                color: AppColors.darkGreen,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeroReadingDetails extends StatelessWidget {
+  const _HeroReadingDetails({required this.result, required this.assessment});
+
+  final BpMonitorResult result;
+  final BloodPressureAssessment assessment;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _assessmentColor(assessment);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          assessment.friendlyStatus,
+          style: AppTextStyles.sectionTitle.copyWith(
+            color: AppColors.darkGreen,
+            fontSize: 23,
+            height: 1.16,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: .1),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: color.withValues(alpha: .24)),
+          ),
+          child: Text(
+            assessment.label,
+            style: AppTextStyles.small.copyWith(
+              color: color,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+        const SizedBox(height: 11),
+        Text(
+          '${result.systolic} / ${result.diastolic} mmHg',
+          style: AppTextStyles.cardTitle.copyWith(
+            color: AppColors.foreground,
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 7,
+          runSpacing: 4,
+          children: [
+            const Icon(
+              Icons.schedule_rounded,
+              size: 18,
+              color: AppColors.darkGreen,
+            ),
+            Text(
+              '${_formatMeasurementDate(result.receivedAt)}  ·  ${_formatMeasurementTime(result.receivedAt)}',
+              style: AppTextStyles.small.copyWith(color: AppColors.darkGreen),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
 class _BloodPressureStatusIndicator extends StatelessWidget {
   const _BloodPressureStatusIndicator({required this.assessment});
 
@@ -1161,9 +1297,46 @@ class _BloodPressureStatusIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textScale = MediaQuery.textScalerOf(context).scale(1);
-    final diameter = (108 + ((textScale - 1) * 58)).clamp(108, 166).toDouble();
+    final color = _assessmentColor(assessment);
+    final semanticsLabel =
+        '${assessment.friendlyStatus}. Measurement range: ${assessment.label}.';
+
+    if (textScale > 1.3) {
+      return Semantics(
+        label: semanticsLabel,
+        excludeSemantics: true,
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 240),
+          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: .1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: color.withValues(alpha: .35)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(_assessmentIcon(assessment), color: color, size: 24),
+              const SizedBox(width: 9),
+              Flexible(
+                child: Text(
+                  assessment.friendlyCompactLabel,
+                  style: AppTextStyles.label.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    const diameter = 106.0;
     final indicator = Semantics(
-      label: 'Status: ${assessment.label}',
+      label:
+          '${assessment.friendlyStatus}. Measurement range: ${assessment.label}.',
       excludeSemantics: true,
       child: Container(
         width: diameter,
@@ -1172,10 +1345,7 @@ class _BloodPressureStatusIndicator extends StatelessWidget {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: Colors.white.withValues(alpha: .96),
-          border: Border.all(
-            color: _assessmentColor(assessment).withValues(alpha: .68),
-            width: 3,
-          ),
+          border: Border.all(color: color.withValues(alpha: .62), width: 3),
           boxShadow: [
             BoxShadow(
               color: AppColors.darkGreen.withValues(alpha: .09),
@@ -1187,24 +1357,22 @@ class _BloodPressureStatusIndicator extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: _assessmentColor(assessment).withValues(alpha: .12),
+            gradient: RadialGradient(
+              colors: [Colors.white, color.withValues(alpha: .13)],
+            ),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                _assessmentIcon(assessment),
-                color: _assessmentColor(assessment),
-                size: 27,
-              ),
+              Icon(_assessmentIcon(assessment), color: color, size: 27),
               const SizedBox(height: 4),
               Text(
-                assessment.shortLabel,
+                assessment.friendlyCompactLabel,
                 textAlign: TextAlign.center,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
                 style: AppTextStyles.small.copyWith(
-                  color: _assessmentColor(assessment),
+                  color: color,
                   fontWeight: FontWeight.w800,
                   height: 1.1,
                 ),
@@ -1233,19 +1401,25 @@ class _BloodPressureStatusIndicator extends StatelessWidget {
 
 class _BloodPressureValueTile extends StatelessWidget {
   const _BloodPressureValueTile({
+    required this.tileKey,
     required this.width,
     required this.icon,
     required this.iconColor,
     required this.label,
+    this.helperLabel,
+    this.tooltipMessage,
     required this.value,
     required this.unit,
     required this.semanticLabel,
   });
 
+  final Key tileKey;
   final double width;
   final IconData icon;
   final Color iconColor;
   final String label;
+  final String? helperLabel;
+  final String? tooltipMessage;
   final String value;
   final String unit;
   final String semanticLabel;
@@ -1253,36 +1427,78 @@ class _BloodPressureValueTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
+      key: tileKey,
       label: semanticLabel,
       excludeSemantics: true,
       child: Container(
         width: width,
-        constraints: const BoxConstraints(minHeight: 112),
-        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 13),
+        constraints: const BoxConstraints(minHeight: 128),
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.border),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [iconColor.withValues(alpha: .075), Colors.white],
+            stops: const [0, .72],
+          ),
+          borderRadius: BorderRadius.circular(17),
+          border: Border.all(color: iconColor.withValues(alpha: .18)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Container(
-                  width: 30,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    color: iconColor.withValues(alpha: .1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(icon, size: 17, color: iconColor),
-                ),
-                const SizedBox(width: 8),
-                Expanded(child: Text(label, style: AppTextStyles.label)),
-              ],
+            Container(
+              width: 34,
+              height: 3,
+              decoration: BoxDecoration(
+                color: iconColor.withValues(alpha: .72),
+                borderRadius: BorderRadius.circular(999),
+              ),
             ),
             const SizedBox(height: 10),
+            Tooltip(
+              message: tooltipMessage ?? label,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: .88),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: iconColor.withValues(alpha: .16),
+                      ),
+                    ),
+                    child: Icon(icon, size: 19, color: iconColor),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          label,
+                          style: AppTextStyles.label.copyWith(
+                            color: AppColors.foreground,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        if (helperLabel case final helperLabel?)
+                          Text(
+                            helperLabel,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.small.copyWith(fontSize: 11.5),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -1362,7 +1578,7 @@ class _MeasurementInfoCard extends StatelessWidget {
       ),
       const _MeasurementInfoData(
         icon: Icons.sensors_rounded,
-        label: 'Result status',
+        label: 'Capture status',
         value: 'Received directly through BLE',
       ),
     ];
@@ -1499,44 +1715,203 @@ class _SystolicCalibrationNote extends StatelessWidget {
   Widget build(BuildContext context) {
     final offset = BpMonitorCalibration.ykIbpa1SystolicOffsetMmHg;
     return AppCard(
-      color: AppColors.accent,
+      key: const Key('bp-technical-info-card'),
+      color: const Color(0xFFF8FBF9),
       borderColor: AppColors.primaryGreen.withValues(alpha: .22),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _CalibrationHeader(offset: offset),
+          const SizedBox(height: 14),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final stacked =
+                  constraints.maxWidth < 300 ||
+                  MediaQuery.textScalerOf(context).scale(1) > 1.25;
+              final packet = _CalibrationValue(
+                label: 'Monitor packet',
+                value: '${result.rawSystolic} mmHg',
+                color: AppColors.secondaryText,
+              );
+              final displayed = _CalibrationValue(
+                label: 'Shown in EverCare',
+                value: '${result.systolic} mmHg',
+                color: AppColors.primaryGreen,
+              );
+              if (stacked) {
+                return Column(
+                  children: [
+                    packet,
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 7),
+                      child: Icon(
+                        Icons.arrow_downward_rounded,
+                        color: AppColors.primaryGreen,
+                      ),
+                    ),
+                    displayed,
+                  ],
+                );
+              }
+              return Row(
+                children: [
+                  Expanded(child: packet),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 8),
+                    child: Icon(
+                      Icons.arrow_forward_rounded,
+                      color: AppColors.primaryGreen,
+                    ),
+                  ),
+                  Expanded(child: displayed),
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'EverCare displays ${result.systolic} mmHg after applying $offset mmHg to the YK-IBPA1 packet value of ${result.rawSystolic} mmHg.',
+            style: AppTextStyles.bodyMuted.copyWith(height: 1.4),
+          ),
+          const SizedBox(height: 10),
           Container(
-            width: 40,
-            height: 40,
-            decoration: const BoxDecoration(
-              color: AppColors.lightGreen,
-              shape: BoxShape.circle,
+            width: double.infinity,
+            padding: const EdgeInsets.all(11),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: .74),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.primaryGreen.withValues(alpha: .13),
+              ),
             ),
-            child: const Icon(
-              Icons.tune_rounded,
-              color: AppColors.primaryGreen,
-              size: 22,
+            child: Text(
+              'Project calibration note: this local offset was requested after the team reported comparison against automatic and manual monitors in a hospital setting with clinician oversight. The raw packet is preserved; this does not medically validate the device or replace repeat measurements and professional advice.',
+              style: AppTextStyles.bodyMuted.copyWith(
+                fontSize: 13.5,
+                height: 1.42,
+              ),
             ),
           ),
-          const SizedBox(width: 11),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'App-corrected systolic',
-                  style: AppTextStyles.cardTitle,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'EverCare displays ${result.systolic} mmHg after applying $offset mmHg to the YK-IBPA1 packet value of ${result.rawSystolic} mmHg.',
-                  style: AppTextStyles.bodyMuted.copyWith(height: 1.36),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Project calibration note: this local offset was requested after the team reported comparison against automatic and manual monitors in a hospital setting with clinician oversight. The raw packet is preserved; this does not medically validate the device or replace repeat measurements and professional advice.',
-                  style: AppTextStyles.small.copyWith(height: 1.38),
-                ),
-              ],
+        ],
+      ),
+    );
+  }
+}
+
+class _CalibrationHeader extends StatelessWidget {
+  const _CalibrationHeader({required this.offset});
+
+  final int offset;
+
+  @override
+  Widget build(BuildContext context) {
+    final icon = Container(
+      width: 42,
+      height: 42,
+      decoration: BoxDecoration(
+        color: AppColors.lightGreen,
+        borderRadius: BorderRadius.circular(13),
+      ),
+      child: const Icon(
+        Icons.tune_rounded,
+        color: AppColors.primaryGreen,
+        size: 23,
+      ),
+    );
+    const title = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('App-corrected systolic', style: AppTextStyles.cardTitle),
+        SizedBox(height: 2),
+        Text(
+          'How EverCare adjusts this monitor’s upper number',
+          style: AppTextStyles.small,
+        ),
+      ],
+    );
+    final offsetChip = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.primaryGreen.withValues(alpha: .09),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        '$offset mmHg',
+        style: AppTextStyles.small.copyWith(
+          color: AppColors.darkGreen,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final stacked =
+            constraints.maxWidth < 300 ||
+            MediaQuery.textScalerOf(context).scale(1) > 1.25;
+        if (stacked) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  icon,
+                  const SizedBox(width: 11),
+                  const Expanded(child: title),
+                ],
+              ),
+              const SizedBox(height: 9),
+              offsetChip,
+            ],
+          );
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            icon,
+            const SizedBox(width: 11),
+            const Expanded(child: title),
+            const SizedBox(width: 8),
+            offsetChip,
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _CalibrationValue extends StatelessWidget {
+  const _CalibrationValue({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(11),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: .075),
+        borderRadius: BorderRadius.circular(13),
+        border: Border.all(color: color.withValues(alpha: .16)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: AppTextStyles.small),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: AppTextStyles.cardTitle.copyWith(
+              color: color,
+              fontWeight: FontWeight.w800,
             ),
           ),
         ],
@@ -1554,47 +1929,123 @@ class _ReadingInsightCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = _assessmentColor(assessment);
     return AppCard(
-      color: color.withValues(alpha: .08),
+      key: const Key('bp-meaning-card'),
+      color: AppColors.card,
       borderColor: color.withValues(alpha: .28),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: .13),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(_assessmentIcon(assessment), color: color, size: 23),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: .11),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  Icons.lightbulb_outline_rounded,
+                  color: color,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'What this reading means',
+                      style: AppTextStyles.cardTitle,
+                    ),
+                    const SizedBox(height: 5),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 9,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: .09),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        assessment.label,
+                        style: AppTextStyles.small.copyWith(
+                          color: color,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
+          const SizedBox(height: 15),
+          Text(
+            assessment.friendlySupportingText,
+            style: AppTextStyles.bodyMuted.copyWith(
+              color: AppColors.foreground,
+              height: 1.43,
+            ),
+          ),
+          const SizedBox(height: 15),
+          Text(
+            'Your numbers',
+            style: AppTextStyles.label.copyWith(color: AppColors.foreground),
+          ),
+          const SizedBox(height: 9),
+          _ReadingValueBreakdown(assessment: assessment, color: color),
+          const SizedBox(height: 13),
+          Text(
+            assessment.upperLowerExplanation,
+            style: AppTextStyles.bodyMuted.copyWith(height: 1.45),
+          ),
+          const SizedBox(height: 14),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(13),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: .08),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: color.withValues(alpha: .22)),
+            ),
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Reading status · ${assessment.label}',
-                  style: AppTextStyles.cardTitle,
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  assessment.summary,
-                  style: AppTextStyles.bodyMuted.copyWith(height: 1.38),
-                ),
-                const SizedBox(height: 9),
-                Text(
-                  assessment.nextStep,
-                  style: AppTextStyles.small.copyWith(
-                    color: AppColors.foreground,
-                    fontWeight: FontWeight.w600,
-                    height: 1.36,
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: .82),
+                    shape: BoxShape.circle,
                   ),
+                  child: Icon(Icons.refresh_rounded, size: 19, color: color),
                 ),
-                const SizedBox(height: 7),
-                const Text(
-                  'Adult category guidance only—not a diagnosis or medical verification.',
-                  style: AppTextStyles.small,
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'What to do next',
+                        style: AppTextStyles.label.copyWith(
+                          color: AppColors.foreground,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        assessment.nextStep,
+                        style: AppTextStyles.bodyMuted.copyWith(
+                          color: AppColors.foreground,
+                          height: 1.42,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -1605,8 +2056,148 @@ class _ReadingInsightCard extends StatelessWidget {
   }
 }
 
+class _ReadingValueBreakdown extends StatelessWidget {
+  const _ReadingValueBreakdown({required this.assessment, required this.color});
+
+  final BloodPressureAssessment assessment;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final bothSetRange =
+        assessment.systolicSetsDisplayedRange &&
+        assessment.diastolicSetsDisplayedRange;
+    final systolic = _ReadingRangePanel(
+      icon: Icons.arrow_upward_rounded,
+      title: 'SYS · Upper number',
+      value: assessment.systolic,
+      rangeLabel: assessment.systolicRangeLabel,
+      highlighted: assessment.systolicSetsDisplayedRange,
+      highlightLabel: bothSetRange ? 'Supports this range' : 'Sets this range',
+      color: color,
+    );
+    final diastolic = _ReadingRangePanel(
+      icon: Icons.arrow_downward_rounded,
+      title: 'DIA · Lower number',
+      value: assessment.diastolic,
+      rangeLabel: assessment.diastolicRangeLabel,
+      highlighted: assessment.diastolicSetsDisplayedRange,
+      highlightLabel: bothSetRange ? 'Supports this range' : 'Sets this range',
+      color: color,
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final textScale = MediaQuery.textScalerOf(context).scale(1);
+        if (constraints.maxWidth < 330 || textScale > 1.25) {
+          return Column(
+            children: [systolic, const SizedBox(height: 9), diastolic],
+          );
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: systolic),
+            const SizedBox(width: 9),
+            Expanded(child: diastolic),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _ReadingRangePanel extends StatelessWidget {
+  const _ReadingRangePanel({
+    required this.icon,
+    required this.title,
+    required this.value,
+    required this.rangeLabel,
+    required this.highlighted,
+    required this.highlightLabel,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String title;
+  final int value;
+  final String rangeLabel;
+  final bool highlighted;
+  final String highlightLabel;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = highlighted ? color : AppColors.secondaryText;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: highlighted
+            ? color.withValues(alpha: .075)
+            : AppColors.background,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: highlighted ? color.withValues(alpha: .28) : AppColors.border,
+          width: highlighted ? 1.2 : 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, size: 18, color: accent),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  title,
+                  style: AppTextStyles.small.copyWith(
+                    color: AppColors.foreground,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '$value mmHg',
+            style: AppTextStyles.cardTitle.copyWith(fontSize: 19),
+          ),
+          const SizedBox(height: 3),
+          Text(rangeLabel, style: AppTextStyles.small.copyWith(color: accent)),
+          if (highlighted) ...[
+            const SizedBox(height: 7),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: .12),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                highlightLabel,
+                style: AppTextStyles.small.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 10.5,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _HealthAiInsightCard extends StatefulWidget {
-  const _HealthAiInsightCard({required this.result, required this.assessment});
+  const _HealthAiInsightCard({
+    required this.result,
+    required this.assessment,
+    super.key,
+  });
 
   final BpMonitorResult result;
   final BloodPressureAssessment assessment;
@@ -1619,10 +2210,10 @@ class _HealthAiInsightCardState extends State<_HealthAiInsightCard> {
   HealthAiInsight? _insight;
   bool _loading = false;
   bool _attempted = false;
-  bool _failed = false;
+  String? _failureMessage;
+  int _requestIdentity = 0;
 
-  String get _resultKey =>
-      '${widget.result.receivedAt.toUtc().toIso8601String()}|${widget.result.rawHex}';
+  String get _resultKey => _healthAiResultKey(widget.result);
 
   @override
   void didChangeDependencies() {
@@ -1633,12 +2224,13 @@ class _HealthAiInsightCardState extends State<_HealthAiInsightCard> {
   @override
   void didUpdateWidget(covariant _HealthAiInsightCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final oldKey =
-        '${oldWidget.result.receivedAt.toUtc().toIso8601String()}|${oldWidget.result.rawHex}';
+    final oldKey = _healthAiResultKey(oldWidget.result);
     if (oldKey == _resultKey) return;
+    _requestIdentity++;
     _insight = null;
-    _failed = false;
+    _failureMessage = null;
     _attempted = false;
+    _loading = false;
     _requestAutomaticallyIfAvailable();
   }
 
@@ -1652,115 +2244,204 @@ class _HealthAiInsightCardState extends State<_HealthAiInsightCard> {
   Future<void> _requestInsight() async {
     final client = EverCareBackendScope.maybeClient(context);
     if (client?.auth.currentUser == null) return;
+    final requestedResult = widget.result;
+    final requestedKey = _resultKey;
+    final requestIdentity = ++_requestIdentity;
     setState(() {
       _attempted = true;
       _loading = true;
-      _failed = false;
+      _failureMessage = null;
     });
     try {
       final insight = await EverCareAiService(
         client!,
-      ).explainBloodPressure(widget.result);
-      if (!mounted) return;
+      ).explainBloodPressure(requestedResult);
+      if (!_isCurrentRequest(requestIdentity, requestedKey)) return;
       setState(() => _insight = insight);
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _failed = true);
+    } catch (error) {
+      if (!_isCurrentRequest(requestIdentity, requestedKey)) return;
+      setState(() {
+        _failureMessage = everCareAiFailureMessage(
+          error,
+          connectionFallback:
+              'Could not reach EverCare AI. Check your connection and try again.',
+        );
+      });
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (_isCurrentRequest(requestIdentity, requestedKey)) {
+        setState(() => _loading = false);
+      }
     }
   }
+
+  Future<void> _openReadingChat() {
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: false,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: .34),
+      builder: (_) => HealthBpAiChatSheet(
+        result: widget.result,
+        assessment: widget.assessment,
+      ),
+    );
+  }
+
+  bool _isCurrentRequest(int identity, String resultKey) =>
+      mounted && identity == _requestIdentity && resultKey == _resultKey;
 
   @override
   Widget build(BuildContext context) {
     final signedIn =
         EverCareBackendScope.maybeClient(context)?.auth.currentUser != null;
-    final color = _assessmentColor(widget.assessment);
     return AppCard(
-      color: AppColors.card,
-      borderColor: color.withValues(alpha: .28),
+      key: const Key('evercare-ai-card'),
+      padding: EdgeInsets.zero,
+      color: const Color(0xFFFDFCFF),
+      borderColor: AppColors.purple.withValues(alpha: .24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: AppColors.purple.withValues(alpha: .11),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.auto_awesome_rounded,
-                  color: AppColors.purple,
-                  size: 21,
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(17, 16, 17, 15),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppColors.purple.withValues(alpha: .11),
+                  AppColors.lightGreen.withValues(alpha: .48),
+                  Colors.white,
+                ],
+              ),
+              border: Border(
+                bottom: BorderSide(
+                  color: AppColors.purple.withValues(alpha: .12),
                 ),
               ),
-              const SizedBox(width: 11),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('EverCare AI insight', style: AppTextStyles.cardTitle),
-                    SizedBox(height: 2),
-                    Text(
-                      'Plain-language guidance for this one reading',
-                      style: AppTextStyles.small,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 13),
-          if (!signedIn)
-            const Text(
-              'Sign in to receive a private AI explanation. The reading status above remains available without AI.',
-              style: AppTextStyles.bodyMuted,
-            )
-          else if (_loading)
-            const Row(
+            ),
+            child: const Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                SizedBox.square(
-                  dimension: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-                SizedBox(width: 10),
-                Text(
-                  'Analyzing the corrected reading…',
-                  style: AppTextStyles.bodyMuted,
+                AiMascotAvatar(size: 58),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'EverCare AI insight',
+                        style: AppTextStyles.cardTitle,
+                      ),
+                      SizedBox(height: 3),
+                      Text(
+                        'A calm, plain-language guide for this measurement',
+                        style: AppTextStyles.small,
+                      ),
+                    ],
+                  ),
                 ),
               ],
-            )
-          else if (_insight case final insight?)
-            _AiInsightContent(insight: insight)
-          else if (_failed)
-            Column(
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 16, 18, 17),
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'EverCare AI is unavailable right now. The reading status above is still available.',
-                  style: AppTextStyles.bodyMuted,
+                if (!signedIn)
+                  const Text(
+                    'Sign in to receive private AI-selected tips. The measurement range above remains available without AI.',
+                    style: AppTextStyles.bodyMuted,
+                  )
+                else if (_loading)
+                  const Row(
+                    children: [
+                      SizedBox.square(
+                        dimension: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      SizedBox(width: 11),
+                      Expanded(
+                        child: Text(
+                          'Preparing friendly tips for this reading…',
+                          style: AppTextStyles.bodyMuted,
+                        ),
+                      ),
+                    ],
+                  )
+                else if (_insight case final insight?)
+                  _AiInsightContent(
+                    insight: insight,
+                    result: widget.result,
+                    assessment: widget.assessment,
+                  )
+                else if (_failureMessage case final failureMessage?)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '$failureMessage The measurement range above is still available.',
+                        style: AppTextStyles.bodyMuted,
+                      ),
+                      const SizedBox(height: 8),
+                      TextButton.icon(
+                        onPressed: _requestInsight,
+                        icon: const Icon(Icons.refresh_rounded),
+                        label: const Text('Try AI insight again'),
+                      ),
+                    ],
+                  )
+                else
+                  TextButton.icon(
+                    onPressed: _requestInsight,
+                    icon: const Icon(Icons.auto_awesome_rounded),
+                    label: const Text('Get AI insight'),
+                  ),
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.tonalIcon(
+                    key: healthBpAiChatButtonKey,
+                    onPressed: _openReadingChat,
+                    icon: const Icon(Icons.forum_rounded),
+                    label: const Text('Ask AI about this reading'),
+                  ),
                 ),
-                const SizedBox(height: 8),
-                TextButton.icon(
-                  onPressed: _requestInsight,
-                  icon: const Icon(Icons.refresh_rounded),
-                  label: const Text('Try AI insight again'),
+                const SizedBox(height: 13),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 11,
+                    vertical: 9,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.purple.withValues(alpha: .055),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.shield_outlined,
+                        size: 18,
+                        color: AppColors.purple,
+                      ),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'AI selects from EverCare’s reviewed tips. Your identity and raw BLE data are not shared.',
+                          style: AppTextStyles.small,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
-            )
-          else
-            TextButton.icon(
-              onPressed: _requestInsight,
-              icon: const Icon(Icons.auto_awesome_rounded),
-              label: const Text('Get AI insight'),
             ),
-          const SizedBox(height: 10),
-          const Text(
-            'Only the corrected systolic value, diastolic value, and pulse are sent for this explanation—never the raw packet or identity. AI guidance is educational, not medical advice.',
-            style: AppTextStyles.small,
           ),
         ],
       ),
@@ -1769,71 +2450,132 @@ class _HealthAiInsightCardState extends State<_HealthAiInsightCard> {
 }
 
 class _AiInsightContent extends StatelessWidget {
-  const _AiInsightContent({required this.insight});
+  const _AiInsightContent({
+    required this.insight,
+    required this.result,
+    required this.assessment,
+  });
 
   final HealthAiInsight insight;
+  final BpMonitorResult result;
+  final BloodPressureAssessment assessment;
 
   @override
   Widget build(BuildContext context) {
+    final color = _assessmentColor(assessment);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(insight.headline, style: AppTextStyles.cardTitle),
-        const SizedBox(height: 5),
-        Text(insight.explanation, style: AppTextStyles.bodyMuted),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: .82),
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(color: AppColors.purple.withValues(alpha: .13)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(insight.headline, style: AppTextStyles.cardTitle),
+              const SizedBox(height: 7),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: .09),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  insight.rangeLabel,
+                  style: AppTextStyles.small.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 9),
+              Text(
+                'Reading analyzed: ${result.systolic}/${result.diastolic} mmHg · Pulse ${result.pulse} BPM',
+                style: AppTextStyles.bodyMuted.copyWith(
+                  color: AppColors.foreground,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                assessment.upperLowerExplanation,
+                style: AppTextStyles.bodyMuted.copyWith(height: 1.43),
+              ),
+            ],
+          ),
+        ),
         if (insight.tips.isNotEmpty) ...[
-          const SizedBox(height: 10),
+          const SizedBox(height: 14),
+          Text(
+            'Helpful next steps',
+            style: AppTextStyles.label.copyWith(
+              color: AppColors.foreground,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 9),
           for (final tip in insight.tips)
             Padding(
-              padding: const EdgeInsets.only(bottom: 5),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Padding(
-                    padding: EdgeInsets.only(top: 7),
-                    child: Icon(
-                      Icons.circle,
-                      size: 5,
-                      color: AppColors.primaryGreen,
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 11,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.lightGreen.withValues(alpha: .56),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 25,
+                      height: 25,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.check_rounded,
+                        size: 16,
+                        color: AppColors.primaryGreen,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text(tip, style: AppTextStyles.bodyMuted)),
-                ],
+                    const SizedBox(width: 9),
+                    Expanded(
+                      child: Text(
+                        tip,
+                        style: AppTextStyles.bodyMuted.copyWith(
+                          color: AppColors.foreground,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
         ],
-        const SizedBox(height: 7),
-        Text(
-          insight.nextStep,
-          style: AppTextStyles.small.copyWith(
-            fontWeight: FontWeight.w700,
-            color: AppColors.foreground,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(insight.disclaimer, style: AppTextStyles.small),
       ],
     );
   }
 }
 
 Color _assessmentColor(BloodPressureAssessment assessment) =>
-    switch (assessment.category) {
-      BloodPressureCategory.normal => AppColors.primaryGreen,
-      BloodPressureCategory.elevated => AppColors.warning,
-      BloodPressureCategory.hypertensionStage1 => AppColors.warning,
-      BloodPressureCategory.hypertensionStage2 => AppColors.danger,
-      BloodPressureCategory.severeHypertension => AppColors.danger,
-      BloodPressureCategory.lowerThanUsual => AppColors.blue,
-    };
+    bloodPressureRangeColor(assessment);
 
 IconData _assessmentIcon(BloodPressureAssessment assessment) =>
     switch (assessment.category) {
       BloodPressureCategory.normal => Icons.favorite_rounded,
       BloodPressureCategory.elevated => Icons.monitor_heart_outlined,
       BloodPressureCategory.hypertensionStage1 => Icons.monitor_heart_rounded,
-      BloodPressureCategory.hypertensionStage2 => Icons.priority_high_rounded,
+      BloodPressureCategory.hypertensionStage2 => Icons.visibility_rounded,
       BloodPressureCategory.severeHypertension => Icons.emergency_rounded,
       BloodPressureCategory.lowerThanUsual => Icons.water_drop_outlined,
     };
@@ -1997,18 +2739,18 @@ class _BleResultBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppCard(
-      color: AppColors.accent,
+      color: const Color(0xFFF7FAF8),
       borderColor: AppColors.primaryGreen.withValues(alpha: .18),
-      padding: EdgeInsets.all(15),
+      padding: const EdgeInsets.all(15),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 40,
-            height: 40,
-            decoration: const BoxDecoration(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
               color: AppColors.lightGreen,
-              shape: BoxShape.circle,
+              borderRadius: BorderRadius.circular(13),
             ),
             child: const Icon(
               Icons.health_and_safety_outlined,
@@ -2021,23 +2763,38 @@ class _BleResultBanner extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryGreen.withValues(alpha: .08),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    'SECURE DEVICE CAPTURE',
+                    style: AppTextStyles.eyebrow.copyWith(
+                      color: AppColors.darkGreen,
+                      fontSize: 10.5,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 7),
                 const Text(
                   'Result received directly through BLE.',
                   style: AppTextStyles.cardTitle,
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 4),
                 Text(
                   'Decoder is provisional. Raw packet metadata is preserved and available through BLE Diagnostics.',
-                  style: AppTextStyles.small.copyWith(height: 1.35),
+                  style: AppTextStyles.bodyMuted.copyWith(
+                    fontSize: 13.5,
+                    height: 1.4,
+                  ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(width: 8),
-          const Icon(
-            Icons.info_outline_rounded,
-            size: 20,
-            color: AppColors.secondaryText,
           ),
         ],
       ),
@@ -2264,13 +3021,6 @@ class _SafetyNotice extends StatelessWidget {
                 ),
               ),
             ],
-          ),
-          SizedBox(height: 12),
-          Divider(),
-          SizedBox(height: 12),
-          Text(
-            'EverCare does not provide a medical diagnosis. Contact a qualified healthcare professional regarding concerning readings or symptoms.',
-            style: AppTextStyles.bodyMuted,
           ),
         ],
       ),

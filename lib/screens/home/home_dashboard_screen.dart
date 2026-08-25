@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../models/blood_pressure_assessment.dart';
 import '../../repositories/dashboard_repository.dart';
 import '../../routes/app_routes.dart';
 import '../../services/bp_monitor_ble_service.dart';
@@ -829,6 +830,11 @@ class _RealBloodPressureSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final assessment = BloodPressureAssessment.fromValues(
+      systolic: systolic,
+      diastolic: diastolic,
+      pulse: pulse,
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -841,7 +847,27 @@ class _RealBloodPressureSummary extends StatelessWidget {
             letterSpacing: 1,
           ),
         ),
-        const SizedBox(height: 7),
+        const SizedBox(height: 8),
+        Text(
+          assessment.friendlyStatus,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 21,
+            height: 1.15,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          assessment.label,
+          style: const TextStyle(
+            color: Color(0xFFCFE7D8),
+            fontSize: 13,
+            height: 1.3,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 13),
         Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [

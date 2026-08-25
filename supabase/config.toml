@@ -362,10 +362,18 @@ inspector_port = 8083
 deno_version = 2
 
 [functions.health-bp-insight]
-verify_jwt = true
+# Authentication is enforced inside the function with requireUserId. Turning
+# off the legacy gateway check supports user JWTs signed by the project's new
+# asymmetric signing key without making this endpoint public.
+verify_jwt = false
+
+[functions.health-bp-chat]
+# Authentication is enforced inside the function. The request contains only
+# the typed question and corrected values displayed in the Health result.
+verify_jwt = false
 
 [functions.care-book-ai]
-verify_jwt = true
+verify_jwt = false
 
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
