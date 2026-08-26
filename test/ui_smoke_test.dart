@@ -35,6 +35,7 @@ import 'package:evercare/screens/home/main_shell.dart';
 import 'package:evercare/screens/journals/add_journal_entry_screen.dart';
 import 'package:evercare/screens/journals/journal_entry_card.dart';
 import 'package:evercare/screens/journals/journal_entry_reader.dart';
+import 'package:evercare/screens/journals/journal_paper.dart';
 import 'package:evercare/screens/journals/journals_screen.dart';
 import 'package:evercare/screens/medications/add_medication_screen.dart';
 import 'package:evercare/screens/medications/medication_detail_screen.dart';
@@ -857,12 +858,16 @@ void main() {
     expect(find.text('Support and information'), findsOneWidget);
   });
 
-  testWidgets('accessibility page clearly labels preview-only controls', (
+  testWidgets('accessibility page presents available settings clearly', (
     tester,
   ) async {
     await pumpPhoneScreen(tester, const AccessibilityScreen());
-    expect(find.text('Preview mode'), findsOneWidget);
-    expect(find.text('COMING LATER'), findsOneWidget);
+    expect(find.text('Settings apply across EverCare'), findsOneWidget);
+    expect(find.text('Reduce motion'), findsOneWidget);
+    expect(find.text('Use your device contrast setting'), findsOneWidget);
+    expect(find.text('COMING LATER'), findsNothing);
+    expect(find.text('Large button mode'), findsNothing);
+    expect(find.text('Text-to-speech preference'), findsNothing);
   });
 
   testWidgets('main shell shows appointments navigation and header', (
@@ -976,8 +981,35 @@ void main() {
     await pumpPhoneScreen(tester, const AddJournalEntryScreen());
   });
 
+  testWidgets('journal extras open outside the paper from Others', (
+    tester,
+  ) async {
+    await pumpPhoneScreen(tester, const AddJournalEntryScreen());
+
+    expect(find.text('Others'), findsOneWidget);
+    expect(find.text('How do you feel?'), findsNothing);
+    expect(find.text('Symptoms'), findsNothing);
+
+    await tester.tap(find.text('Others'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Other details'), findsOneWidget);
+    expect(find.text('How do you feel?'), findsOneWidget);
+    expect(find.text('Symptoms'), findsOneWidget);
+    expect(find.text('Activities'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(JournalPaper),
+        matching: find.text('How do you feel?'),
+      ),
+      findsNothing,
+    );
+  });
+
   testWidgets('journal chip labels keep readable contrast', (tester) async {
     await pumpPhoneScreen(tester, const AddJournalEntryScreen());
+    await tester.tap(find.text('Others'));
+    await tester.pumpAndSettle();
 
     final happyLabel = find.descendant(
       of: find.byType(ChoiceChip),
@@ -1018,8 +1050,7 @@ void main() {
 
   testWidgets('no symptoms remains mutually exclusive', (tester) async {
     await pumpPhoneScreen(tester, const AddJournalEntryScreen());
-    await tester.ensureVisible(find.text('Add details to this memory'));
-    await tester.tap(find.text('Add details to this memory'));
+    await tester.tap(find.text('Others'));
     await tester.pumpAndSettle();
 
     await tester.ensureVisible(find.text('Headache'));
@@ -1044,12 +1075,18 @@ void main() {
     tester,
   ) async {
     await pumpPhoneScreen(tester, const AddJournalEntryScreen());
-    await tester.ensureVisible(find.text('Add details to this memory'));
-    await tester.tap(find.text('Add details to this memory'));
+    await tester.tap(find.text('Others'));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Add your own'));
+    final addCustomDetail = find.text('Add your own');
+    final detailsScrollable = find.ancestor(
+      of: addCustomDetail,
+      matching: find.byType(Scrollable),
+    );
+    expect(detailsScrollable, findsOneWidget);
+    await tester.drag(detailsScrollable, const Offset(0, -360));
+    await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Add your own'));
+    await tester.tap(addCustomDetail);
     await tester.pumpAndSettle();
     await tester.enterText(
       find.widgetWithText(TextFormField, 'Journal detail'),

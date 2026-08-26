@@ -1,0 +1,102 @@
+erDiagram
+  AUTH_USERS ||--|| PROFILES : creates
+  AUTH_USERS ||--o| MEDICAL_PROFILES : owns
+  AUTH_USERS ||--o{ MEDICATIONS : owns
+  MEDICATIONS ||--o{ MEDICATION_DOSE_EVENTS : schedules
+  AUTH_USERS ||--o{ APPOINTMENTS : owns
+  AUTH_USERS ||--o{ JOURNAL_ENTRIES : owns
+  JOURNAL_ENTRIES ||--o{ JOURNAL_ENTRY_PHOTOS : contains
+  AUTH_USERS ||--o{ JOURNAL_ENTRY_PHOTOS : owns
+  AUTH_USERS ||--o{ EMERGENCY_CONTACTS : owns
+  AUTH_USERS ||--o{ BLOOD_PRESSURE_READINGS : owns
+  AUTH_USERS ||--o{ NOTIFICATIONS : receives
+  PROFILES ||--o{ CAREGIVER_RELATIONSHIPS : older_adult
+  PROFILES ||--o{ CAREGIVER_RELATIONSHIPS : caregiver
+
+  AUTH_USERS {
+    uuid id PK
+  }
+  PROFILES {
+    uuid id PK
+    text full_name
+    text user_type
+    date birth_date
+    timestamptz updated_at
+  }
+  MEDICAL_PROFILES {
+    uuid user_id PK
+    text blood_type
+    text_array allergies
+    text_array conditions
+    text preferred_hospital
+  }
+  MEDICATIONS {
+    uuid id PK
+    uuid user_id FK
+    text name
+    text dosage
+    smallint_array schedule_days
+    time schedule_time
+    boolean is_active
+  }
+  MEDICATION_DOSE_EVENTS {
+    uuid id PK
+    uuid user_id FK
+    uuid medication_id FK
+    timestamptz scheduled_for
+    text status
+    timestamptz taken_at
+  }
+  APPOINTMENTS {
+    uuid id PK
+    uuid user_id FK
+    text title
+    timestamptz starts_at
+    text status
+    timestamptz completed_at
+  }
+  JOURNAL_ENTRIES {
+    uuid id PK
+    uuid user_id FK
+    text title
+    text body
+    timestamptz entry_at
+    boolean bookmarked
+  }
+  JOURNAL_ENTRY_PHOTOS {
+    uuid id PK
+    uuid user_id FK
+    uuid journal_entry_id FK
+    text storage_path
+    int display_order
+  }
+  EMERGENCY_CONTACTS {
+    uuid id PK
+    uuid user_id FK
+    text name
+    text phone_number
+    boolean is_primary
+  }
+  CAREGIVER_RELATIONSHIPS {
+    uuid id PK
+    uuid older_adult_id FK
+    uuid caregiver_id FK
+    text status
+    text relationship_label
+  }
+  BLOOD_PRESSURE_READINGS {
+    uuid id PK
+    uuid user_id FK
+    int systolic
+    int diastolic
+    int pulse
+    timestamptz measured_at
+    text source
+  }
+  NOTIFICATIONS {
+    uuid id PK
+    uuid user_id FK
+    text title
+    boolean is_read
+    timestamptz created_at
+  }

@@ -1,0 +1,35 @@
+flowchart TD
+  person[Senior, family member, or caregiver] --> ui
+
+  subgraph mobile[EverCare Flutter mobile app]
+    ui[Feature screens, reusable widgets, and named navigation]
+    logic[Typed models, validation, repositories, and services]
+    bp[BLE decoder and app systolic calibration]
+    ui --> logic
+    bp --> logic
+  end
+
+  monitor[YK-IBPA1 Bluetooth BP monitor] -->|BLE packets| bp
+
+  subgraph backend[Supabase backend]
+    auth[Supabase Auth]
+    rest[PostgREST data API\nGET / POST / PATCH / DELETE]
+    rls[Owner-scoped Row Level Security]
+    db[(PostgreSQL database)]
+    storage[Private journal-photo storage]
+    edge[Authenticated Edge Functions]
+    rest --> rls --> db
+  end
+
+  logic --> auth
+  logic --> rest
+  logic --> storage
+  logic --> edge
+
+  subgraph external[External integrations]
+    maps[OpenStreetMap services\nGET search and tiles / POST nearby hospitals]
+    groq[Groq GPT-OSS model]
+  end
+
+  logic --> maps
+  edge --> groq

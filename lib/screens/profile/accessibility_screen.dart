@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
+import '../../services/accessibility_settings_controller.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
+import '../../widgets/accessibility_settings_scope.dart';
 import '../../widgets/app_page.dart';
 import '../../widgets/section_header.dart';
 
@@ -13,12 +17,40 @@ class AccessibilityScreen extends StatefulWidget {
 }
 
 class _AccessibilityScreenState extends State<AccessibilityScreen> {
-  double _fontSize = 1;
-  bool _highContrast = false;
+  EverCareTextSize _fallbackTextSize = EverCareTextSize.standard;
+  bool _fallbackReduceMotion = false;
+
+  void _setTextSize(
+    AccessibilitySettingsController? settings,
+    EverCareTextSize textSize,
+  ) {
+    if (settings != null) {
+      unawaited(settings.setTextSize(textSize));
+      return;
+    }
+    setState(() => _fallbackTextSize = textSize);
+  }
+
+  void _setReduceMotion(
+    AccessibilitySettingsController? settings,
+    bool reduceMotion,
+  ) {
+    if (settings != null) {
+      unawaited(settings.setReduceMotion(reduceMotion));
+      return;
+    }
+    setState(() => _fallbackReduceMotion = reduceMotion);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final previewSize = 15 + (_fontSize * 3.5);
+    final settings = EverCareAccessibilityScope.maybeWatch(context);
+    final textSize = settings?.textSize ?? _fallbackTextSize;
+    final reduceMotion = settings?.reduceMotion ?? _fallbackReduceMotion;
+    final deviceReducedMotion =
+        MediaQuery.disableAnimationsOf(context) && !reduceMotion;
+    final previewSize = settings == null ? 18 * textSize.multiplier : 18.0;
+
     return DetailPage(
       title: 'Accessibility',
       child: Column(
@@ -35,10 +67,13 @@ class _AccessibilityScreenState extends State<AccessibilityScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Preview mode', style: AppTextStyles.cardTitle),
+                      Text(
+                        'Settings apply across EverCare',
+                        style: AppTextStyles.cardTitle,
+                      ),
                       SizedBox(height: 3),
                       Text(
-                        'These controls update the preview below only. They are not saved as app-wide preferences yet.',
+                        'Text size and motion preferences are saved on this device and used throughout the app.',
                         style: AppTextStyles.bodyMuted,
                       ),
                     ],
@@ -48,22 +83,18 @@ class _AccessibilityScreenState extends State<AccessibilityScreen> {
             ),
           ),
           const SizedBox(height: 22),
-          const SectionHeader(title: 'Text preview'),
+          const SectionHeader(title: 'Text size preview'),
           const SizedBox(height: 10),
           AppCard(
-            color: _highContrast ? AppColors.primaryText : AppColors.lightGreen,
-            borderColor: _highContrast
-                ? AppColors.primaryText
-                : AppColors.lightGreen,
+            color: AppColors.lightGreen,
+            borderColor: AppColors.lightGreen,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Preview',
                   style: AppTextStyles.label.copyWith(
-                    color: _highContrast
-                        ? Colors.white70
-                        : AppColors.secondaryText,
+                    color: AppColors.secondaryText,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -73,7 +104,7 @@ class _AccessibilityScreenState extends State<AccessibilityScreen> {
                     fontSize: previewSize,
                     height: 1.35,
                     fontWeight: FontWeight.w700,
-                    color: _highContrast ? Colors.white : AppColors.primaryText,
+                    color: AppColors.primaryText,
                   ),
                 ),
               ],
@@ -87,24 +118,24 @@ class _AccessibilityScreenState extends State<AccessibilityScreen> {
                 const Text('Font size', style: AppTextStyles.cardTitle),
                 const SizedBox(height: 4),
                 const Text(
-                  'Adjust the preview text size',
+                  'Choose a comfortable size for EverCare.',
                   style: AppTextStyles.bodyMuted,
                 ),
+                const SizedBox(height: 8),
                 Row(
                   children: [
                     const Text('A', style: TextStyle(fontSize: 14)),
                     Expanded(
                       child: Slider(
-                        value: _fontSize,
+                        value: textSize.index.toDouble(),
                         min: 0,
                         max: 2,
                         divisions: 2,
-                        label: [
-                          'Default',
-                          'Large',
-                          'Extra large',
-                        ][_fontSize.round()],
-                        onChanged: (value) => setState(() => _fontSize = value),
+                        label: textSize.label,
+                        onChanged: (value) => _setTextSize(
+                          settings,
+                          EverCareTextSize.values[value.round()],
+                        ),
                       ),
                     ),
                     const Text(
@@ -119,41 +150,43 @@ class _AccessibilityScreenState extends State<AccessibilityScreen> {
                 const Divider(),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('High contrast preview'),
-                  subtitle: const Text('Increase contrast in this preview'),
-                  value: _highContrast,
-                  onChanged: (value) => setState(() => _highContrast = value),
-                ),
-                const Divider(),
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(0, 14, 0, 4),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text('COMING LATER', style: AppTextStyles.eyebrow),
+                  title: const Text('Reduce motion'),
+                  subtitle: Text(
+                    deviceReducedMotion
+                        ? 'Your device setting is currently reducing motion too.'
+                        : 'Limit movement and transitions throughout EverCare.',
                   ),
+                  value: reduceMotion,
+                  onChanged: (value) => _setReduceMotion(settings, value),
                 ),
-                const SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text('Large button mode'),
-                  subtitle: Text('App-wide preference is not available yet'),
-                  value: true,
-                  onChanged: null,
-                ),
-                const Divider(),
-                const SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text('Reduced animations'),
-                  subtitle: Text('App-wide preference is not available yet'),
-                  value: false,
-                  onChanged: null,
-                ),
-                const Divider(),
-                const SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text('Text-to-speech preference'),
-                  subtitle: Text('App-wide preference is not available yet'),
-                  value: false,
-                  onChanged: null,
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+          const SectionHeader(title: 'Display contrast'),
+          const SizedBox(height: 10),
+          const AppCard(
+            color: AppColors.muted,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.contrast_outlined, color: AppColors.darkGreen),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Use your device contrast setting',
+                        style: AppTextStyles.cardTitle,
+                      ),
+                      SizedBox(height: 3),
+                      Text(
+                        'EverCare follows your device display and accessibility settings. To increase contrast or enable high-contrast text, open Accessibility in your device Settings.',
+                        style: AppTextStyles.bodyMuted,
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),

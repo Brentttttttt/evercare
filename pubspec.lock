@@ -849,7 +849,7 @@ packages:
     source: hosted
     version: "6.5.2"
   postgrest:
-    dependency: transitive
+    dependency: "direct dev"
     description:
       name: postgrest
       sha256: "10e3f195e131eec944fa872644aed89b33b5be998f3fc77c87325db3927bc646"

@@ -5,8 +5,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'routes/app_route_observer.dart';
 import 'routes/app_routes.dart';
+import 'services/accessibility_settings_controller.dart';
 import 'services/bp_monitor_ble_service.dart';
 import 'theme/app_theme.dart';
+import 'widgets/accessibility_settings_scope.dart';
 import 'widgets/bp_monitor_ble_scope.dart';
 import 'widgets/evercare_backend_scope.dart';
 
@@ -19,12 +21,15 @@ class EverCareApp extends StatefulWidget {
 
 class _EverCareAppState extends State<EverCareApp> with WidgetsBindingObserver {
   late final BpMonitorBleService _bpMonitorService = BpMonitorBleService();
+  late final AccessibilitySettingsController _accessibilitySettings =
+      AccessibilitySettingsController();
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     unawaited(_bpMonitorService.initialize());
+    unawaited(_accessibilitySettings.load());
   }
 
   @override
@@ -36,26 +41,40 @@ class _EverCareAppState extends State<EverCareApp> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     unawaited(_bpMonitorService.close());
+    _accessibilitySettings.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return EverCareBackendScope(
-      client: Supabase.instance.client,
-      child: BpMonitorBleScope(
-        service: _bpMonitorService,
-        child: MaterialApp(
-          title: 'EverCare',
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.light,
-          themeAnimationDuration: const Duration(milliseconds: 300),
-          themeAnimationCurve: Curves.easeOutCubic,
-          scrollBehavior: const _EverCareScrollBehavior(),
-          initialRoute: AppRoutes.splash,
-          onGenerateRoute: AppRoutes.onGenerateRoute,
-          navigatorObservers: [everCareRouteObserver],
-        ),
+    return EverCareAccessibilityScope(
+      settings: _accessibilitySettings,
+      child: AnimatedBuilder(
+        animation: _accessibilitySettings,
+        builder: (context, child) {
+          return EverCareBackendScope(
+            client: Supabase.instance.client,
+            child: BpMonitorBleScope(
+              service: _bpMonitorService,
+              child: MaterialApp(
+                title: 'EverCare',
+                debugShowCheckedModeBanner: false,
+                theme: AppTheme.light,
+                themeAnimationDuration: _accessibilitySettings.reduceMotion
+                    ? Duration.zero
+                    : const Duration(milliseconds: 300),
+                themeAnimationCurve: Curves.easeOutCubic,
+                scrollBehavior: const _EverCareScrollBehavior(),
+                initialRoute: AppRoutes.splash,
+                onGenerateRoute: AppRoutes.onGenerateRoute,
+                navigatorObservers: [everCareRouteObserver],
+                builder: (context, child) => EverCareAccessibilityMediaQuery(
+                  child: child ?? const SizedBox.shrink(),
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

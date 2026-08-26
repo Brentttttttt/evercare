@@ -1,0 +1,80 @@
+{
+  "metadata": {
+    "name": "EverCare Week 6 demonstration dataset",
+    "purpose": "Manual classroom testing only",
+    "privacy": "All entries are fictional. Do not replace them with real patient information.",
+    "cleanupPrefix": "EverCare Demo"
+  },
+  "medications": [
+    {
+      "name": "EverCare Demo Vitamin D",
+      "dosage": "1 tablet",
+      "purpose": "Practice medication entry only",
+      "scheduleDays": [1, 3, 5],
+      "scheduleTime": "08:00"
+    },
+    {
+      "name": "EverCare Demo Reminder",
+      "dosage": "As directed",
+      "purpose": "Demonstrates schedule and completion controls",
+      "scheduleDays": [2, 4],
+      "scheduleTime": "19:00"
+    }
+  ],
+  "appointments": [
+    {
+      "title": "EverCare Demo Wellness Visit",
+      "doctorName": "Demo Clinician",
+      "specialty": "General practice",
+      "startsAt": "2026-09-05T09:30:00+08:00",
+      "clinic": "EverCare Demo Clinic",
+      "address": "Guiguinto, Bulacan",
+      "notes": "Fictional demo appointment - no real booking."
+    }
+  ],
+  "journals": [
+    {
+      "title": "EverCare Demo Morning Note",
+      "body": "This fictional entry demonstrates creating and reading a journal record.",
+      "mood": "Calm",
+      "tags": ["EverCare Demo", "Routine"]
+    },
+    {
+      "title": "EverCare Demo Updated Note",
+      "body": "Use this entry to demonstrate edit, save, search, and delete with confirmation.",
+      "mood": "Hopeful",
+      "tags": ["EverCare Demo", "CRUD"]
+    }
+  ],
+  "emergencyContacts": [
+    {
+      "name": "EverCare Demo Contact",
+      "relationship": "Family member",
+      "phoneNumber": "09170000000",
+      "isPrimary": true
+    }
+  ],
+  "bloodPressureReadings": [
+    {
+      "systolic": 118,
+      "diastolic": 75,
+      "pulse": 72,
+      "source": "manual",
+      "note": "Fictional demo reading only - normal blood pressure range."
+    },
+    {
+      "systolic": 125,
+      "diastolic": 75,
+      "pulse": 74,
+      "source": "manual",
+      "note": "Fictional demo reading only - elevated blood pressure range."
+    },
+    {
+      "systolic": 135,
+      "diastolic": 85,
+      "pulse": 76,
+      "source": "manual",
+      "note": "Fictional demo reading only - Stage 1 blood pressure range."
+    }
+  ]
+}

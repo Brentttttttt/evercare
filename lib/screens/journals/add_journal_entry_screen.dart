@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../models/journal_entry.dart';
-import '../../widgets/app_page.dart';
 import 'journal_entry_form.dart';
 
 class AddJournalEntryScreen extends StatelessWidget {
@@ -11,9 +10,6 @@ class AddJournalEntryScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DetailPage(
-      title: entry == null ? 'Write a Journal Entry' : 'Edit Journal Entry',
-      child: JournalEntryForm(entry: entry),
-    );
+    return JournalEntryForm(entry: entry);
   }
 }

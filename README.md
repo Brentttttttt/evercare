@@ -136,3 +136,10 @@ flutter analyze
 flutter test
 flutter run
 ```
+
+## Week 6 midterm evidence
+
+The current midterm architecture diagram, database ERD, safe demonstration data,
+CRUD API verification script, and live-demo runbook are in
+[`docs/week 6/`](docs/week%206/README_SUBMISSION.md). The Week 4 and Week 5
+evidence packets remain in their original folders.

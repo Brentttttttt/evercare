@@ -1,0 +1,32 @@
+flowchart TB
+  auth[auth.users] --> profiles[profiles]
+
+  subgraph privateData[Private, owner-scoped EverCare data]
+    medical[medical_profiles]
+    medications[medications]
+    doses[medication_dose_events]
+    appointments[appointments]
+    journals[journal_entries]
+    photos[journal_entry_photos]
+    contacts[emergency_contacts]
+    bp[blood_pressure_readings]
+    notifications[notifications]
+    care[caregiver_relationships]
+  end
+
+  profiles --> medical
+  profiles --> medications
+  profiles --> appointments
+  profiles --> journals
+  profiles --> contacts
+  profiles --> bp
+  profiles --> notifications
+  profiles --> care
+
+  medications --> doses
+  journals --> photos
+  profiles -. older adult .-> care
+  profiles -. caregiver .-> care
+
+  note[Every private table is protected by Supabase Auth and Row Level Security.]
+  privateData -.-> note

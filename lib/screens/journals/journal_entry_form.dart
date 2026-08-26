@@ -9,6 +9,7 @@ import '../../models/journal_photo.dart';
 import '../../repositories/journal_repository.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
+import '../../widgets/app_page.dart';
 import '../../widgets/evercare_backend_scope.dart';
 import '../authentication/auth_widgets.dart';
 import 'custom_journal_tag_dialog.dart';
@@ -118,182 +119,113 @@ class _JournalEntryFormState extends State<JournalEntryForm> {
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) unawaited(_confirmDiscard());
       },
-      child: JournalPaper(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildPaperHeader(),
-              const SizedBox(height: 22),
-              _buildDateRow(),
-              const SizedBox(height: 22),
-              TextFormField(
-                controller: _titleController,
-                enabled: !_saving,
-                textCapitalization: TextCapitalization.sentences,
-                textInputAction: TextInputAction.next,
-                style: AppTextStyles.sectionTitle.copyWith(fontSize: 20),
-                decoration: const InputDecoration(
-                  labelText: 'Entry title',
-                  hintText: 'Give this memory a title…',
-                  prefixIcon: Icon(Icons.title_rounded),
-                  filled: false,
-                  border: UnderlineInputBorder(),
+      child: DetailPage(
+        title: widget.entry == null
+            ? 'Write a Journal Entry'
+            : 'Edit Journal Entry',
+        floatingActionButton: FloatingActionButton.extended(
+          heroTag: 'journal-entry-others',
+          onPressed: _saving ? null : _showOtherDetails,
+          tooltip: 'Mood and other journal details',
+          icon: const Icon(Icons.tune_rounded),
+          label: const Text('Others'),
+        ),
+        child: JournalPaper(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildPaperHeader(),
+                const SizedBox(height: 22),
+                _buildDateRow(),
+                const SizedBox(height: 22),
+                TextFormField(
+                  controller: _titleController,
+                  enabled: !_saving,
+                  textCapitalization: TextCapitalization.sentences,
+                  textInputAction: TextInputAction.next,
+                  style: AppTextStyles.sectionTitle.copyWith(fontSize: 20),
+                  decoration: const InputDecoration(
+                    labelText: 'Entry title',
+                    hintText: 'Give this memory a title…',
+                    prefixIcon: Icon(Icons.title_rounded),
+                    filled: false,
+                    border: UnderlineInputBorder(),
+                  ),
+                  validator: (value) =>
+                      validateRequiredText(value, 'Entry title'),
                 ),
-                validator: (value) =>
-                    validateRequiredText(value, 'Entry title'),
-              ),
-              const SizedBox(height: 24),
-              const Text('How do you feel?', style: AppTextStyles.label),
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: JournalOptions.moods
-                    .map(
-                      (mood) => JournalOptionChip(
-                        label: mood,
-                        icon: journalMoodIcon(mood),
-                        selected: _mood == mood,
-                        singleChoice: true,
-                        onSelected: _saving
-                            ? null
-                            : (_) => setState(() => _mood = mood),
-                      ),
-                    )
-                    .toList(growable: false),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Today’s journal',
-                style: AppTextStyles.label.copyWith(color: AppColors.darkGreen),
-              ),
-              const SizedBox(height: 6),
-              TextFormField(
-                controller: _bodyController,
-                enabled: !_saving,
-                minLines: 10,
-                maxLines: null,
-                keyboardType: TextInputType.multiline,
-                textCapitalization: TextCapitalization.sentences,
-                scrollPadding: const EdgeInsets.only(bottom: 220),
-                style: AppTextStyles.body.copyWith(fontSize: 16, height: 2),
-                decoration: const InputDecoration(
-                  hintText:
-                      'Write about today, a special memory, changes you noticed, or anything you want to remember…',
-                  alignLabelWithHint: true,
-                  filled: false,
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  errorBorder: UnderlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(vertical: 8),
-                ),
-                validator: (value) =>
-                    validateRequiredText(value, 'Journal note'),
-              ),
-              const SizedBox(height: 24),
-              JournalSection(
-                title: 'Add details to this memory',
-                subtitle: 'Symptoms, activities, and your own labels',
-                icon: Icons.tune_rounded,
-                collapsible: true,
-                initiallyExpanded:
-                    _symptoms.isNotEmpty ||
-                    _activities.isNotEmpty ||
-                    _customTags.isNotEmpty,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _OptionSelector(
-                      title: 'Symptoms',
-                      values: JournalOptions.symptoms,
-                      selected: _symptoms,
-                      enabled: !_saving,
-                      onSelected: _toggleSymptom,
-                    ),
-                    const SizedBox(height: 18),
-                    _OptionSelector(
-                      title: 'Activities',
-                      values: JournalOptions.activities,
-                      selected: _activities,
-                      enabled: !_saving,
-                      onSelected: (value, selected) {
-                        setState(() {
-                          selected
-                              ? _activities.add(value)
-                              : _activities.remove(value);
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 18),
-                    Text('Your own details', style: AppTextStyles.label),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        for (final tag in _customTags)
-                          InputChip(
-                            label: Text(tag),
-                            onDeleted: _saving
-                                ? null
-                                : () => setState(() => _customTags.remove(tag)),
-                            deleteIcon: const Icon(
-                              Icons.close_rounded,
-                              size: 18,
-                            ),
-                            deleteButtonTooltipMessage: 'Remove $tag',
-                          ),
-                        ActionChip(
-                          avatar: const Icon(Icons.add_rounded, size: 18),
-                          label: const Text('Add your own'),
-                          onPressed: _saving ? null : _addCustomTag,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 18),
-              JournalSection(
-                title: 'Add Photos',
-                subtitle: 'Up to 5 private photo memories',
-                icon: Icons.photo_library_outlined,
-                child: _buildPhotoSection(),
-              ),
-              if (_repository == null) ...[
-                const SizedBox(height: 18),
-                const _FormNotice(
-                  message: 'Sign in to save journal entries to EverCare.',
-                ),
-              ],
-              if (_error != null) ...[
-                const SizedBox(height: 18),
-                _FormNotice(message: _error!, isError: true),
-              ],
-              const SizedBox(height: 22),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: _repository == null || _saving ? null : _save,
-                  icon: _saving
-                      ? const SizedBox.square(
-                          dimension: 19,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.menu_book_rounded),
-                  label: Text(
-                    _saving
-                        ? 'Saving…'
-                        : widget.entry == null
-                        ? 'Save Journal Entry'
-                        : 'Update Journal Entry',
+                const SizedBox(height: 24),
+                Text(
+                  'Today’s journal',
+                  style: AppTextStyles.label.copyWith(
+                    color: AppColors.darkGreen,
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 6),
+                TextFormField(
+                  controller: _bodyController,
+                  enabled: !_saving,
+                  minLines: 10,
+                  maxLines: null,
+                  keyboardType: TextInputType.multiline,
+                  textCapitalization: TextCapitalization.sentences,
+                  scrollPadding: const EdgeInsets.only(bottom: 220),
+                  style: AppTextStyles.body.copyWith(fontSize: 16, height: 2),
+                  decoration: const InputDecoration(
+                    hintText:
+                        'Write about today, a special memory, changes you noticed, or anything you want to remember…',
+                    alignLabelWithHint: true,
+                    filled: false,
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    errorBorder: UnderlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(vertical: 8),
+                  ),
+                  validator: (value) =>
+                      validateRequiredText(value, 'Journal note'),
+                ),
+                const SizedBox(height: 24),
+                JournalSection(
+                  title: 'Add Photos',
+                  subtitle: 'Up to 5 private photo memories',
+                  icon: Icons.photo_library_outlined,
+                  child: _buildPhotoSection(),
+                ),
+                if (_repository == null) ...[
+                  const SizedBox(height: 18),
+                  const _FormNotice(
+                    message: 'Sign in to save journal entries to EverCare.',
+                  ),
+                ],
+                if (_error != null) ...[
+                  const SizedBox(height: 18),
+                  _FormNotice(message: _error!, isError: true),
+                ],
+                const SizedBox(height: 22),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: _repository == null || _saving ? null : _save,
+                    icon: _saving
+                        ? const SizedBox.square(
+                            dimension: 19,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.menu_book_rounded),
+                    label: Text(
+                      _saving
+                          ? 'Saving…'
+                          : widget.entry == null
+                          ? 'Save Journal Entry'
+                          : 'Update Journal Entry',
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -482,13 +414,33 @@ class _JournalEntryFormState extends State<JournalEntryForm> {
     });
   }
 
-  Future<void> _addCustomTag() async {
-    final tag = await showDialog<String>(
+  Future<void> _showOtherDetails() async {
+    if (_saving) return;
+    FocusScope.of(context).unfocus();
+    await showModalBottomSheet<void>(
       context: context,
-      builder: (_) => CustomJournalTagDialog(existingTags: _customTags),
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (sheetContext) => FractionallySizedBox(
+        heightFactor: .95,
+        child: _JournalOtherDetailsSheet(
+          mood: _mood,
+          symptoms: _symptoms,
+          activities: _activities,
+          customTags: _customTags,
+          onMoodChanged: (mood) => setState(() => _mood = mood),
+          onSymptomsChanged: (symptoms) => setState(() {
+            _symptoms = symptoms;
+          }),
+          onActivitiesChanged: (activities) => setState(() {
+            _activities = activities;
+          }),
+          onCustomTagsChanged: (tags) => setState(() {
+            _customTags = tags;
+          }),
+        ),
+      ),
     );
-    if (tag == null || !mounted) return;
-    setState(() => _customTags.add(tag));
   }
 
   Future<void> _pickPhotos(JournalPhotoSource source) async {
@@ -601,18 +553,6 @@ class _JournalEntryFormState extends State<JournalEntryForm> {
     if (mounted) Navigator.pop(context);
   }
 
-  void _toggleSymptom(String value, bool selected) {
-    setState(() {
-      if (value == 'No symptoms') {
-        _symptoms.clear();
-        if (selected) _symptoms.add(value);
-        return;
-      }
-      _symptoms.remove('No symptoms');
-      selected ? _symptoms.add(value) : _symptoms.remove(value);
-    });
-  }
-
   void _removeExistingPhoto(int index) {
     setState(() {
       final removed = _existingPhotos.removeAt(index);
@@ -622,6 +562,211 @@ class _JournalEntryFormState extends State<JournalEntryForm> {
 
   void _onWritingChanged() {
     if (mounted) setState(() {});
+  }
+}
+
+class _JournalOtherDetailsSheet extends StatefulWidget {
+  const _JournalOtherDetailsSheet({
+    required this.mood,
+    required this.symptoms,
+    required this.activities,
+    required this.customTags,
+    required this.onMoodChanged,
+    required this.onSymptomsChanged,
+    required this.onActivitiesChanged,
+    required this.onCustomTagsChanged,
+  });
+
+  final String mood;
+  final Set<String> symptoms;
+  final Set<String> activities;
+  final Set<String> customTags;
+  final ValueChanged<String> onMoodChanged;
+  final ValueChanged<Set<String>> onSymptomsChanged;
+  final ValueChanged<Set<String>> onActivitiesChanged;
+  final ValueChanged<Set<String>> onCustomTagsChanged;
+
+  @override
+  State<_JournalOtherDetailsSheet> createState() =>
+      _JournalOtherDetailsSheetState();
+}
+
+class _JournalOtherDetailsSheetState extends State<_JournalOtherDetailsSheet> {
+  late String _mood;
+  late Set<String> _symptoms;
+  late Set<String> _activities;
+  late Set<String> _customTags;
+
+  @override
+  void initState() {
+    super.initState();
+    _mood = widget.mood;
+    _symptoms = {...widget.symptoms};
+    _activities = {...widget.activities};
+    _customTags = {...widget.customTags};
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 4, 12, 14),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: AppColors.lightGreen,
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: const Icon(
+                  Icons.tune_rounded,
+                  color: AppColors.darkGreen,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Other details', style: AppTextStyles.sectionTitle),
+                    SizedBox(height: 3),
+                    Text(
+                      'Add a feeling, symptoms, activities, or your own labels.',
+                      style: AppTextStyles.bodyMuted,
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                onPressed: () => Navigator.pop(context),
+                tooltip: 'Close other details',
+                icon: const Icon(Icons.close_rounded),
+              ),
+            ],
+          ),
+        ),
+        const Divider(),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 128),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('How do you feel?', style: AppTextStyles.label),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: JournalOptions.moods
+                      .map(
+                        (mood) => JournalOptionChip(
+                          label: mood,
+                          icon: journalMoodIcon(mood),
+                          selected: _mood == mood,
+                          singleChoice: true,
+                          onSelected: (_) => _selectMood(mood),
+                        ),
+                      )
+                      .toList(growable: false),
+                ),
+                const SizedBox(height: 28),
+                _OptionSelector(
+                  title: 'Symptoms',
+                  values: JournalOptions.symptoms,
+                  selected: _symptoms,
+                  enabled: true,
+                  onSelected: _toggleSymptom,
+                ),
+                const SizedBox(height: 24),
+                _OptionSelector(
+                  title: 'Activities',
+                  values: JournalOptions.activities,
+                  selected: _activities,
+                  enabled: true,
+                  onSelected: _toggleActivity,
+                ),
+                const SizedBox(height: 24),
+                Text('Your own details', style: AppTextStyles.label),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final tag in _customTags)
+                      InputChip(
+                        label: Text(tag),
+                        onDeleted: () => _removeCustomTag(tag),
+                        deleteIcon: const Icon(Icons.close_rounded, size: 18),
+                        deleteButtonTooltipMessage: 'Remove $tag',
+                      ),
+                    ActionChip(
+                      avatar: const Icon(Icons.add_rounded, size: 18),
+                      label: const Text('Add your own'),
+                      onPressed: _addCustomTag,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        SafeArea(
+          top: false,
+          minimum: const EdgeInsets.fromLTRB(20, 10, 20, 16),
+          child: SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Done'),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _selectMood(String mood) {
+    setState(() => _mood = mood);
+    widget.onMoodChanged(mood);
+  }
+
+  void _toggleSymptom(String value, bool selected) {
+    setState(() {
+      if (value == 'No symptoms') {
+        _symptoms.clear();
+        if (selected) _symptoms.add(value);
+      } else {
+        _symptoms.remove('No symptoms');
+        selected ? _symptoms.add(value) : _symptoms.remove(value);
+      }
+    });
+    widget.onSymptomsChanged({..._symptoms});
+  }
+
+  void _toggleActivity(String value, bool selected) {
+    setState(() {
+      selected ? _activities.add(value) : _activities.remove(value);
+    });
+    widget.onActivitiesChanged({..._activities});
+  }
+
+  Future<void> _addCustomTag() async {
+    final tag = await showDialog<String>(
+      context: context,
+      builder: (_) => CustomJournalTagDialog(existingTags: _customTags),
+    );
+    if (tag == null || !mounted) return;
+    setState(() => _customTags.add(tag));
+    widget.onCustomTagsChanged({..._customTags});
+  }
+
+  void _removeCustomTag(String tag) {
+    setState(() => _customTags.remove(tag));
+    widget.onCustomTagsChanged({..._customTags});
   }
 }
 

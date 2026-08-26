@@ -1,0 +1,59 @@
+EVERCARE WEEK 6 MIDTERM - VERIFICATION RESULTS
+================================================
+
+Verified: August 26, 2026, 12:25 PM (Asia/Manila)
+Repository base commit: 1d2b005
+Scope: Current Week 6 working-tree changes and existing EverCare features
+
+FLUTTER VALIDATION
+------------------
+[PASS] flutter pub get
+[PASS] dart format on changed Dart files
+[PASS] flutter analyze - No issues found
+[PASS] flutter test --reporter compact - 165 tests passed
+[PASS] PostgREST transport test verifies GET, POST, PATCH, DELETE for the
+       Journal CRUD request builders
+[PASS] Accessibility controller and MediaQuery tests verify persistent global
+       text-size and reduced-motion settings
+[PASS] UI smoke tests verify app surfaces, navigation, responsive layouts,
+       large text, Care Book launcher, Health screens, forms, and error states
+[PASS] flutter build apk --debug
+
+ANDROID DEBUG APK
+-----------------
+Path: build/app/outputs/flutter-apk/app-debug.apk
+Size: 229.59 MB
+SHA-256: 554D0B600745F138313462E61EB7AD6685D51D02453237F66523B93DD881F7D1
+
+DATABASE / BACKEND VALIDATION
+-----------------------------
+[PASS] supabase migration list --linked
+       Local and remote migrations match:
+       20260730140000
+       20260805090000
+       20260810170000
+       20260810173000
+       20260810180000
+[PASS] Safe demo dataset JSON parsed successfully
+[PASS] Supabase CRUD verification PowerShell script parsed successfully
+[PASS] Architecture and database PNG diagrams exported and visually reviewed
+[PASS] git diff --check reported no whitespace errors
+
+EVIDENCE STATUS
+---------------
+[READY] Architecture flowchart and database ERD are in this Week 6 folder.
+[READY] Fictional sample dataset is available for a disposable demo account.
+[READY] Automated PostgREST HTTP method test covers GET/POST/PATCH/DELETE.
+[READY] Authenticated live CRUD script creates, updates, verifies, and deletes
+        one temporary non-PHI Journal record, with cleanup in finally.
+[PENDING PRESENTER ACTION] Run the live script once with a disposable signed-in
+        account and retain only its PASS output. It was not run in this
+        verification because no user access token was supplied.
+[PENDING PRESENTER ACTION] Capture one real, scrubbed Supabase schema or Table
+        Editor screenshot after signing in. Do not fabricate it and do not
+        expose identities, health rows, tokens, or keys.
+
+PRIVACY NOTE
+------------
+No real health information, access token, password, API key, service-role key,
+or private contact information was added to this evidence package.
