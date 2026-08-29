@@ -1,0 +1,13 @@
+{
+  "contentPolicy": "All strings and figures are copied verbatim from the source PPTX; no reconciliation or correction is permitted.",
+  "slide21": {
+    "fee": "5%",
+    "basis": "client’s downpayment for a confirmed booking"
+  },
+  "slide23": {
+    "completedServices": "1,000",
+    "averageValue": "₱1,500",
+    "totalServiceValue": "₱1,500,000",
+    "platformFeeRevenue": "approximately ₱75,000 revenue"
+  }
+}

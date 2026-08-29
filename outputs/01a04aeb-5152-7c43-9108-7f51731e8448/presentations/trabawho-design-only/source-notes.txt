@@ -1,0 +1,22 @@
+SOURCE DECK
+C:\Users\Brent\Downloads\TrabaWho_Local_Service_Ecommerce_Marketplace_with_Logo.pptx
+Role: sole content authority. All 30 slides, slide order, presenter names, titles, body copy, quotations, and figures are locked.
+
+BRAND REFERENCE
+https://trabawho-kappa.vercel.app/
+Role: visual design reference only. Dark slate surfaces, blue primary accent, orange identity accent, thin borders, restrained corner radius, and documentary workplace imagery.
+
+IDENTITY ASSET
+assets/trabawho-logo.png
+Provenance: extracted from ppt/media/image1.png in the user-supplied source PPTX. This is the verified TrabaWho logo used in the original deck.
+
+PHOTOGRAPHY
+assets/team.jpg — https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=1800&h=1100&fit=crop
+assets/repair.jpg — https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?w=1800&h=1100&fit=crop
+assets/workshop.jpg — https://images.unsplash.com/photo-1552664730-d307ca884978?w=1800&h=1100&fit=crop
+assets/meeting.jpg — https://images.unsplash.com/photo-1556761175-b413da4baf72?w=1400&h=1600&fit=crop
+Provenance: the same Unsplash assets referenced by the live TrabaWho website. Used as background/editorial imagery only.
+
+USER SCREENSHOT
+assets/website-login-reference.png
+Provenance: user-provided screenshot. Used for design reference only, not embedded, to avoid introducing visible copy that is absent from the source deck.

@@ -1,0 +1,19 @@
+The source deck is a 30-slide, 16:9 academic/business presentation with one dominant teal text template, repeated logo placement, and almost no visual proof objects. Its content is authoritative but its visual language does not match the website.
+
+Design improvement target:
+- preserve every source text string and slide assignment
+- replace repetitive title-and-bullets compositions with varied diagrams, flows, comparisons, and editorial photo layouts
+- align the deck with the website's dark navy, blue, orange, white, and slate system
+- keep presenter, corporation, slide number, and logo chrome consistently visible
+- avoid adding explanatory labels, factual clarifications, or new claims
+
+Anti-patterns to remove:
+- repeated large empty text slides
+- teal academic template styling
+- decorative card grids without semantic grouping
+- tiny disconnected page chrome
+
+Reference delta target:
+- stronger visual rhythm at contact-sheet scale
+- clearer grouping and reading order at full size
+- exact content fidelity despite the redesigned compositions

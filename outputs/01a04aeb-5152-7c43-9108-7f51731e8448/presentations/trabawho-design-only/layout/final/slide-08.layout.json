@@ -1,0 +1,751 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/yi29m0",
+    "id": "yi29m0",
+    "slide": 8,
+    "layoutId": "5d193ad5-037f-4480-98ae-647e0bf18944",
+    "layoutName": "Title Slide",
+    "layoutType": "title",
+    "masterLayoutId": "5d0d6481-2ab8-4ddd-a998-6cc52e76656d",
+    "masterLayoutName": "Master",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "ChatGPT",
+    "colors": {
+      "accent1": "#156082",
+      "accent2": "#E97132",
+      "accent3": "#196B24",
+      "accent4": "#0F9ED5",
+      "accent5": "#A02B93",
+      "accent6": "#4EA72E",
+      "bg1": "#FFFFFF",
+      "bg2": "#000000",
+      "tx1": "#1F1F1F",
+      "tx2": "#FFFFFF",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#0E2841",
+      "lt2": "#E8E8E8",
+      "hlink": "#467886",
+      "folHlink": "#96607D"
+    },
+    "typefaces": [
+      "Segoe UI"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "5d193ad5-037f-4480-98ae-647e0bf18944",
+      "name": "Title Slide",
+      "type": "title",
+      "parentLayoutId": "5d0d6481-2ab8-4ddd-a998-6cc52e76656d",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "5d0d6481-2ab8-4ddd-a998-6cc52e76656d",
+      "name": "Master",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/k3q5o7qp",
+      "id": "1",
+      "name": "background",
+      "bbox": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "geometry": "rect",
+      "fillColor": "#111827",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 2,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/epkzupwb",
+      "id": "2",
+      "bbox": [
+        54,
+        25,
+        184,
+        51
+      ],
+      "alt": "TrabaWho",
+      "contentType": "image/png",
+      "asset": {
+        "assetId": "8795b6fb-f234-4532-be8f-1fdc621d4611",
+        "contentType": "image/png",
+        "byteLength": 62683
+      }
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/2x4nap4r",
+      "id": "3",
+      "name": "source-brand-text",
+      "bbox": [
+        250,
+        681,
+        100,
+        8
+      ],
+      "geometry": "rect",
+      "text": "TrabaWho",
+      "textPreview": "TrabaWho",
+      "resolvedFontSize": 1,
+      "resolvedTextStyle": {
+        "fontSize": 75,
+        "typeface": "Segoe UI",
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "TrabaWho"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "TrabaWho",
+          "runs": [
+            {
+              "index": 1,
+              "text": "TrabaWho",
+              "fontSize": 1,
+              "typeface": "Segoe UI",
+              "color": "#111827"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/dcbulwva",
+      "id": "4",
+      "name": "company",
+      "bbox": [
+        844,
+        34,
+        288,
+        22
+      ],
+      "geometry": "rect",
+      "text": "NexusLink IT Systems Corporation",
+      "textPreview": "NexusLink IT Systems Corporation",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "fontSize": 14,
+        "typeface": "Segoe UI",
+        "alignment": "right"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "NexusLink IT Systems Corporation"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "NexusLink IT Systems Corporation",
+          "runs": [
+            {
+              "index": 1,
+              "text": "NexusLink IT Systems Corporation",
+              "fontSize": 14,
+              "typeface": "Segoe UI",
+              "color": "#CBD5E1"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/kre1w7mp",
+      "id": "5",
+      "name": "page-number",
+      "bbox": [
+        1160,
+        31,
+        64,
+        26
+      ],
+      "geometry": "rect",
+      "text": "08",
+      "textPreview": "08",
+      "resolvedFontSize": 18,
+      "resolvedTextStyle": {
+        "fontSize": 18,
+        "typeface": "Segoe UI",
+        "bold": true,
+        "alignment": "right"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "08"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "08",
+          "runs": [
+            {
+              "index": 1,
+              "text": "08",
+              "fontSize": 18,
+              "typeface": "Segoe UI",
+              "color": "#FF9A3D",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/val87ed8",
+      "id": "6",
+      "name": "kicker-marker",
+      "bbox": [
+        64,
+        108,
+        34,
+        4
+      ],
+      "geometry": "rect",
+      "fillColor": "#FF9A3D",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/6psfil0r",
+      "id": "7",
+      "name": "kicker-label",
+      "bbox": [
+        112,
+        97,
+        852,
+        26
+      ],
+      "geometry": "rect",
+      "text": "The core promise",
+      "textPreview": "The core promise",
+      "resolvedFontSize": 17,
+      "resolvedTextStyle": {
+        "fontSize": 17,
+        "typeface": "Segoe UI",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "The core promise"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "The core promise",
+          "runs": [
+            {
+              "index": 1,
+              "text": "The core promise",
+              "fontSize": 17,
+              "typeface": "Segoe UI",
+              "color": "#CBD5E1",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/d8bat47y",
+      "id": "8",
+      "name": "slide-title",
+      "bbox": [
+        64,
+        137,
+        900,
+        67
+      ],
+      "geometry": "rect",
+      "text": "Value Proposition",
+      "textPreview": "Value Proposition",
+      "resolvedFontSize": 48,
+      "resolvedTextStyle": {
+        "fontSize": 48,
+        "typeface": "Segoe UI",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Value Proposition"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Value Proposition",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Value Proposition",
+              "fontSize": 48,
+              "typeface": "Segoe UI",
+              "color": "#F8FAFC",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/knih4byh",
+      "id": "9",
+      "name": "footer-rule",
+      "bbox": [
+        54,
+        662,
+        1170,
+        1
+      ],
+      "geometry": "rect",
+      "fillColor": "#3D4A5F",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/uxc3ylc7",
+      "id": "10",
+      "name": "presenter",
+      "bbox": [
+        54,
+        674,
+        180,
+        22
+      ],
+      "geometry": "rect",
+      "text": "Allen",
+      "textPreview": "Allen",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "fontSize": 14,
+        "typeface": "Segoe UI",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Allen"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Allen",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Allen",
+              "fontSize": 14,
+              "typeface": "Segoe UI",
+              "color": "#CBD5E1",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ji5snelo",
+      "id": "11",
+      "name": "value-quote",
+      "bbox": [
+        66,
+        245,
+        700,
+        250
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#243244",
+      "lineColor": "#1557C0",
+      "lineWidth": 2
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/c3ylc7u5",
+      "id": "12",
+      "bbox": [
+        94,
+        276,
+        8,
+        183
+      ],
+      "geometry": "rect",
+      "fillColor": "#FF9A3D",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/1kre1w7m",
+      "id": "13",
+      "name": "quote-text",
+      "bbox": [
+        132,
+        276,
+        590,
+        184
+      ],
+      "geometry": "rect",
+      "text": "“Help clients find the right person for the job while helping providers turn their skills into visible and sellable service offerings.”",
+      "textPreview": "“Help clients find the right person for the job while helping providers turn their skills into visible and sellable service offerings.”",
+      "resolvedFontSize": 27,
+      "resolvedTextStyle": {
+        "fontSize": 27,
+        "typeface": "Segoe UI",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "“Help clients find the right person for the job"
+          },
+          {
+            "index": 2,
+            "text": "while helping providers turn their skills into"
+          },
+          {
+            "index": 3,
+            "text": "visible and sellable service offerings.”"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "“Help clients find the right person for the job while helping providers turn their skills into visible and sellable service offerings.”",
+          "runs": [
+            {
+              "index": 1,
+              "text": "“Help clients find the right person for the job while helping providers turn their skills into visible and sellable service offerings.”",
+              "fontSize": 27,
+              "typeface": "Segoe UI",
+              "color": "#F8FAFC",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ulwval87",
+      "id": "14",
+      "name": "benefit-1",
+      "bbox": [
+        820,
+        254,
+        392,
+        84
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#1F2937",
+      "lineColor": "#3D4A5F",
+      "lineWidth": 1
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/j6tovaho",
+      "id": "15",
+      "name": "benefit-text-1",
+      "bbox": [
+        846,
+        268,
+        340,
+        56
+      ],
+      "geometry": "rect",
+      "text": "Digital storefront for providers",
+      "textPreview": "Digital storefront for providers",
+      "resolvedFontSize": 19,
+      "resolvedTextStyle": {
+        "fontSize": 19,
+        "typeface": "Segoe UI",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Digital storefront for providers"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Digital storefront for providers",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Digital storefront for providers",
+              "fontSize": 19,
+              "typeface": "Segoe UI",
+              "color": "#F8FAFC",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 16,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/crmhk3q5",
+      "id": "16",
+      "name": "benefit-2",
+      "bbox": [
+        820,
+        360,
+        392,
+        84
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#1F2937",
+      "lineColor": "#3D4A5F",
+      "lineWidth": 1
+    },
+    {
+      "order": 17,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/1cfa9w3m",
+      "id": "17",
+      "name": "benefit-text-2",
+      "bbox": [
+        846,
+        374,
+        340,
+        56
+      ],
+      "geometry": "rect",
+      "text": "Less app-switching for clients",
+      "textPreview": "Less app-switching for clients",
+      "resolvedFontSize": 19,
+      "resolvedTextStyle": {
+        "fontSize": 19,
+        "typeface": "Segoe UI",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Less app-switching for clients"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Less app-switching for clients",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Less app-switching for clients",
+              "fontSize": 19,
+              "typeface": "Segoe UI",
+              "color": "#F8FAFC",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 18,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/qh0fepkz",
+      "id": "18",
+      "name": "benefit-3",
+      "bbox": [
+        820,
+        466,
+        392,
+        84
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#243244",
+      "lineColor": "#FF7A00",
+      "lineWidth": 1
+    },
+    {
+      "order": 19,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/j2t83itg",
+      "id": "19",
+      "name": "benefit-text-3",
+      "bbox": [
+        846,
+        480,
+        340,
+        56
+      ],
+      "geometry": "rect",
+      "text": "More structured service transactions",
+      "textPreview": "More structured service transactions",
+      "resolvedFontSize": 19,
+      "resolvedTextStyle": {
+        "fontSize": 19,
+        "typeface": "Segoe UI",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "More structured service transactions"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "More structured service transactions",
+          "runs": [
+            {
+              "index": 1,
+              "text": "More structured service transactions",
+              "fontSize": 19,
+              "typeface": "Segoe UI",
+              "color": "#F8FAFC",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    }
+  ],
+  "composeRuns": []
+}

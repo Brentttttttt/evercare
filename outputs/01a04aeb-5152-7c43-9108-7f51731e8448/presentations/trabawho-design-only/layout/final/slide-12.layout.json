@@ -1,0 +1,724 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/7q5507",
+    "id": "7q5507",
+    "slide": 12,
+    "layoutId": "5d193ad5-037f-4480-98ae-647e0bf18944",
+    "layoutName": "Title Slide",
+    "layoutType": "title",
+    "masterLayoutId": "5d0d6481-2ab8-4ddd-a998-6cc52e76656d",
+    "masterLayoutName": "Master",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "ChatGPT",
+    "colors": {
+      "accent1": "#156082",
+      "accent2": "#E97132",
+      "accent3": "#196B24",
+      "accent4": "#0F9ED5",
+      "accent5": "#A02B93",
+      "accent6": "#4EA72E",
+      "bg1": "#FFFFFF",
+      "bg2": "#000000",
+      "tx1": "#1F1F1F",
+      "tx2": "#FFFFFF",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#0E2841",
+      "lt2": "#E8E8E8",
+      "hlink": "#467886",
+      "folHlink": "#96607D"
+    },
+    "typefaces": [
+      "Segoe UI"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "5d193ad5-037f-4480-98ae-647e0bf18944",
+      "name": "Title Slide",
+      "type": "title",
+      "parentLayoutId": "5d0d6481-2ab8-4ddd-a998-6cc52e76656d",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "5d0d6481-2ab8-4ddd-a998-6cc52e76656d",
+      "name": "Master",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/nap4r65w",
+      "id": "1",
+      "name": "background",
+      "bbox": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "geometry": "rect",
+      "fillColor": "#111827",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 2,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/xobm58z2",
+      "id": "2",
+      "bbox": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "alt": "Workplace photography",
+      "contentType": "image/jpeg",
+      "asset": {
+        "assetId": "9d6032ee-d49e-4142-a9b9-9ce04f275ce9",
+        "contentType": "image/jpeg",
+        "byteLength": 211708
+      }
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/5gbq1ory",
+      "id": "3",
+      "name": "photo-overlay",
+      "bbox": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "geometry": "rect",
+      "fillColor": "rgba(11, 18, 32, 0.86667)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 4,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/fu18jqh0",
+      "id": "4",
+      "bbox": [
+        54,
+        25,
+        184,
+        51
+      ],
+      "alt": "TrabaWho",
+      "contentType": "image/png",
+      "asset": {
+        "assetId": "35c8da82-68cc-46a1-b43a-3f075b9138a6",
+        "contentType": "image/png",
+        "byteLength": 62683
+      }
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/nyd0z610",
+      "id": "5",
+      "name": "source-brand-text",
+      "bbox": [
+        250,
+        681,
+        100,
+        8
+      ],
+      "geometry": "rect",
+      "text": "TrabaWho",
+      "textPreview": "TrabaWho",
+      "resolvedFontSize": 1,
+      "resolvedTextStyle": {
+        "fontSize": 75,
+        "typeface": "Segoe UI",
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "TrabaWho"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "TrabaWho",
+          "runs": [
+            {
+              "index": 1,
+              "text": "TrabaWho",
+              "fontSize": 1,
+              "typeface": "Segoe UI",
+              "color": "#111827"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/cj6tovah",
+      "id": "6",
+      "name": "company",
+      "bbox": [
+        844,
+        34,
+        288,
+        22
+      ],
+      "geometry": "rect",
+      "text": "NexusLink IT Systems Corporation",
+      "textPreview": "NexusLink IT Systems Corporation",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "fontSize": 14,
+        "typeface": "Segoe UI",
+        "alignment": "right"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "NexusLink IT Systems Corporation"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "NexusLink IT Systems Corporation",
+          "runs": [
+            {
+              "index": 1,
+              "text": "NexusLink IT Systems Corporation",
+              "fontSize": 14,
+              "typeface": "Segoe UI",
+              "color": "#CBD5E1"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/54zidony",
+      "id": "7",
+      "name": "page-number",
+      "bbox": [
+        1160,
+        31,
+        64,
+        26
+      ],
+      "geometry": "rect",
+      "text": "12",
+      "textPreview": "12",
+      "resolvedFontSize": 18,
+      "resolvedTextStyle": {
+        "fontSize": 18,
+        "typeface": "Segoe UI",
+        "bold": true,
+        "alignment": "right"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "12"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "12",
+          "runs": [
+            {
+              "index": 1,
+              "text": "12",
+              "fontSize": 18,
+              "typeface": "Segoe UI",
+              "color": "#FF9A3D",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/u9knih4b",
+      "id": "8",
+      "name": "kicker-marker",
+      "bbox": [
+        64,
+        108,
+        34,
+        4
+      ],
+      "geometry": "rect",
+      "fillColor": "#FF9A3D",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/judg7ads",
+      "id": "9",
+      "name": "kicker-label",
+      "bbox": [
+        112,
+        97,
+        852,
+        26
+      ],
+      "geometry": "rect",
+      "text": "Organizing existing behavior",
+      "textPreview": "Organizing existing behavior",
+      "resolvedFontSize": 17,
+      "resolvedTextStyle": {
+        "fontSize": 17,
+        "typeface": "Segoe UI",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Organizing existing behavior"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Organizing existing behavior",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Organizing existing behavior",
+              "fontSize": 17,
+              "typeface": "Segoe UI",
+              "color": "#CBD5E1",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/nyd0z610",
+      "id": "10",
+      "name": "slide-title",
+      "bbox": [
+        64,
+        137,
+        900,
+        67
+      ],
+      "geometry": "rect",
+      "text": "Problem Opportunity",
+      "textPreview": "Problem Opportunity",
+      "resolvedFontSize": 48,
+      "resolvedTextStyle": {
+        "fontSize": 48,
+        "typeface": "Segoe UI",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Problem Opportunity"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Problem Opportunity",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Problem Opportunity",
+              "fontSize": 48,
+              "typeface": "Segoe UI",
+              "color": "#F8FAFC",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/udg7adsj",
+      "id": "11",
+      "name": "footer-rule",
+      "bbox": [
+        54,
+        662,
+        1170,
+        1
+      ],
+      "geometry": "rect",
+      "fillColor": "#3D4A5F",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/54zidony",
+      "id": "12",
+      "name": "presenter",
+      "bbox": [
+        54,
+        674,
+        180,
+        22
+      ],
+      "geometry": "rect",
+      "text": "Lance",
+      "textPreview": "Lance",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "fontSize": 14,
+        "typeface": "Segoe UI",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Lance"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Lance",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Lance",
+              "fontSize": 14,
+              "typeface": "Segoe UI",
+              "color": "#CBD5E1",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/cj6tovah",
+      "id": "13",
+      "name": "behavior-panel",
+      "bbox": [
+        72,
+        254,
+        1136,
+        246
+      ],
+      "geometry": "roundRect",
+      "fillColor": "rgba(17, 24, 39, 0.84706)",
+      "lineColor": "#3D4A5F",
+      "lineWidth": 1
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/nap4r65w",
+      "id": "14",
+      "name": "behavior-accent-1",
+      "bbox": [
+        102,
+        290,
+        282,
+        6
+      ],
+      "geometry": "rect",
+      "fillColor": "#5B8FF0",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/upwb2hwf",
+      "id": "15",
+      "name": "behavior-text-1",
+      "bbox": [
+        102,
+        322,
+        282,
+        130
+      ],
+      "geometry": "rect",
+      "text": "People already buy and sell local services every day",
+      "textPreview": "People already buy and sell local services every day",
+      "resolvedFontSize": 21,
+      "resolvedTextStyle": {
+        "fontSize": 21,
+        "typeface": "Segoe UI",
+        "alignment": "center"
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "People already buy and sell"
+          },
+          {
+            "index": 2,
+            "text": "local services every day"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "People already buy and sell local services every day",
+          "runs": [
+            {
+              "index": 1,
+              "text": "People already buy and sell local services every day",
+              "fontSize": 21,
+              "typeface": "Segoe UI",
+              "color": "#F8FAFC"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 16,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/5gbq1ory",
+      "id": "16",
+      "name": "behavior-accent-2",
+      "bbox": [
+        456,
+        290,
+        282,
+        6
+      ],
+      "geometry": "rect",
+      "fillColor": "#5B8FF0",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 17,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/cvixczed",
+      "id": "17",
+      "name": "behavior-text-2",
+      "bbox": [
+        456,
+        322,
+        282,
+        130
+      ],
+      "geometry": "rect",
+      "text": "Many transactions are still under-structured",
+      "textPreview": "Many transactions are still under-structured",
+      "resolvedFontSize": 21,
+      "resolvedTextStyle": {
+        "fontSize": 21,
+        "typeface": "Segoe UI",
+        "alignment": "center"
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Many transactions are still"
+          },
+          {
+            "index": 2,
+            "text": "under-structured"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Many transactions are still under-structured",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Many transactions are still under-structured",
+              "fontSize": 21,
+              "typeface": "Segoe UI",
+              "color": "#F8FAFC"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 18,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/jm1cfa9w",
+      "id": "18",
+      "name": "behavior-accent-3",
+      "bbox": [
+        810,
+        290,
+        282,
+        6
+      ],
+      "geometry": "rect",
+      "fillColor": "#FF9A3D",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 19,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/u18jqh0f",
+      "id": "19",
+      "name": "behavior-text-3",
+      "bbox": [
+        810,
+        322,
+        282,
+        130
+      ],
+      "geometry": "rect",
+      "text": "TrabaWho organizes this behavior through a digital marketplace",
+      "textPreview": "TrabaWho organizes this behavior through a digital marketplace",
+      "resolvedFontSize": 21,
+      "resolvedTextStyle": {
+        "fontSize": 21,
+        "typeface": "Segoe UI",
+        "bold": true,
+        "alignment": "center"
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "TrabaWho organizes this"
+          },
+          {
+            "index": 2,
+            "text": "behavior through a digital"
+          },
+          {
+            "index": 3,
+            "text": "marketplace"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "TrabaWho organizes this behavior through a digital marketplace",
+          "runs": [
+            {
+              "index": 1,
+              "text": "TrabaWho organizes this behavior through a digital marketplace",
+              "fontSize": 21,
+              "typeface": "Segoe UI",
+              "color": "#F8FAFC",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    }
+  ],
+  "composeRuns": []
+}

@@ -1,0 +1,691 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/0b1lox",
+    "id": "0b1lox",
+    "slide": 11,
+    "layoutId": "5d193ad5-037f-4480-98ae-647e0bf18944",
+    "layoutName": "Title Slide",
+    "layoutType": "title",
+    "masterLayoutId": "5d0d6481-2ab8-4ddd-a998-6cc52e76656d",
+    "masterLayoutName": "Master",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "ChatGPT",
+    "colors": {
+      "accent1": "#156082",
+      "accent2": "#E97132",
+      "accent3": "#196B24",
+      "accent4": "#0F9ED5",
+      "accent5": "#A02B93",
+      "accent6": "#4EA72E",
+      "bg1": "#FFFFFF",
+      "bg2": "#000000",
+      "tx1": "#1F1F1F",
+      "tx2": "#FFFFFF",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#0E2841",
+      "lt2": "#E8E8E8",
+      "hlink": "#467886",
+      "folHlink": "#96607D"
+    },
+    "typefaces": [
+      "Segoe UI"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "5d193ad5-037f-4480-98ae-647e0bf18944",
+      "name": "Title Slide",
+      "type": "title",
+      "parentLayoutId": "5d0d6481-2ab8-4ddd-a998-6cc52e76656d",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "5d0d6481-2ab8-4ddd-a998-6cc52e76656d",
+      "name": "Master",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/m1cfa9w3",
+      "id": "1",
+      "name": "background",
+      "bbox": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "geometry": "rect",
+      "fillColor": "#111827",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 2,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/0je9cvix",
+      "id": "2",
+      "bbox": [
+        54,
+        25,
+        184,
+        51
+      ],
+      "alt": "TrabaWho",
+      "contentType": "image/png",
+      "asset": {
+        "assetId": "9b99c555-a670-4410-b91c-8148095dbdda",
+        "contentType": "image/png",
+        "byteLength": 62683
+      }
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/47y1kre1",
+      "id": "3",
+      "name": "source-brand-text",
+      "bbox": [
+        250,
+        681,
+        100,
+        8
+      ],
+      "geometry": "rect",
+      "text": "TrabaWho",
+      "textPreview": "TrabaWho",
+      "resolvedFontSize": 1,
+      "resolvedTextStyle": {
+        "fontSize": 75,
+        "typeface": "Segoe UI",
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "TrabaWho"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "TrabaWho",
+          "runs": [
+            {
+              "index": 1,
+              "text": "TrabaWho",
+              "fontSize": 1,
+              "typeface": "Segoe UI",
+              "color": "#111827"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/bat47y1k",
+      "id": "4",
+      "name": "company",
+      "bbox": [
+        844,
+        34,
+        288,
+        22
+      ],
+      "geometry": "rect",
+      "text": "NexusLink IT Systems Corporation",
+      "textPreview": "NexusLink IT Systems Corporation",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "fontSize": 14,
+        "typeface": "Segoe UI",
+        "alignment": "right"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "NexusLink IT Systems Corporation"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "NexusLink IT Systems Corporation",
+          "runs": [
+            {
+              "index": 1,
+              "text": "NexusLink IT Systems Corporation",
+              "fontSize": 14,
+              "typeface": "Segoe UI",
+              "color": "#CBD5E1"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/mp0bi9s3",
+      "id": "5",
+      "name": "page-number",
+      "bbox": [
+        1160,
+        31,
+        64,
+        26
+      ],
+      "geometry": "rect",
+      "text": "11",
+      "textPreview": "11",
+      "resolvedFontSize": 18,
+      "resolvedTextStyle": {
+        "fontSize": 18,
+        "typeface": "Segoe UI",
+        "bold": true,
+        "alignment": "right"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "11"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "11",
+          "runs": [
+            {
+              "index": 1,
+              "text": "11",
+              "fontSize": 18,
+              "typeface": "Segoe UI",
+              "color": "#FF9A3D",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/tgfmlkjm",
+      "id": "6",
+      "name": "kicker-marker",
+      "bbox": [
+        64,
+        108,
+        34,
+        4
+      ],
+      "geometry": "rect",
+      "fillColor": "#FF9A3D",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/4vmtwra5",
+      "id": "7",
+      "name": "kicker-label",
+      "bbox": [
+        112,
+        97,
+        852,
+        26
+      ],
+      "geometry": "rect",
+      "text": "Two-sided marketplace",
+      "textPreview": "Two-sided marketplace",
+      "resolvedFontSize": 17,
+      "resolvedTextStyle": {
+        "fontSize": 17,
+        "typeface": "Segoe UI",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Two-sided marketplace"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Two-sided marketplace",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Two-sided marketplace",
+              "fontSize": 17,
+              "typeface": "Segoe UI",
+              "color": "#CBD5E1",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/b2hwfyxo",
+      "id": "8",
+      "name": "slide-title",
+      "bbox": [
+        64,
+        137,
+        900,
+        67
+      ],
+      "geometry": "rect",
+      "text": "Target Market",
+      "textPreview": "Target Market",
+      "resolvedFontSize": 48,
+      "resolvedTextStyle": {
+        "fontSize": 48,
+        "typeface": "Segoe UI",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Target Market"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Target Market",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Target Market",
+              "fontSize": 48,
+              "typeface": "Segoe UI",
+              "color": "#F8FAFC",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/mhk3q5o7",
+      "id": "9",
+      "name": "footer-rule",
+      "bbox": [
+        54,
+        662,
+        1170,
+        1
+      ],
+      "geometry": "rect",
+      "fillColor": "#3D4A5F",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/0z61032l",
+      "id": "10",
+      "name": "presenter",
+      "bbox": [
+        54,
+        674,
+        180,
+        22
+      ],
+      "geometry": "rect",
+      "text": "Lance",
+      "textPreview": "Lance",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "fontSize": 14,
+        "typeface": "Segoe UI",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Lance"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Lance",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Lance",
+              "fontSize": 14,
+              "typeface": "Segoe UI",
+              "color": "#CBD5E1",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/pkzupwb2",
+      "id": "11",
+      "name": "provider-market",
+      "bbox": [
+        76,
+        246,
+        526,
+        306
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#1F2937",
+      "lineColor": "#1557C0",
+      "lineWidth": 2
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/itgfmlkj",
+      "id": "12",
+      "name": "client-market",
+      "bbox": [
+        678,
+        246,
+        526,
+        306
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#1F2937",
+      "lineColor": "#FF7A00",
+      "lineWidth": 2
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/7ed8bat4",
+      "id": "13",
+      "name": "provider-primary",
+      "bbox": [
+        116,
+        279,
+        446,
+        92
+      ],
+      "geometry": "rect",
+      "text": "Independent service providers, freelancers, professionals, and small service businesses",
+      "textPreview": "Independent service providers, freelancers, professionals, and small service businesses",
+      "resolvedFontSize": 23,
+      "resolvedTextStyle": {
+        "fontSize": 23,
+        "typeface": "Segoe UI",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Independent service providers,"
+          },
+          {
+            "index": 2,
+            "text": "freelancers, professionals, and small"
+          },
+          {
+            "index": 3,
+            "text": "service businesses"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Independent service providers, freelancers, professionals, and small service businesses",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Independent service providers, freelancers, professionals, and small service businesses",
+              "fontSize": 23,
+              "typeface": "Segoe UI",
+              "color": "#F8FAFC",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/0nuxc3yl",
+      "id": "14",
+      "bbox": [
+        116,
+        390,
+        110,
+        5
+      ],
+      "geometry": "rect",
+      "fillColor": "#5B8FF0",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/p8nqxs72",
+      "id": "15",
+      "name": "provider-examples",
+      "bbox": [
+        116,
+        416,
+        446,
+        104
+      ],
+      "geometry": "rect",
+      "text": "Tutors, photographers, repair technicians, designers, cleaners, and other skilled workers",
+      "textPreview": "Tutors, photographers, repair technicians, designers, cleaners, and other skilled workers",
+      "resolvedFontSize": 19,
+      "resolvedTextStyle": {
+        "fontSize": 19,
+        "typeface": "Segoe UI",
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Tutors, photographers, repair technicians, designers,"
+          },
+          {
+            "index": 2,
+            "text": "cleaners, and other skilled workers"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Tutors, photographers, repair technicians, designers, cleaners, and other skilled workers",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Tutors, photographers, repair technicians, designers, cleaners, and other skilled workers",
+              "fontSize": 19,
+              "typeface": "Segoe UI",
+              "color": "#CBD5E1"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 16,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ih4byhgn",
+      "id": "16",
+      "name": "client-primary",
+      "bbox": [
+        718,
+        312,
+        446,
+        166
+      ],
+      "geometry": "rect",
+      "text": "Clients such as individuals, groups, families, or businesses looking for local services",
+      "textPreview": "Clients such as individuals, groups, families, or businesses looking for local services",
+      "resolvedFontSize": 23,
+      "resolvedTextStyle": {
+        "fontSize": 23,
+        "typeface": "Segoe UI",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Clients such as individuals, groups,"
+          },
+          {
+            "index": 2,
+            "text": "families, or businesses looking for local"
+          },
+          {
+            "index": 3,
+            "text": "services"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Clients such as individuals, groups, families, or businesses looking for local services",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Clients such as individuals, groups, families, or businesses looking for local services",
+              "fontSize": 23,
+              "typeface": "Segoe UI",
+              "color": "#F8FAFC",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 17,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/72x4nap4",
+      "id": "17",
+      "name": "market-bridge",
+      "bbox": [
+        613,
+        382,
+        54,
+        34
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#243244",
+      "lineColor": "#3D4A5F",
+      "lineWidth": 1
+    }
+  ],
+  "composeRuns": []
+}

@@ -1,0 +1,687 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/q94c12",
+    "id": "q94c12",
+    "slide": 21,
+    "layoutId": "5d193ad5-037f-4480-98ae-647e0bf18944",
+    "layoutName": "Title Slide",
+    "layoutType": "title",
+    "masterLayoutId": "5d0d6481-2ab8-4ddd-a998-6cc52e76656d",
+    "masterLayoutName": "Master",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "ChatGPT",
+    "colors": {
+      "accent1": "#156082",
+      "accent2": "#E97132",
+      "accent3": "#196B24",
+      "accent4": "#0F9ED5",
+      "accent5": "#A02B93",
+      "accent6": "#4EA72E",
+      "bg1": "#FFFFFF",
+      "bg2": "#000000",
+      "tx1": "#1F1F1F",
+      "tx2": "#FFFFFF",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#0E2841",
+      "lt2": "#E8E8E8",
+      "hlink": "#467886",
+      "folHlink": "#96607D"
+    },
+    "typefaces": [
+      "Segoe UI"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "5d193ad5-037f-4480-98ae-647e0bf18944",
+      "name": "Title Slide",
+      "type": "title",
+      "parentLayoutId": "5d0d6481-2ab8-4ddd-a998-6cc52e76656d",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "5d0d6481-2ab8-4ddd-a998-6cc52e76656d",
+      "name": "Master",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/qtcj6tov",
+      "id": "1",
+      "name": "background",
+      "bbox": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "geometry": "rect",
+      "fillColor": "#111827",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 2,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/8z25kb6x",
+      "id": "2",
+      "bbox": [
+        54,
+        25,
+        184,
+        51
+      ],
+      "alt": "TrabaWho",
+      "contentType": "image/png",
+      "asset": {
+        "assetId": "89964f17-63ed-46b6-a04c-ca3c73663b86",
+        "contentType": "image/png",
+        "byteLength": 62683
+      }
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/8z25kb6x",
+      "id": "3",
+      "name": "source-brand-text",
+      "bbox": [
+        250,
+        681,
+        100,
+        8
+      ],
+      "geometry": "rect",
+      "text": "TrabaWho",
+      "textPreview": "TrabaWho",
+      "resolvedFontSize": 1,
+      "resolvedTextStyle": {
+        "fontSize": 75,
+        "typeface": "Segoe UI",
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "TrabaWho"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "TrabaWho",
+          "runs": [
+            {
+              "index": 1,
+              "text": "TrabaWho",
+              "fontSize": 1,
+              "typeface": "Segoe UI",
+              "color": "#111827"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/fmlkjm1c",
+      "id": "4",
+      "name": "company",
+      "bbox": [
+        844,
+        34,
+        288,
+        22
+      ],
+      "geometry": "rect",
+      "text": "NexusLink IT Systems Corporation",
+      "textPreview": "NexusLink IT Systems Corporation",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "fontSize": 14,
+        "typeface": "Segoe UI",
+        "alignment": "right"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "NexusLink IT Systems Corporation"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "NexusLink IT Systems Corporation",
+          "runs": [
+            {
+              "index": 1,
+              "text": "NexusLink IT Systems Corporation",
+              "fontSize": 14,
+              "typeface": "Segoe UI",
+              "color": "#CBD5E1"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/q1orytsv",
+      "id": "5",
+      "name": "page-number",
+      "bbox": [
+        1160,
+        31,
+        64,
+        26
+      ],
+      "geometry": "rect",
+      "text": "21",
+      "textPreview": "21",
+      "resolvedFontSize": 18,
+      "resolvedTextStyle": {
+        "fontSize": 18,
+        "typeface": "Segoe UI",
+        "bold": true,
+        "alignment": "right"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "21"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "21",
+          "runs": [
+            {
+              "index": 1,
+              "text": "21",
+              "fontSize": 18,
+              "typeface": "Segoe UI",
+              "color": "#FF9A3D",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/xs72x4na",
+      "id": "6",
+      "name": "kicker-marker",
+      "bbox": [
+        64,
+        108,
+        34,
+        4
+      ],
+      "geometry": "rect",
+      "fillColor": "#FF9A3D",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/87ed8bat",
+      "id": "7",
+      "name": "kicker-label",
+      "bbox": [
+        112,
+        97,
+        852,
+        26
+      ],
+      "geometry": "rect",
+      "text": "Commercial sustainability",
+      "textPreview": "Commercial sustainability",
+      "resolvedFontSize": 17,
+      "resolvedTextStyle": {
+        "fontSize": 17,
+        "typeface": "Segoe UI",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Commercial sustainability"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Commercial sustainability",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Commercial sustainability",
+              "fontSize": 17,
+              "typeface": "Segoe UI",
+              "color": "#CBD5E1",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/fyxobm58",
+      "id": "8",
+      "name": "slide-title",
+      "bbox": [
+        64,
+        137,
+        900,
+        67
+      ],
+      "geometry": "rect",
+      "text": "Revenue Strategy",
+      "textPreview": "Revenue Strategy",
+      "resolvedFontSize": 48,
+      "resolvedTextStyle": {
+        "fontSize": 48,
+        "typeface": "Segoe UI",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Revenue Strategy"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Revenue Strategy",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Revenue Strategy",
+              "fontSize": 48,
+              "typeface": "Segoe UI",
+              "color": "#F8FAFC",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/qd4vmtwr",
+      "id": "9",
+      "name": "footer-rule",
+      "bbox": [
+        54,
+        662,
+        1170,
+        1
+      ],
+      "geometry": "rect",
+      "fillColor": "#3D4A5F",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/sfil0rqd",
+      "id": "10",
+      "name": "presenter",
+      "bbox": [
+        54,
+        674,
+        180,
+        22
+      ],
+      "geometry": "rect",
+      "text": "Brent",
+      "textPreview": "Brent",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "fontSize": 14,
+        "typeface": "Segoe UI",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Brent"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Brent",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Brent",
+              "fontSize": 14,
+              "typeface": "Segoe UI",
+              "color": "#CBD5E1",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/h0fepkzu",
+      "id": "11",
+      "name": "fee-callout",
+      "bbox": [
+        64,
+        250,
+        508,
+        276
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#243244",
+      "lineColor": "#FF7A00",
+      "lineWidth": 2
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/a9w3m94f",
+      "id": "12",
+      "name": "fee-callout-text",
+      "bbox": [
+        102,
+        282,
+        432,
+        102
+      ],
+      "geometry": "rect",
+      "text": "Proposed 5% Transaction Coordination Fee",
+      "textPreview": "Proposed 5% Transaction Coordination Fee",
+      "resolvedFontSize": 34,
+      "resolvedTextStyle": {
+        "fontSize": 34,
+        "typeface": "Segoe UI",
+        "bold": true,
+        "alignment": "center"
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Proposed 5% Transaction"
+          },
+          {
+            "index": 2,
+            "text": "Coordination Fee"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Proposed 5% Transaction Coordination Fee",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Proposed 5% Transaction Coordination Fee",
+              "fontSize": 34,
+              "typeface": "Segoe UI",
+              "color": "#F8FAFC",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/zupwb2hw",
+      "id": "13",
+      "bbox": [
+        102,
+        407,
+        432,
+        2
+      ],
+      "geometry": "rect",
+      "fillColor": "#3D4A5F",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/orytsvu9",
+      "id": "14",
+      "name": "fee-basis",
+      "bbox": [
+        104,
+        428,
+        428,
+        64
+      ],
+      "geometry": "rect",
+      "text": "Charged on the client’s downpayment for a confirmed booking.",
+      "textPreview": "Charged on the client’s downpayment for a confirmed booking.",
+      "resolvedFontSize": 20,
+      "resolvedTextStyle": {
+        "fontSize": 20,
+        "typeface": "Segoe UI",
+        "alignment": "center"
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Charged on the client’s downpayment for a"
+          },
+          {
+            "index": 2,
+            "text": "confirmed booking."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Charged on the client’s downpayment for a confirmed booking.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Charged on the client’s downpayment for a confirmed booking.",
+              "fontSize": 20,
+              "typeface": "Segoe UI",
+              "color": "#CBD5E1"
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/hcrmhk3q",
+      "id": "15",
+      "name": "fee-result",
+      "bbox": [
+        642,
+        300,
+        566,
+        176
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#1F2937",
+      "lineColor": "#1557C0",
+      "lineWidth": 1
+    },
+    {
+      "order": 16,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/al87ed8b",
+      "id": "16",
+      "name": "fee-result-text",
+      "bbox": [
+        680,
+        328,
+        490,
+        120
+      ],
+      "geometry": "rect",
+      "text": "This allows TrabaWho to earn once a legitimate service transaction is secured through the platform.",
+      "textPreview": "This allows TrabaWho to earn once a legitimate service transaction is secured through the platform.",
+      "resolvedFontSize": 22,
+      "resolvedTextStyle": {
+        "fontSize": 22,
+        "typeface": "Segoe UI",
+        "bold": true,
+        "alignment": "left"
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "This allows TrabaWho to earn once a legitimate"
+          },
+          {
+            "index": 2,
+            "text": "service transaction is secured through the"
+          },
+          {
+            "index": 3,
+            "text": "platform."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "This allows TrabaWho to earn once a legitimate service transaction is secured through the platform.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "This allows TrabaWho to earn once a legitimate service transaction is secured through the platform.",
+              "fontSize": 22,
+              "typeface": "Segoe UI",
+              "color": "#F8FAFC",
+              "bold": true
+            }
+          ]
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 17,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/z61032ls",
+      "id": "17",
+      "name": "fee-connector",
+      "bbox": [
+        572,
+        386,
+        70,
+        4
+      ],
+      "geometry": "rect",
+      "fillColor": "#3D4A5F",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    }
+  ],
+  "composeRuns": []
+}

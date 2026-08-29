@@ -1,0 +1,13 @@
+canvas: 1280 x 720, 16:9
+backgrounds: #111827 primary; #0B1220 deep; #1F2937 and #243244 semantic surfaces
+type: Segoe UI; 46-58 px display titles; 19-24 px body; 12-14 px chrome
+palette: #F8FAFC primary text; #CBD5E1 secondary; #94A3B8 muted; #5B8FF0 interactive blue; #1557C0 core blue; #FF9A3D orange; #FF7A00 core orange; #3D4A5F borders
+chart grammar: editable shapes with direct labels; blue for primary sequence, orange for checkpoints/commerce
+diagram grammar: concrete source phrases in lanes, nodes, and flows; no new labels
+connector grammar: horizontal/vertical hairlines or chevrons only when sequence is explicit in the source
+container grammar: 8 px equivalent corners, 1 px slate borders, minimum 16 px internal padding; no decorative prose boxes
+footer grammar: verified logo left; company and presenter in quiet text; page number right
+title/kicker grammar: original lead line as uppercase kicker; original title verbatim as display title
+brand asset policy: use only the source-deck logo and verified website photography; never approximate the mark or fabricate UI
+layout families: hero photo, editorial split, radial/marketplace map, horizontal process, two-column comparison, vertical ladder, landscape matrix, closing hero
+banned motifs: teal academic template, invented labels, altered figures, pseudo-UI, excessive pills, repeated generic card grids

@@ -1,0 +1,27 @@
+{
+  "allowed": [
+    "slide-01.layout.json:text-image:7:2",
+    "slide-01.layout.json:text-image:8:2",
+    "slide-01.layout.json:text-image:9:2",
+    "slide-01.layout.json:text-image:10:2",
+    "slide-01.layout.json:text-image:11:2",
+    "slide-01.layout.json:text-image:13:2",
+    "slide-01.layout.json:text-image:14:2",
+    "slide-01.layout.json:text-image:15:2",
+    "slide-06.layout.json:text-image:6:2",
+    "slide-06.layout.json:text-image:7:2",
+    "slide-12.layout.json:text-image:5:2",
+    "slide-12.layout.json:text-image:6:2",
+    "slide-12.layout.json:text-image:7:2",
+    "slide-12.layout.json:text-image:9:2",
+    "slide-12.layout.json:text-image:10:2",
+    "slide-12.layout.json:text-image:12:2",
+    "slide-12.layout.json:text-image:15:2",
+    "slide-12.layout.json:text-image:17:2",
+    "slide-12.layout.json:text-image:19:2",
+    "slide-30.layout.json:text-image:7:2",
+    "slide-30.layout.json:text-image:8:2",
+    "slide-30.layout.json:text-image:12:2",
+    "slide-30.layout.json:text-image:13:2"
+  ]
+}

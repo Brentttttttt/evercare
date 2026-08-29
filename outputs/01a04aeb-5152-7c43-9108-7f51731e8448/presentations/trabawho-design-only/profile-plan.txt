@@ -1,0 +1,8 @@
+task mode: reference-beating, with the supplied PPTX as a content-locked source
+primary deck-profile: product-platform
+secondary gates: exact-source-text preservation; brand authenticity
+required proof objects: marketplace map, booking workflow, pricing comparison, monetization linkage, competitive positioning, governance, and timeline
+source/asset requirements: exact source slide order and wording; source-deck logo; verified website colors and photography
+brand authenticity constraints: use the official TrabaWho logo extracted from the source PPTX; do not fabricate product UI, partner marks, or identity assets
+profile-specific QA gates: visualized workflows must be concrete and readable; monetization visuals may not alter the source figures; no generic feature-card repetition
+known missing inputs: none

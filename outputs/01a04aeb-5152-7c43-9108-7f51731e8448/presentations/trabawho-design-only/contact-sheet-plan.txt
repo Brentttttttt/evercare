@@ -1,0 +1,31 @@
+30-slide rhythm with eight macro families:
+01 hero photo
+02 radial question + four channels
+03-05 problem-series variations: channels, scatter, and risk sequence
+06 editorial photo split
+07 marketplace exchange
+08 value quote split
+09 commerce lifecycle
+10 objective ascent
+11 two-sided market
+12 editorial behavior bridge
+13 product system map
+14 storefront anatomy
+15 discovery path
+16 linked communication
+17 status/payment lanes
+18 stepped transaction flow
+19 end-to-end ribbon
+20 pricing comparison
+21 fee mechanism
+22 premium revenue ladder
+23 calculation composition
+24 alternative landscape
+25 positioning comparison
+26 scope bands
+27 governance layers
+28 self-service split
+29 milestone timeline
+30 closing hero
+
+Hard rhythm rule: no three consecutive slides use the same macro composition. Repeated system primitives (thin borders, numbered markers, blue/orange accents) provide coherence without repeated scaffolding.

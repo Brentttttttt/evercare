@@ -1,0 +1,16 @@
+thesis: TrabaWho organizes fragmented local service transactions into one marketplace workflow.
+audience: academic evaluators, project stakeholders, and prospective platform users
+one-line arc: problem fragmentation -> marketplace concept -> product workflow -> monetization -> differentiation -> operating model -> conclusion
+
+CONTENT-LOCK OVERRIDE
+The source slide titles and copy remain verbatim. The skill's preference for rewritten claim titles is superseded by the user's explicit design-only instruction. Proof objects are built only from the exact phrases already present on each source slide.
+
+slide 01: source cover retained; proof object = branded hero composition
+slides 02-05: original problem statements retained; proof objects = channel map, fragmentation lanes, communication scatter, risk sequence
+slides 06-12: original solution/market text retained; proof objects = marketplace map, two-sided exchange, value quote, commerce workflow, objective path, audience split, behavior bridge
+slides 13-17: original product text retained; proof objects = capability system, provider storefront anatomy, discovery-to-booking path, booking-linked conversation, status/payment lanes
+slides 18-20: original transaction and pricing text retained; proof objects = structured flow, end-to-end sequence, fixed-price/quotation comparison
+slides 21-23: original revenue text and figures retained exactly; proof objects = fee mechanism, premium revenue ladder, sample computation
+slides 24-25: original competitive text retained; proof objects = alternative landscape and positioning comparison
+slides 26-29: original scope/operations/timeline text retained; proof objects = scope bands, governance layers, self-service split, milestone path
+slide 30: original conclusion retained; proof object = branded closing summary
