@@ -263,7 +263,7 @@ export async function requestGroqStructuredJson({
   schema,
   messages,
   maxCompletionTokens = 700,
-  reasoningEffort = "low",
+  reasoningEffort = "medium",
   temperature = 0.2,
 }: {
   schemaName: string;
@@ -288,10 +288,10 @@ export async function requestGroqStructuredJson({
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: Deno.env.get("GROQ_MODEL") ?? "openai/gpt-oss-20b",
+        model: Deno.env.get("GROQ_MODEL") ?? "openai/gpt-oss-120b",
         messages,
-        // GPT-OSS completion tokens include reasoning tokens. Low reasoning
-        // keeps these short, leaving enough of the budget for strict JSON.
+        // GPT-OSS completion tokens include reasoning tokens. Callers can
+        // lower or raise this when a narrowly bounded task warrants it.
         reasoning_effort: reasoningEffort,
         temperature,
         max_completion_tokens: maxCompletionTokens,

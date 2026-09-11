@@ -21,7 +21,8 @@ key stays only in Supabase Function secrets; it must never be added to Flutter,
   in-scope replies instead of disappearing.
   It does not use health records, profiles, journals, or the NIA PDF.
 - All AI functions require an authenticated Supabase user and use the
-  `openai/gpt-oss-20b` Groq model by default with strict JSON output.
+  `openai/gpt-oss-120b` Groq model by default with strict JSON output and
+  medium reasoning effort.
 
 ## Configure and deploy
 
@@ -30,7 +31,7 @@ key stays only in Supabase Function secrets; it must never be added to Flutter,
 
    ```powershell
    supabase secrets set GROQ_API_KEY=your_groq_key
-   supabase secrets set GROQ_MODEL=openai/gpt-oss-20b
+   supabase secrets set GROQ_MODEL=openai/gpt-oss-120b
    ```
 
 3. Deploy the functions to the same Supabase project configured in

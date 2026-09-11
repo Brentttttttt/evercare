@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
       schemaName: "evercare_bp_insight",
       schema: insightSchema,
       maxCompletionTokens: 220,
-      reasoningEffort: "low",
+      reasoningEffort: "medium",
       messages: [
         {
           role: "system",
