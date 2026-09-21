@@ -149,7 +149,7 @@ class _HealthBpAiChatSheetState extends State<HealthBpAiChatSheet> {
         _notice = everCareAiFailureMessage(
           error,
           connectionFallback:
-              'Could not reach EverCare AI. Check your connection and try again.',
+              "EverCare AI couldn't connect right now. Please try again.",
         );
       });
       _scrollToLatest();
@@ -181,7 +181,7 @@ class _HealthBpAiChatSheetState extends State<HealthBpAiChatSheet> {
         icon: const Icon(Icons.shield_outlined, color: AppColors.primaryGreen),
         title: const Text('About this reading chat'),
         content: const Text(
-          '$healthBpChatDisclaimer Your current question, up to 8 recent chat messages, and the corrected numbers shown in EverCare are sent for AI processing so replies can understand the conversation. EverCare does not add your account identity, raw BLE packet, device details, or saved health history. Anything identifying that you type is still part of your messages. EverCare does not save this conversation to your account.',
+          '$healthBpChatDisclaimer Your current question, up to 16 recent chat messages, and the corrected numbers shown in EverCare are sent for AI processing so replies can understand the conversation. EverCare does not add your account identity, raw BLE packet, device details, or saved health history. Anything identifying that you type is still part of your messages. EverCare does not save this conversation to your account.',
         ),
         actions: [
           TextButton(

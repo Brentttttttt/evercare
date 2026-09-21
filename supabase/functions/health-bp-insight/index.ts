@@ -5,7 +5,7 @@ import {
   optionsResponse,
   PublicFunctionError,
   readJsonBody,
-  requestGroqStructuredJson,
+  requestGeminiStructuredJson,
   requiredInteger,
   requireUserId,
 } from "../_shared/ai.ts";
@@ -44,7 +44,7 @@ const insightSchema = {
   },
 };
 
-Deno.serve(async (req) => {
+export async function handleRequest(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") return optionsResponse();
   if (req.method !== "POST") {
     return functionErrorResponse(
@@ -61,11 +61,10 @@ Deno.serve(async (req) => {
     enforceCooldown(userId, "health-bp-insight", 10000);
     const assessment = assessBloodPressure(systolic, diastolic);
 
-    const completion = await requestGroqStructuredJson({
-      schemaName: "evercare_bp_insight",
+    const completion = await requestGeminiStructuredJson({
       schema: insightSchema,
-      maxCompletionTokens: 220,
-      reasoningEffort: "medium",
+      maxOutputTokens: 2048,
+      thinkingLevel: "medium",
       messages: [
         {
           role: "system",
@@ -110,7 +109,9 @@ Deno.serve(async (req) => {
   } catch (error) {
     return functionErrorResponse(error);
   }
-});
+}
+
+if (import.meta.main) Deno.serve(handleRequest);
 
 function selectReviewedTips(value: unknown): string[] {
   const selectedIds: TipId[] = [];

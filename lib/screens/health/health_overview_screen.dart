@@ -969,6 +969,8 @@ class _BloodPressureResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final showEmergencyShortcut =
+        assessment.category == BloodPressureCategory.hypertensionStage2;
     return AppCard(
       key: const Key('bp-hero-card'),
       padding: EdgeInsets.zero,
@@ -980,7 +982,9 @@ class _BloodPressureResultCard extends StatelessWidget {
             builder: (context, constraints) {
               final textScale = MediaQuery.textScalerOf(context).scale(1);
               final separateArtwork =
-                  constraints.maxWidth < 440 || textScale > 1.25;
+                  constraints.maxWidth < 440 ||
+                  textScale > 1.25 ||
+                  showEmergencyShortcut;
 
               if (separateArtwork) {
                 return Column(
@@ -1019,6 +1023,7 @@ class _BloodPressureResultCard extends StatelessWidget {
                       child: LayoutBuilder(
                         builder: (context, detailsConstraints) {
                           final sideBySide =
+                              !showEmergencyShortcut &&
                               detailsConstraints.maxWidth >= 330 &&
                               textScale <= 1.15;
                           final details = _HeroReadingDetails(
@@ -1031,7 +1036,7 @@ class _BloodPressureResultCard extends StatelessWidget {
                               children: [
                                 details,
                                 const SizedBox(height: 14),
-                                _BloodPressureStatusIndicator(
+                                _BloodPressureStatusActions(
                                   assessment: assessment,
                                 ),
                               ],
@@ -1290,7 +1295,7 @@ class _HeroReadingDetails extends StatelessWidget {
 }
 
 class _BloodPressureStatusIndicator extends StatelessWidget {
-  const _BloodPressureStatusIndicator({required this.assessment});
+  const _BloodPressureStatusIndicator({required this.assessment, super.key});
 
   final BloodPressureAssessment assessment;
 
@@ -1395,6 +1400,127 @@ class _BloodPressureStatusIndicator extends StatelessWidget {
         opacity: value,
         child: Transform.scale(scale: value, child: child),
       ),
+    );
+  }
+}
+
+class _BloodPressureStatusActions extends StatelessWidget {
+  const _BloodPressureStatusActions({required this.assessment});
+
+  final BloodPressureAssessment assessment;
+
+  Future<void> _openEmergency(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Emergency help'),
+        scrollable: true,
+        content: const Text(
+          'Do you want to open EverCare Emergency assistance? '
+          'This opens emergency contacts and resources. It does not place a call.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    await Navigator.pushNamed(context, AppRoutes.emergency);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final indicator = _BloodPressureStatusIndicator(
+      key: const Key('bp-status-indicator'),
+      assessment: assessment,
+    );
+    if (assessment.category != BloodPressureCategory.hypertensionStage2) {
+      return indicator;
+    }
+
+    final emergencyAction = ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 260),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Semantics(
+            hint:
+                'Opens emergency assistance after confirmation. '
+                'Does not place a call.',
+            child: OutlinedButton(
+              key: const Key('bp-emergency-button'),
+              onPressed: () => _openEmergency(context),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.destructiveContainerForeground,
+                backgroundColor: AppColors.destructiveContainer,
+                side: const BorderSide(color: AppColors.danger),
+                minimumSize: const Size(48, 64),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 10,
+                ),
+                textStyle: AppTextStyles.body.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              child: const Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.sos_rounded, size: 28),
+                  SizedBox(height: 4),
+                  Text('Emergency', textAlign: TextAlign.center),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'For severe symptoms or emergencies',
+            textAlign: TextAlign.center,
+            style: AppTextStyles.small,
+          ),
+        ],
+      ),
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final textScale = MediaQuery.textScalerOf(context).scale(1);
+        // Keep the existing circle at its readable size. At large accessibility
+        // sizes, retain the status badge and wrap the action to the right below it.
+        if (constraints.maxWidth >= 138 + 92 * textScale && textScale <= 1.3) {
+          return Row(
+            children: [
+              indicator,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: emergencyAction,
+                ),
+              ),
+            ],
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            indicator,
+            const SizedBox(height: 12),
+            Align(alignment: Alignment.centerRight, child: emergencyAction),
+          ],
+        );
+      },
     );
   }
 }
@@ -2264,7 +2390,7 @@ class _HealthAiInsightCardState extends State<_HealthAiInsightCard> {
         _failureMessage = everCareAiFailureMessage(
           error,
           connectionFallback:
-              'Could not reach EverCare AI. Check your connection and try again.',
+              "EverCare AI couldn't connect right now. Please try again.",
         );
       });
     } finally {

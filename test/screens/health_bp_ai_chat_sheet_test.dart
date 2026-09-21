@@ -8,6 +8,7 @@ import 'package:evercare/theme/app_theme.dart';
 import 'package:evercare/widgets/evercare_ai_mascot.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
   BpMonitorResult result({
@@ -223,7 +224,54 @@ void main() {
     );
     expect(composer.controller?.text, question);
     expect(composer.enabled, isTrue);
-    expect(find.textContaining('Check your connection'), findsOneWidget);
+    expect(
+      find.text("EverCare AI couldn't connect right now. Please try again."),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('quota failure is a retryable notice, not an assistant reply', (
+    tester,
+  ) async {
+    var requests = 0;
+    await pumpChat(tester, ({required message, required result}) async {
+      requests++;
+      if (requests == 1) {
+        throw const FunctionException(
+          status: 429,
+          details: {'error': 'https://internal.invalid?key=private-key'},
+        );
+      }
+      return responseFor(
+        result,
+        status: HealthBpChatResponseStatus.answered,
+        answer: 'Here is the answer to your lifestyle question.',
+      );
+    });
+
+    const question = 'How can I improve my blood pressure?';
+    await tester.enterText(find.byKey(healthBpAiChatComposerKey), question);
+    await tester.tap(find.byTooltip('Send'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('receiving a lot of requests'), findsOneWidget);
+    expect(find.textContaining('private-key'), findsNothing);
+    expect(find.byKey(healthBpAiChatAssistantMascotKey), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey<String>('health-bp-chat-message-1')),
+      findsNothing,
+    );
+
+    await tester.tap(find.byTooltip('Send'));
+    await tester.pumpAndSettle();
+
+    expect(requests, 2);
+    expect(find.text(question), findsOneWidget);
+    expect(find.textContaining('receiving a lot of requests'), findsNothing);
+    expect(
+      find.textContaining('answer to your lifestyle question'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('keeps urgent guidance above a severe-reading conversation', (

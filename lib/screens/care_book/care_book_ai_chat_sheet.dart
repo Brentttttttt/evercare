@@ -450,7 +450,7 @@ class _CareBookAiChatSheetState extends State<CareBookAiChatSheet> {
         _notice = everCareAiFailureMessage(
           error,
           connectionFallback:
-              'Could not reach Care Guide. Check your connection and try again.',
+              "EverCare AI couldn't connect right now. Please try again.",
         );
       });
       _scrollToLatest();
@@ -488,7 +488,7 @@ class _CareBookAiChatSheetState extends State<CareBookAiChatSheet> {
         icon: const Icon(Icons.shield_outlined, color: AppColors.primaryGreen),
         title: const Text('About Care Guide'),
         content: const Text(
-          'Care Guide uses EverCare’s Care Book and general older-adult care guidance. Your current question and up to 8 recent chat messages are sent for a contextual AI reply, but EverCare does not save this conversation to your account. Care Guide does not diagnose conditions, change medicines, or replace emergency services.',
+          'Care Guide uses EverCare’s Care Book and general older-adult care guidance. Your current question and up to 16 recent chat messages are sent for a contextual AI reply, but EverCare does not save this conversation to your account. Care Guide does not diagnose conditions, change medicines, or replace emergency services.',
         ),
         actions: [
           TextButton(

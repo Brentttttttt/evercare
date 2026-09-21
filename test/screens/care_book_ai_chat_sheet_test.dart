@@ -7,6 +7,7 @@ import 'package:evercare/theme/app_theme.dart';
 import 'package:evercare/widgets/bp_level_visual.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
   Future<void> pumpChat(
@@ -291,7 +292,7 @@ void main() {
     expect(composer.controller?.text, question);
     expect(composer.enabled, isTrue);
     final notice = find.text(
-      'Could not reach Care Guide. Check your connection and try again.',
+      "EverCare AI couldn't connect right now. Please try again.",
     );
     expect(notice, findsOneWidget);
     expect(tester.getRect(notice).top, greaterThanOrEqualTo(0));
@@ -300,6 +301,40 @@ void main() {
       lessThanOrEqualTo(tester.getRect(find.byKey(careBookAiComposerKey)).top),
     );
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('quota failures do not add a refusal to the conversation', (
+    tester,
+  ) async {
+    await pumpChat(tester, ({
+      required message,
+      required selectedChapter,
+    }) async {
+      throw const FunctionException(
+        status: 429,
+        details: {'error': 'GEMINI_API_KEY=private-key'},
+      );
+    });
+
+    const question = 'Could coffee affect blood pressure?';
+    await tester.enterText(find.byKey(careBookAiComposerKey), question);
+    await tester.tap(find.byTooltip('Send'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('receiving a lot of requests'), findsOneWidget);
+    expect(find.textContaining('private-key'), findsNothing);
+    expect(find.byKey(careBookAiAssistantAvatarKey), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey<String>('care-book-ai-message-1')),
+      findsNothing,
+    );
+    expect(
+      tester
+          .widget<TextField>(find.byKey(careBookAiComposerKey))
+          .controller
+          ?.text,
+      question,
+    );
   });
 
   testWidgets('shows a mascot while thinking and beside the completed reply', (
