@@ -1,127 +1,166 @@
 # EverCare AI setup
 
-Provider: **Google Gemini Developer API**. Model: **`gemini-3.8-flash`**.
+EverCare adapts Inaagapay's conversational approach and GPT-OSS provider setup
+to older adults, caregivers, and families. The primary model is
+**`openai/gpt-oss-120b` on Groq**, with a smaller Groq model and optional NVIDIA
+backup. It no longer sends requests to Gemini.
 
-`Flutter → authenticated Supabase Edge Function → Gemini API`
+`Flutter → authenticated Supabase Edge Function → Groq (optional NVIDIA fallback)`
 
-`GEMINI_API_KEY` belongs only in Supabase Function secrets (or the ignored
-`supabase/functions/.env` for local server development). Never put it in Flutter,
-`--dart-define`, an APK asset, a committed file, or a client configuration.
+Provider keys belong only in Supabase Function secrets or the ignored
+`supabase/functions/.env` for local server development. Never put them in
+Flutter, `--dart-define`, an APK asset, a committed file, or client configuration.
+Inaagapay's patient records, saved conversations, and maternal-health prompts
+are not copied into EverCare.
 
-## Features and shared implementation
+## Provider routing
 
-- `health-bp-insight` computes the existing adult BP category, explanation, and
-  urgent next step on the server. Gemini selects IDs from reviewed tips.
-- `health-bp-chat` receives corrected systolic/diastolic/pulse values and the
-  current question. The backend adds the actual result status and category as
-  context. Gemini can answer normal BP, lifestyle, symptoms, and
-  medication-education questions; a single reading never establishes a diagnosis.
-- `care-book-ai` prioritizes the 12 local Care Book topics and labels chapter
-  sources only when used. General guidance is allowed without claiming it is
-  Care Book content. It has no access to the NIA PDF, profiles, journals, saved
-  health records, or medication records.
-- `_shared/ai.ts` is the only provider transport. It uses REST
-  `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent`,
-  an `x-goog-api-key` header, JSON Schema output, and medium thinking by default.
-  Output budgets allow room for thinking and the final answer.
-- All three functions verify the bearer token with Supabase Auth. The legacy
-  gateway JWT check is disabled in `config.toml` to support asymmetric signing
-  keys; the application-level user verification remains mandatory.
+The shared `requestAiStructuredJson` client in `_shared/ai.ts` tries:
+
+1. Groq: `openai/gpt-oss-120b`.
+2. Groq: `openai/gpt-oss-20b` if the primary target is unavailable.
+3. NVIDIA: `openai/gpt-oss-20b`, only when `NVIDIA_API_KEY` is configured and
+   the Groq targets have failed.
+
+Recoverable provider failures include rate limits, server errors, network
+failures, timeouts, context-limit errors, and unavailable models. Each target
+is attempted at most once per request. Groq attempts have a 15-second timeout;
+the final NVIDIA attempt can use the remaining time in the shared 45-second
+provider budget. There is no unbounded retry loop.
+
+Models are fixed in the server code; `GROQ_MODEL` is not an override. Requests
+use standard non-streaming chat completions, temperature `0.5`, top-p `0.95`,
+medium reasoning, and a default output budget of 2,048 tokens. Groq uses strict
+JSON Schema output; NVIDIA uses JSON-object output with the required schema in
+the instructions. The server validates every response before returning it.
+See [Groq structured outputs](https://console.groq.com/docs/structured-outputs)
+and [NVIDIA's GPT-OSS endpoint](https://docs.api.nvidia.com/nim/reference/openai-gpt-oss-20b).
+
+The source project's NVIDIA 120B model returned HTTP 410 (retired). The optional
+integration therefore targets the listed NVIDIA 20B endpoint instead. Its live
+requests repeatedly exceeded the 45-second budget, so **NVIDIA is not enabled in
+the current hosted deployment**. No NVIDIA key was copied into EverCare's files
+or hosted secrets. Stale source-model identifiers are not copied into the chain.
 
 ## Configure and deploy
 
-Create a Gemini Developer API key in [Google AI Studio](https://aistudio.google.com/apikey)
-using a project on the Free Tier, then set the hosted secret:
+Use EverCare's Groq key. Configure an NVIDIA key only if you want requests to
+fall back to that separate provider:
 
 ```powershell
-supabase secrets set GEMINI_API_KEY=YOUR_GEMINI_API_KEY
+supabase secrets set GROQ_API_KEY=YOUR_GROQ_API_KEY
+# Optional backup:
+supabase secrets set NVIDIA_API_KEY=YOUR_NVIDIA_API_KEY
 supabase functions deploy health-bp-insight
 supabase functions deploy health-bp-chat
 supabase functions deploy care-book-ai
 ```
 
-Deploy to the project configured in `lib/config/supabase_config.dart`. The model
-is fixed in the shared server client; there is no model/provider fallback.
-Old `GROQ_API_KEY` / `GROQ_MODEL` secrets are unused and may be removed after
-verifying deployment. Do not rename a Groq key into a Gemini key.
+Deploy to the project configured in `lib/config/supabase_config.dart`.
+`GEMINI_API_KEY` and legacy `GROQ_MODEL` secrets are unused by this integration.
+Never rename one provider's key into another provider's key.
 
-For local development, copy `.env.example` to `supabase/functions/.env` and replace
-the placeholder. Keep the real file ignored by Git. With Supabase running:
+For local development, copy `supabase/functions/.env.example` to
+`supabase/functions/.env`, replace the Groq placeholder, and optionally add the
+NVIDIA key. Keep the real file ignored by Git. With Supabase running:
 
 ```powershell
 supabase start
 supabase functions serve --env-file supabase/functions/.env
 ```
 
-The integration uses standard text generation. It enables no billing, paid
-tools, search grounding, Vertex AI, persistent provider conversations, or context
-caching. Google lists Gemini 3.8 Flash input/output as free on the Free Tier;
-quotas and model availability still depend on the key's project. Using a key
-from an already-paid project follows that project's billing settings: application
-code cannot force a paid project onto the Free Tier.
+This change does not enable billing or change any provider account's plan.
+Availability, quotas, credits, and charges follow the configured accounts; a
+fallback is not a promise of unlimited or permanently free access. Both Groq
+models may share account-level limits. Check the account dashboard and
+[Groq rate limits](https://console.groq.com/docs/rate-limits).
 
-## Conversation continuity and safety
+## Features, context, and authentication
 
-Both chats remain in memory on the device. They send at most **16 prior
+- `health-bp-insight` computes the existing adult BP category, explanation, and
+  urgent next step on the server. The model selects IDs from reviewed tips;
+  it does not calculate the category or invent replacement instructions.
+- `health-bp-chat` receives corrected systolic/diastolic/pulse values and the
+  current question. The backend adds the actual result status and category.
+  Ordinary BP, lifestyle, symptom, and medication-education questions reach
+  the conversational model; one reading never establishes a diagnosis.
+- `care-book-ai` prioritizes the 12 local Care Book topics and labels chapter
+  sources only when used. General guidance is allowed without claiming it is
+  Care Book content. It has no access to the NIA PDF, profiles, journals, saved
+  health records, or medication records.
+- All three functions verify the bearer token with Supabase Auth. The legacy
+  gateway JWT check is disabled in `config.toml` to support asymmetric signing
+  keys; application-level user verification remains mandatory.
+
+Both chats remain in memory on the device. Requests include at most **16 prior
 messages** (eight user/assistant exchanges), up to **16,000 characters** total.
 Each user message is limited to 600 characters and each assistant message to
-2,400. The Flutter client keeps complete recent exchanges rather than cutting
-sentences; the server independently validates roles, fields, and size limits.
-The current user question is sent once, after history.
+2,400. Flutter keeps complete recent exchanges instead of cutting sentences;
+the server independently validates roles, fields, and sizes. The current user
+question is sent once, after history.
 
-Trusted instructions and BP/Care Book context go in Gemini's `systemInstruction`.
-History retains separate `contents` entries, mapping `user → user` and
-`assistant → model`. Old chat messages cannot become system instructions.
-Generated thought text is not returned to Flutter or stored as conversation.
+Trusted instructions and BP/Care Book context are system messages. History
+retains separate `user` and `assistant` messages and cannot supply a system
+role. Only the final structured answer is returned: internal reasoning is not
+shown in Flutter or saved as conversation. Requests do not create persistent
+provider conversation objects.
 
-The previous repetition originated in backend `medical_redirect` routing and
-fixed fallback templates, including lifestyle questions; it was not just a
-model problem. Normal health questions now reach the conversational prompt,
-which answers the newest question and avoids repeating classifications,
-definitions, disclaimers, and generic referral closings. Medication education
-is allowed, but the assistant must not prescribe or change prescribed treatment.
-Service failures appear as retry notices and are not stored as assistant turns.
+## Conversational behavior and safety
 
-Existing BP classification thresholds and the one-time `-10 mmHg` BLE systolic
-calibration are unchanged. The backend retains deterministic severe-reading
-guidance and emergency handling. `Needs Attention` alone does not trigger an
-emergency response. Its new Emergency shortcut opens the existing Emergency
-page after confirmation; it does not place a phone call.
+The prompt borrows Inaagapay's warm, mobile-friendly style and naturally
+mirrors English, Tagalog, or Taglish, while retaining EverCare's health and
+caregiving scope. It answers the newest question first, uses prior turns, and
+usually gives two to four focused sentences. Follow-up questions are optional
+and useful, not a required closing on every answer.
 
-## Errors and operational privacy
+The previous backend's blanket medical redirects and fixed reply templates
+remain removed. The assistant should not repeat BP definitions, classifications,
+disclaimers, or generic referrals on every turn. Medication education is
+allowed, but it must not prescribe or change prescribed treatment. Failures
+appear as retry notices, not fabricated medical answers, and are excluded
+from conversation history.
 
-- HTTP 429 returns a friendly busy message and `Retry-After`; there are no
-  automatic paid-provider fallbacks or unbounded retries.
-  A Google `QuotaFailure` whose quota ID identifies `PerDay` returns
-  `code: AI_DAILY_QUOTA` instead of suggesting a momentary delay. Flutter shows
-  "EverCare AI has reached its daily free limit. Please try again after the daily reset."
-  A local tap cooldown returns `AI_COOLDOWN` and asks the user to wait a few
-  seconds. Only these fixed codes are interpreted; raw provider text is never
-  displayed. The live test runner stops on daily exhaustion without retrying.
-  All three features and live tests share the Google project's model quota;
-  an automatic BP insight also uses a request. Google documents daily quota
-  renewal at midnight Pacific time (3 PM in the Philippines during Pacific
-  daylight time, 4 PM during standard time). See [rate limits](https://ai.google.dev/gemini-api/docs/rate-limits).
-- Network failures, a 45-second request timeout, and upstream non-success
-  responses return a clean service error, never a medical refusal.
-  HTTP 502/503/504 gets at most one short retry within that same deadline.
-- Missing candidates, blocked output, incomplete generations, malformed JSON,
-  and invalid schema output are rejected with a retry message.
-- Logs contain generic failure categories and HTTP status, never provider
-  response bodies, keys, full conversations, or identifying information.
-- Flutter receives no provider URL, stack trace, or secret in error messages.
+Live answer review also tightened uncertainty about caffeine: temporal
+association is not an established cause, and food or water must not be presented
+as a way to neutralize its BP effects. Routine measurement guidance is grounded
+in [AHA home monitoring guidance](https://www.heart.org/en/health-topics/high-blood-pressure/understanding-blood-pressure-readings/monitoring-your-blood-pressure-at-home)
+and [Mayo Clinic's caffeine explanation](https://www.mayoclinic.org/diseases-conditions/high-blood-pressure/expert-answers/blood-pressure/faq-20058543).
+Potassium advice must respect kidney and medication restrictions; see
+[AHA potassium guidance](https://www.heart.org/en/health-topics/high-blood-pressure/changes-you-can-make-to-manage-high-blood-pressure/how-potassium-can-help-control-high-blood-pressure).
+These are prompt safeguards, not a guarantee that every generated answer is
+clinically correct.
 
-Google's Free Tier data handling differs from its paid service. Review the
-[Gemini terms](https://ai.google.dev/gemini-api/terms) before any real-patient
-rollout: unpaid services must not receive sensitive, confidential, or personal
-information, and content may be reviewed and used to improve Google's products.
-The terms also restrict clinical practice and medical-advice uses. This
-integration is for general education and synthetic demonstrations; connecting
-the API does not establish suitability for handling real patient information.
-The app sends only the question, bounded history, and the explicitly described
-context. Identifying information typed into a chat is still part of that text.
-Use synthetic data for testing. The existing per-instance cooldown is not a
-distributed production rate limiter.
+Existing BP thresholds and the one-time `-10 mmHg` BLE systolic calibration are
+unchanged. Deterministic severe-reading guidance and emergency handling remain
+in place. `Needs Attention` alone is not an emergency. Its Emergency shortcut
+opens the existing Emergency page after confirmation; it does not place a
+phone call.
+
+## Errors and privacy
+
+- Rate-limit errors reach Flutter only after applicable fallback targets fail.
+  Daily exhaustion returns `AI_DAILY_QUOTA` when the relevant failures identify
+  daily request/token limits, rather than promising recovery in a few seconds.
+  Other rate limits use a friendly busy message and available retry timing.
+- The local tap cooldown remains separate (`AI_COOLDOWN`). It is a per-instance
+  safeguard, not a distributed production rate limiter.
+- Exhausted timeout/network/server fallbacks return a clean service error.
+  Incomplete generations, refusals, malformed JSON, and invalid response shapes
+  are rejected rather than displayed as answers.
+- Logs contain generic failure categories and status, not provider response
+  bodies, keys, full conversations, or identifying information. Flutter never
+  receives provider URLs, stack traces, or secrets in error messages.
+- Enabling the NVIDIA backup means the same bounded request context may be
+  sent to NVIDIA after Groq fails. A shared NVIDIA key also shares that account's
+  quota/credits; use a dedicated EverCare key for independent operations when
+  available. No database content is copied from Inaagapay.
+
+The application sends only the question, bounded history, and the explicitly
+described feature context. Identifying information typed into a chat is still
+part of that text. Review both providers' account terms and data-handling
+settings before handling real patient information; a working integration does
+not establish clinical suitability or privacy compliance. Use synthetic data
+for testing.
 
 ## Verification
 
@@ -133,44 +172,55 @@ flutter test
 flutter build apk --debug
 ```
 
-Backend tests mock the provider to verify payloads, routing, safety, authentication,
-and error handling; these alone do not prove live model answer quality. Live
-verification should use a test account and synthetic 123/96, pulse 77 data:
-ask about worry, immediate advice, then long-term improvement, and also run the
-coffee / two cups / waiting-time follow-ups. Confirm distinct relevant answers
-and verify both automatic insights and Care Book responses.
+Mocked backend tests verify transport payloads, fallback handling, routing,
+safety, authentication, and response validation; they do not prove live answer
+quality. Live verification should use synthetic 123/96, pulse 77 data: ask about
+worry, immediate advice, long-term improvement, and the coffee / two cups /
+waiting-time follow-ups. Confirm distinct, relevant answers and verify both
+automatic insights and Care Book replies. Include English and Tagalog/Taglish
+checks for language matching.
 
 `supabase/tests/ai_live_smoke.ts` is an explicit live regression runner. Set
 `SUPABASE_URL`, `SUPABASE_TEST_ADMIN_KEY`, and `SUPABASE_TEST_PUBLIC_KEY` only in
-your server shell, then run `npx --yes deno run --allow-env --allow-net
-supabase/tests/ai_live_smoke.ts`. It creates a temporary synthetic test account,
-uses fabricated readings, verifies all three hosted functions and follow-ups,
-and deletes that account in cleanup. It never uses an existing person's data.
-Do not put the test administrator key into Flutter or a committed file.
+your server shell, then run:
 
-### Verification recorded on 2026-09-21
+```powershell
+npx --yes deno run --allow-env --allow-net supabase/tests/ai_live_smoke.ts
+```
 
-- Configured the Gemini secret and deployed all three functions to the existing
-  linked EverCare Supabase project.
-- All 188 Flutter tests, Flutter analysis, and the Android debug APK build passed.
-- All 19 backend tests passed, including the exact six-message conversation
-  regression with a mocked provider, actual Gemini role mapping, emergency
-  handling, authentication, and clean provider-error responses.
-- Live authenticated Supabase calls produced automatic insights and distinct
-  BP replies to the worry and immediate-advice questions. All three hosted
-  functions rejected unauthenticated calls with HTTP 401.
-- Full live acceptance is **not yet complete**: Gemini returned intermittent
-  HTTP 503 high-demand errors, then HTTP 429 with
-  `GenerateRequestsPerDayPerProjectPerModel-FreeTier`, limit **20** for the
-  configured project. This is the observed project quota, not a promise about
-  all accounts. No billing or alternate provider was enabled.
-- Remaining live checks after quota renewal: the long-term lifestyle answer,
-  the coffee follow-up sequence, and Care Book responses. The live test runner
-  is available above. Avoid repeatedly rerunning it while the daily quota is
-  exhausted; even failed attempts may consume quota.
-- Temporary synthetic test users and their generated profiles were removed.
+It creates a temporary synthetic account, checks all three hosted functions and
+follow-ups, then deletes that account in cleanup. It never uses an existing
+person's data. Do not put its administrator key in Flutter or a committed file.
+The runner stops on daily exhaustion; avoid repeated live runs against an
+exhausted account.
 
-References: [Gemini REST](https://ai.google.dev/api/generate-content),
-[Gemini structured output](https://ai.google.dev/gemini-api/docs/structured-output),
-[Gemini pricing](https://ai.google.dev/gemini-api/docs/pricing),
-[Supabase secrets](https://supabase.com/docs/guides/functions/secrets).
+### Migration verification — 2026-09-22
+
+The former Gemini deployment encountered intermittent high-demand errors and an
+observed daily free-project quota of 20 requests. This motivates moving to the
+requested Inaagapay-style provider setup; it is not a statement about every
+Gemini account.
+
+- Deployed all three functions to the existing EverCare Supabase project,
+  using EverCare's existing Groq key. Gemini is no longer called. No account
+  billing settings were changed.
+- Direct live checks returned valid structured answers from Groq 120B and from
+  Groq 20B after a simulated primary-model HTTP 429.
+- All 30 backend tests passed, including bounded fallbacks, malformed output,
+  deadlines, history, authentication, and emergency handling. Deno type checks,
+  formatting, and lint passed.
+- All 192 Flutter tests and Flutter analysis passed. Flutter behavior and wire
+  contracts are unchanged, so this server-side update does not require a new APK.
+- Hosted synthetic checks passed automatic BP insights, all six BP conversation
+  turns, Care Book follow-ups, Tagalog responses, emergency handling, and HTTP
+  401 for unauthenticated access to all three functions.
+  The final run encountered one short HTTP 429 and succeeded after a five-second
+  retry; provider rate limits still apply even with the model fallback.
+- Live answer review prompted additional brevity and caffeine-uncertainty
+  instructions. These sampled checks are not a clinical validation or a
+  guarantee of future model accuracy or availability.
+- NVIDIA 120B returned a retirement error; NVIDIA 20B requests timed out.
+  Optional NVIDIA transport has mocked coverage but failed live availability
+  checks and remains disabled. The working hosted fallback is Groq 20B.
+- Temporary synthetic test accounts and their generated profiles were removed.
+  Inaagapay's source project and patient data were not modified or imported.

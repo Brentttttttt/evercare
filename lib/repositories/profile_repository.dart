@@ -7,6 +7,48 @@ class ProfileRepository {
 
   final SupabaseClient _client;
 
+  /// The auth trigger normally creates this row. If it is absent, bootstrap
+  /// only known account metadata. ON CONFLICT DO NOTHING makes a concurrent
+  /// trigger/device insert safe and never overwrites an existing profile.
+  Future<UserProfile> ensureCurrentProfile() async {
+    final user = _client.auth.currentUser;
+    if (user == null) throw const AuthException('Please sign in first.');
+    final existing = await _client
+        .from('profiles')
+        .select()
+        .eq('id', user.id)
+        .maybeSingle();
+    if (_client.auth.currentUser?.id != user.id) {
+      throw const AuthException('Your session changed.');
+    }
+    if (existing != null) return UserProfile.fromMap(existing, user);
+    final metadataProfile = UserProfile.fromAccount(user);
+    final knownRole =
+        const {
+          'senior',
+          'caregiver',
+          'family_member',
+        }.contains(metadataProfile.userType)
+        ? metadataProfile.userType
+        : '';
+    await _client
+        .from('profiles')
+        .upsert(
+          metadataProfile.copyWith(userType: knownRole).toDatabaseJson(),
+          onConflict: 'id',
+          ignoreDuplicates: true,
+        );
+    final created = await _client
+        .from('profiles')
+        .select()
+        .eq('id', user.id)
+        .single();
+    if (_client.auth.currentUser?.id != user.id) {
+      throw const AuthException('Your session changed.');
+    }
+    return UserProfile.fromMap(created, user);
+  }
+
   Future<UserProfile> fetchCurrentProfile() async {
     final user = _client.auth.currentUser;
     if (user == null) {

@@ -2,6 +2,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/medication.dart';
 import '../models/medication_dose.dart';
+import '../models/scheduled_reminder.dart';
+import '../services/reminder_changes.dart';
 
 class MedicationOverview {
   const MedicationOverview({
@@ -181,6 +183,7 @@ class MedicationRepository {
       'end_date': _dateOnly(endDate),
       'is_active': isActive,
     });
+    await ReminderChanges.changed(userId, ReminderKind.medication);
   }
 
   Future<void> update(
@@ -218,6 +221,7 @@ class MedicationRepository {
     if (updated.isEmpty) {
       throw StateError('The medication is no longer available.');
     }
+    await ReminderChanges.changed(userId, ReminderKind.medication, id);
   }
 
   Future<void> markTaken(MedicationDoseOccurrence occurrence) async {
@@ -234,6 +238,11 @@ class MedicationRepository {
         'p_scheduled_for': occurrence.scheduledFor.toUtc().toIso8601String(),
       },
     );
+    await ReminderChanges.changed(
+      userId,
+      ReminderKind.medication,
+      occurrence.medication.id,
+    );
   }
 
   Future<void> markMissed(MedicationDoseOccurrence occurrence) async {
@@ -249,10 +258,9 @@ class MedicationRepository {
   }
 
   Future<void> markCompleted(String id) async {
-    if (_client.auth.currentUser?.id == null) {
-      throw StateError('Sign in to access medications.');
-    }
+    final userId = _userId;
     await _client.rpc('complete_medication', params: {'p_medication_id': id});
+    await ReminderChanges.changed(userId, ReminderKind.medication, id);
   }
 
   Future<void> delete(String id) async {
@@ -266,6 +274,7 @@ class MedicationRepository {
     if (deleted.isEmpty) {
       throw StateError('The medication is no longer available.');
     }
+    await ReminderChanges.changed(userId, ReminderKind.medication, id);
   }
 }
 

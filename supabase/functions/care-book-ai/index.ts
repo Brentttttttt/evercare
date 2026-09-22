@@ -8,7 +8,7 @@ import {
   optionsResponse,
   PublicFunctionError,
   readJsonBody,
-  requestGeminiStructuredJson,
+  requestAiStructuredJson,
   requiredInteger,
   requiredText,
   requireUserId,
@@ -67,7 +67,7 @@ export async function handleRequest(req: Request): Promise<Response> {
     }
 
     enforceCooldown(userId, "care-book-ai", 2500);
-    const completion = await requestGeminiStructuredJson({
+    const completion = await requestAiStructuredJson({
       schema: answerSchema,
       messages: [
         {

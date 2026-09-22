@@ -8,9 +8,13 @@ import '../../theme/app_text_styles.dart';
 import '../../widgets/evercare_backend_scope.dart';
 import '../../widgets/primary_button.dart';
 import 'auth_widgets.dart';
+import 'google_auth_flow.dart';
+import 'google_sign_in_section.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  const LoginScreen({super.key, this.onGoogleSignIn});
+
+  final GoogleSignInAction? onGoogleSignIn;
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -22,7 +26,11 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isSubmitting = false;
+  bool _isGoogleSubmitting = false;
   String? _errorMessage;
+  String? _googleErrorMessage;
+
+  bool get _isBusy => _isSubmitting || _isGoogleSubmitting;
 
   @override
   void dispose() {
@@ -32,6 +40,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _logIn() async {
+    if (_isBusy) return;
     FocusManager.instance.primaryFocus?.unfocus();
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
@@ -47,17 +56,35 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() {
       _isSubmitting = true;
       _errorMessage = null;
+      _googleErrorMessage = null;
     });
     try {
-      await AuthService(client).signIn(
+      final auth = AuthService(client);
+      await auth.signIn(
         email: _emailController.text,
         password: _passwordController.text,
       );
       if (!mounted) return;
-      Navigator.pushNamedAndRemoveUntil(
+      bool needsProfileSetup;
+      try {
+        // Linked Google accounts need the same setup even when their owner
+        // chooses a password. Ordinary email accounts do not query a profile.
+        needsProfileSetup = await auth.needsGoogleProfileSetup();
+      } catch (_) {
+        if (mounted) {
+          setState(() {
+            _errorMessage =
+                'Your EverCare profile could not be loaded. Check your connection and try again.';
+          });
+        }
+        return;
+      }
+      if (!mounted) return;
+      finishGoogleSignIn(
         context,
-        AppRoutes.home,
-        (route) => false,
+        needsProfileSetup
+            ? GoogleAuthResult.needsProfileSetup
+            : GoogleAuthResult.ready,
       );
     } on AuthException catch (error) {
       if (mounted) setState(() => _errorMessage = error.message);
@@ -70,6 +97,29 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  Future<void> _continueWithGoogle() async {
+    if (_isBusy) return;
+    FocusManager.instance.primaryFocus?.unfocus();
+    setState(() {
+      _isGoogleSubmitting = true;
+      _googleErrorMessage = null;
+      _errorMessage = null;
+    });
+    try {
+      final result = await startGoogleSignIn(
+        context,
+        signIn: widget.onGoogleSignIn,
+      );
+      if (mounted && result != null) finishGoogleSignIn(context, result);
+    } catch (error) {
+      if (mounted) {
+        setState(() => _googleErrorMessage = googleSignInErrorMessage(error));
+      }
+    } finally {
+      if (mounted) setState(() => _isGoogleSubmitting = false);
     }
   }
 
@@ -90,7 +140,7 @@ class _LoginScreenState extends State<LoginScreen> {
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
             autofillHints: const [AutofillHints.email],
-            enabled: !_isSubmitting,
+            enabled: !_isBusy,
           ),
           AppTextField(
             label: 'Password',
@@ -101,12 +151,13 @@ class _LoginScreenState extends State<LoginScreen> {
             obscureText: _obscurePassword,
             textInputAction: TextInputAction.done,
             autofillHints: const [AutofillHints.password],
-            enabled: !_isSubmitting,
+            enabled: !_isBusy,
             onFieldSubmitted: (_) => _logIn(),
             suffix: IconButton(
               tooltip: _obscurePassword ? 'Show password' : 'Hide password',
-              onPressed: () =>
-                  setState(() => _obscurePassword = !_obscurePassword),
+              onPressed: _isBusy
+                  ? null
+                  : () => setState(() => _obscurePassword = !_obscurePassword),
               icon: Icon(
                 _obscurePassword
                     ? Icons.visibility_off_outlined
@@ -117,7 +168,7 @@ class _LoginScreenState extends State<LoginScreen> {
           Align(
             alignment: Alignment.centerRight,
             child: TextButton(
-              onPressed: _isSubmitting
+              onPressed: _isBusy
                   ? null
                   : () =>
                         Navigator.pushNamed(context, AppRoutes.forgotPassword),
@@ -134,7 +185,13 @@ class _LoginScreenState extends State<LoginScreen> {
             loadingLabel: 'Logging In…',
             isLoading: _isSubmitting,
             icon: Icons.login_rounded,
-            onPressed: _logIn,
+            onPressed: _isBusy ? null : _logIn,
+          ),
+          const SizedBox(height: 20),
+          GoogleSignInSection(
+            onPressed: _isBusy ? null : _continueWithGoogle,
+            isLoading: _isGoogleSubmitting,
+            errorMessage: _googleErrorMessage,
           ),
           const SizedBox(height: 20),
           Row(
@@ -155,7 +212,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           const SizedBox(height: 18),
           OutlinedButton(
-            onPressed: _isSubmitting
+            onPressed: _isBusy
                 ? null
                 : () => Navigator.pushNamed(context, AppRoutes.registration),
             child: const Text('Create an Account'),

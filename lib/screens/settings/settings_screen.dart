@@ -44,7 +44,7 @@ class SettingsScreen extends StatelessWidget {
                   icon: Icons.notifications_outlined,
                   color: AppColors.purple,
                   title: 'Notifications',
-                  subtitle: 'View your account notifications',
+                  subtitle: 'Phone reminder permissions and account updates',
                   onTap: () =>
                       Navigator.pushNamed(context, AppRoutes.notifications),
                 ),

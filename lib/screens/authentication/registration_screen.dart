@@ -8,9 +8,13 @@ import '../../theme/app_text_styles.dart';
 import '../../widgets/evercare_backend_scope.dart';
 import '../../widgets/primary_button.dart';
 import 'auth_widgets.dart';
+import 'google_auth_flow.dart';
+import 'google_sign_in_section.dart';
 
 class RegistrationScreen extends StatefulWidget {
-  const RegistrationScreen({super.key});
+  const RegistrationScreen({super.key, this.onGoogleSignIn});
+
+  final GoogleSignInAction? onGoogleSignIn;
 
   @override
   State<RegistrationScreen> createState() => _RegistrationScreenState();
@@ -30,7 +34,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmation = true;
   bool _isSubmitting = false;
+  bool _isGoogleSubmitting = false;
   String? _errorMessage;
+  String? _googleErrorMessage;
+
+  bool get _isBusy => _isSubmitting || _isGoogleSubmitting;
 
   @override
   void dispose() {
@@ -61,6 +69,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   }
 
   Future<void> _register() async {
+    if (_isBusy) return;
     FocusManager.instance.primaryFocus?.unfocus();
     if (!(_formKey.currentState?.validate() ?? false)) return;
     final client = EverCareBackendScope.maybeClient(context);
@@ -75,6 +84,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     setState(() {
       _isSubmitting = true;
       _errorMessage = null;
+      _googleErrorMessage = null;
     });
     try {
       final response = await AuthService(client).register(
@@ -137,6 +147,29 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     }
   }
 
+  Future<void> _continueWithGoogle() async {
+    if (_isBusy) return;
+    FocusManager.instance.primaryFocus?.unfocus();
+    setState(() {
+      _isGoogleSubmitting = true;
+      _googleErrorMessage = null;
+      _errorMessage = null;
+    });
+    try {
+      final result = await startGoogleSignIn(
+        context,
+        signIn: widget.onGoogleSignIn,
+      );
+      if (mounted && result != null) finishGoogleSignIn(context, result);
+    } catch (error) {
+      if (mounted) {
+        setState(() => _googleErrorMessage = googleSignInErrorMessage(error));
+      }
+    } finally {
+      if (mounted) setState(() => _isGoogleSubmitting = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     const userTypes = <String, String>{
@@ -164,7 +197,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             validator: (value) => validateRequiredText(value, 'Full name'),
             textInputAction: TextInputAction.next,
             autofillHints: const [AutofillHints.name],
-            enabled: !_isSubmitting,
+            enabled: !_isBusy,
           ),
           AppTextField(
             label: 'Email address',
@@ -174,7 +207,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
             autofillHints: const [AutofillHints.email],
-            enabled: !_isSubmitting,
+            enabled: !_isBusy,
           ),
           AppTextField(
             label: 'Phone number',
@@ -183,7 +216,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             keyboardType: TextInputType.phone,
             textInputAction: TextInputAction.next,
             autofillHints: const [AutofillHints.telephoneNumber],
-            enabled: !_isSubmitting,
+            enabled: !_isBusy,
           ),
           AppTextField(
             label: 'Date of birth',
@@ -191,11 +224,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             hint: 'Select your date of birth',
             controller: _birthDateController,
             readOnly: true,
-            onTap: _isSubmitting ? null : _pickBirthDate,
+            onTap: _isBusy ? null : _pickBirthDate,
             validator: (_) =>
                 _birthDate == null ? 'Select your date of birth.' : null,
             suffix: const Icon(Icons.calendar_month_outlined),
-            enabled: !_isSubmitting,
+            enabled: !_isBusy,
           ),
           const Text('I am a', style: AppTextStyles.cardTitle),
           const SizedBox(height: 10),
@@ -208,7 +241,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     label: Text(entry.value),
                     selected: _userType == entry.key,
                     selectedColor: AppColors.lightGreen,
-                    onSelected: _isSubmitting
+                    onSelected: _isBusy
                         ? null
                         : (_) => setState(() => _userType = entry.key),
                   ),
@@ -231,7 +264,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             obscureText: _obscurePassword,
             textInputAction: TextInputAction.next,
             autofillHints: const [AutofillHints.newPassword],
-            enabled: !_isSubmitting,
+            enabled: !_isBusy,
             validator: (value) {
               final requiredMessage = validateRequiredText(value, 'Password');
               if (requiredMessage != null) return requiredMessage;
@@ -242,8 +275,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             },
             suffix: IconButton(
               tooltip: _obscurePassword ? 'Show password' : 'Hide password',
-              onPressed: () =>
-                  setState(() => _obscurePassword = !_obscurePassword),
+              onPressed: _isBusy
+                  ? null
+                  : () => setState(() => _obscurePassword = !_obscurePassword),
               icon: Icon(
                 _obscurePassword
                     ? Icons.visibility_off_outlined
@@ -258,7 +292,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             obscureText: _obscureConfirmation,
             textInputAction: TextInputAction.done,
             autofillHints: const [AutofillHints.newPassword],
-            enabled: !_isSubmitting,
+            enabled: !_isBusy,
             onFieldSubmitted: (_) => _register(),
             validator: (value) {
               if (value != _passwordController.text) {
@@ -270,8 +304,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               tooltip: _obscureConfirmation
                   ? 'Show confirmation'
                   : 'Hide confirmation',
-              onPressed: () =>
-                  setState(() => _obscureConfirmation = !_obscureConfirmation),
+              onPressed: _isBusy
+                  ? null
+                  : () => setState(
+                      () => _obscureConfirmation = !_obscureConfirmation,
+                    ),
               icon: Icon(
                 _obscureConfirmation
                     ? Icons.visibility_off_outlined
@@ -289,12 +326,18 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             loadingLabel: 'Creating Account…',
             isLoading: _isSubmitting,
             icon: Icons.arrow_forward_rounded,
-            onPressed: _register,
+            onPressed: _isBusy ? null : _register,
+          ),
+          const SizedBox(height: 20),
+          GoogleSignInSection(
+            onPressed: _isBusy ? null : _continueWithGoogle,
+            isLoading: _isGoogleSubmitting,
+            errorMessage: _googleErrorMessage,
           ),
           const SizedBox(height: 12),
           Center(
             child: TextButton(
-              onPressed: _isSubmitting ? null : () => Navigator.pop(context),
+              onPressed: _isBusy ? null : () => Navigator.pop(context),
               child: const Text('Already have an account? Log In'),
             ),
           ),

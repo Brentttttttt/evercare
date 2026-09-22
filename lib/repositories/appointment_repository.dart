@@ -1,6 +1,8 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/appointment.dart';
+import '../models/scheduled_reminder.dart';
+import '../services/reminder_changes.dart';
 
 class AppointmentRepository {
   const AppointmentRepository(this._client);
@@ -41,8 +43,9 @@ class AppointmentRepository {
     required String address,
     required String notes,
   }) async {
+    final userId = _userId;
     await _client.from('appointments').insert({
-      'user_id': _userId,
+      'user_id': userId,
       'title': title.trim(),
       'doctor_name': doctorName.trim(),
       'specialty': specialty.trim(),
@@ -52,6 +55,7 @@ class AppointmentRepository {
       'notes': notes.trim(),
       'status': AppointmentStatus.upcoming.name,
     });
+    await ReminderChanges.changed(userId, ReminderKind.appointment);
   }
 
   Future<void> update(
@@ -68,6 +72,7 @@ class AppointmentRepository {
     if (status != AppointmentStatus.upcoming) {
       throw StateError('Only an upcoming appointment can be edited.');
     }
+    final userId = _userId;
     // `status` remains in this public method for compatibility with the
     // existing form callers, but ordinary detail edits must never overwrite a
     // newer server outcome such as Completed or Missed.
@@ -83,7 +88,7 @@ class AppointmentRepository {
           'notes': notes.trim(),
         })
         .eq('id', id)
-        .eq('user_id', _userId)
+        .eq('user_id', userId)
         .eq('status', AppointmentStatus.upcoming.name)
         .select('id');
     if (updated.isEmpty) {
@@ -91,6 +96,7 @@ class AppointmentRepository {
         'This appointment changed. Refresh it before editing again.',
       );
     }
+    await ReminderChanges.changed(userId, ReminderKind.appointment, id);
   }
 
   Future<void> setStatus(String id, AppointmentStatus status) async {
@@ -99,7 +105,9 @@ class AppointmentRepository {
       return;
     }
     if (status == AppointmentStatus.cancelled) {
+      final userId = _userId;
       await _client.rpc('cancel_appointment', params: {'p_appointment_id': id});
+      await ReminderChanges.changed(userId, ReminderKind.appointment, id);
       return;
     }
     throw ArgumentError.value(
@@ -110,17 +118,18 @@ class AppointmentRepository {
   }
 
   Future<void> markCompleted(String id) async {
-    if (_client.auth.currentUser?.id == null) {
-      throw StateError('Sign in to access appointments.');
-    }
+    final userId = _userId;
     await _client.rpc('complete_appointment', params: {'p_appointment_id': id});
+    await ReminderChanges.changed(userId, ReminderKind.appointment, id);
   }
 
   Future<void> delete(String id) async {
+    final userId = _userId;
     await _client
         .from('appointments')
         .delete()
         .eq('id', id)
-        .eq('user_id', _userId);
+        .eq('user_id', userId);
+    await ReminderChanges.changed(userId, ReminderKind.appointment, id);
   }
 }

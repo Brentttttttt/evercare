@@ -49,6 +49,7 @@ app.*.map.json
 /.claude/
 /.vscode/
 /tmp/
+/config/google_auth.json
 
 # Edge Function secrets must remain server-side.
 /supabase/functions/.env

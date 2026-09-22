@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../routes/app_route_observer.dart';
 import '../../routes/app_routes.dart';
+import '../../services/phone_reminder_controller.dart';
 import '../../theme/app_motion.dart';
 import '../../widgets/app_bottom_navigation.dart';
 import '../../widgets/app_header.dart';
+import '../../widgets/phone_reminder_scope.dart';
 import '../appointments/appointments_screen.dart';
 import '../care_book/care_book_screen.dart';
 import '../emergency/emergency_screen.dart';
@@ -37,6 +39,8 @@ class _MainShellState extends State<MainShell>
     value: 1,
   );
   int _transitionDirection = 1;
+  bool _reminderPromptScheduled = false;
+  bool _reminderPromptChecked = false;
 
   void _selectTab(int index) {
     if (index == _selectedIndex) {
@@ -65,16 +69,95 @@ class _MainShellState extends State<MainShell>
   void didChangeDependencies() {
     super.didChangeDependencies();
     final route = ModalRoute.of(context);
-    if (route is! PageRoute<dynamic> || identical(route, _pageRoute)) return;
-    if (_pageRoute != null) everCareRouteObserver.unsubscribe(this);
-    _pageRoute = route;
-    everCareRouteObserver.subscribe(this, route);
+    if (route is PageRoute<dynamic> && !identical(route, _pageRoute)) {
+      if (_pageRoute != null) everCareRouteObserver.unsubscribe(this);
+      _pageRoute = route;
+      everCareRouteObserver.subscribe(this, route);
+    }
+    _scheduleReminderPrompt();
+  }
+
+  void _scheduleReminderPrompt() {
+    final controller = PhoneReminderScope.maybeOf(context);
+    if (_reminderPromptScheduled ||
+        _reminderPromptChecked ||
+        controller == null ||
+        !controller.supported ||
+        !controller.initialized ||
+        !controller.signedIn ||
+        controller.busy ||
+        ModalRoute.of(context)?.isCurrent != true) {
+      return;
+    }
+    _reminderPromptScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        await _offerReminderPrompt(controller);
+      } finally {
+        _reminderPromptScheduled = false;
+      }
+    });
+  }
+
+  Future<void> _offerReminderPrompt(PhoneReminderController controller) async {
+    if (!mounted ||
+        !controller.signedIn ||
+        ModalRoute.of(context)?.isCurrent != true) {
+      return;
+    }
+    try {
+      final shouldOffer = await controller.shouldOfferPermissionPrompt();
+      _reminderPromptChecked = true;
+      if (!mounted ||
+          !controller.signedIn ||
+          !shouldOffer ||
+          ModalRoute.of(context)?.isCurrent != true) {
+        return;
+      }
+      final enable = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          scrollable: true,
+          title: const Text('Get reminders on this phone?'),
+          content: const Text(
+            'EverCare can remind you about medicine and appointments while '
+            'the app is in the background. Alerts use generic wording to keep '
+            'health details private.\n\n'
+            'Enable reminders to allow phone notifications. You can change '
+            'permissions or turn reminders off in Notifications.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Not now'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Enable'),
+            ),
+          ],
+        ),
+      );
+      if (enable == true && mounted && controller.signedIn) {
+        await controller.enable();
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Phone reminders can be set up in Notifications.'),
+        ),
+      );
+    }
   }
 
   @override
   void didPopNext() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _resetPageScroll(_selectedIndex);
+      if (mounted) {
+        _resetPageScroll(_selectedIndex);
+        _scheduleReminderPrompt();
+      }
     });
   }
 

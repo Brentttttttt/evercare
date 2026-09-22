@@ -5,7 +5,7 @@ import {
   optionsResponse,
   PublicFunctionError,
   readJsonBody,
-  requestGeminiStructuredJson,
+  requestAiStructuredJson,
   requiredInteger,
   requireUserId,
 } from "../_shared/ai.ts";
@@ -61,10 +61,10 @@ export async function handleRequest(req: Request): Promise<Response> {
     enforceCooldown(userId, "health-bp-insight", 10000);
     const assessment = assessBloodPressure(systolic, diastolic);
 
-    const completion = await requestGeminiStructuredJson({
+    const completion = await requestAiStructuredJson({
       schema: insightSchema,
       maxOutputTokens: 2048,
-      thinkingLevel: "medium",
+      reasoningEffort: "medium",
       messages: [
         {
           role: "system",

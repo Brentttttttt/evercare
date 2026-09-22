@@ -8,29 +8,34 @@ import {
 } from "./health_conversation.ts";
 
 type Turn = { role: "user" | "assistant"; content: string };
-type GeminiBody = {
-  systemInstruction: { parts: { text: string }[] };
-  contents: { role: string; parts: { text: string }[] }[];
+type ProviderBody = {
+  model: string;
+  messages: { role: string; content: string }[];
 };
 
 let syntheticUser = 0;
 
-/** These tests verify our real handlers and Gemini transport with synthetic
+/** These tests verify our real handlers and Groq transport with synthetic
  * completions. They do not claim that a live model's answer quality is tested. */
 async function withProvider(
-  complete: (body: GeminiBody) => Record<string, unknown> | Response,
+  complete: (body: ProviderBody) => Record<string, unknown> | Response,
   run: () => Promise<void>,
 ) {
   const originalFetch = globalThis.fetch;
-  const env = {
-    GEMINI_API_KEY: "synthetic-key",
+  const env: Record<string, string | undefined> = {
+    GROQ_API_KEY: "synthetic-key",
+    NVIDIA_API_KEY: undefined,
+    GEMINI_API_KEY: undefined,
     SUPABASE_URL: "https://synthetic.supabase.invalid",
     SUPABASE_PUBLISHABLE_KEY: "synthetic-publishable-key",
   };
   const originalEnv = Object.fromEntries(
     Object.keys(env).map((name) => [name, Deno.env.get(name)]),
   );
-  for (const [name, value] of Object.entries(env)) Deno.env.set(name, value);
+  for (const [name, value] of Object.entries(env)) {
+    if (value === undefined) Deno.env.delete(name);
+    else Deno.env.set(name, value);
+  }
   globalThis.fetch = (url, init) => {
     if (url === `${env.SUPABASE_URL}/auth/v1/user`) {
       // Distinct synthetic identities avoid wall-clock sleeps for per-user
@@ -41,14 +46,18 @@ async function withProvider(
     }
     equal(
       url,
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent",
+      "https://api.groq.com/openai/v1/chat/completions",
+    );
+    equal(
+      new Headers(init?.headers).get("Authorization"),
+      "Bearer synthetic-key",
     );
     const result = complete(JSON.parse(init!.body as string));
     return Promise.resolve(
       result instanceof Response ? result : Response.json({
-        candidates: [{
-          finishReason: "STOP",
-          content: { parts: [{ text: JSON.stringify(result) }] },
+        choices: [{
+          finish_reason: "stop",
+          message: { role: "assistant", content: JSON.stringify(result) },
         }],
       }),
     );
@@ -102,15 +111,13 @@ Deno.test("mocked BP pipeline preserves six distinct exact regression answers an
   const history: Turn[] = [];
   let turn = 0;
   await withProvider((body) => {
-    const expected = [...history, { role: "user", content: messages[turn] }]
-      .map((item) => ({
-        role: item.role === "assistant" ? "model" : "user",
-        parts: [{ text: item.content }],
-      }));
-    deepStrictEqual(body.contents, expected);
-    const system = body.systemInstruction.parts.map((part) => part.text).join(
-      "\n",
+    const expected = [...history, { role: "user", content: messages[turn] }];
+    deepStrictEqual(
+      body.messages.filter((item) => item.role !== "system"),
+      expected,
     );
+    const system = body.messages.filter((item) => item.role === "system")
+      .map((item) => item.content).join("\n");
     ok(system.includes('"systolic":123'));
     ok(system.includes('"diastolic":96'));
     ok(system.includes('"pulse":77'));
@@ -147,7 +154,7 @@ Deno.test("mocked BP pipeline preserves six distinct exact regression answers an
   });
 });
 
-Deno.test("normal medical, lifestyle, symptom education and medication questions reach Gemini in both chats", async () => {
+Deno.test("normal medical, lifestyle, symptom education and medication questions reach Groq in both chats", async () => {
   const messages = [
     "How can I improve my blood pressure?",
     "Can lack of sleep cause this?",
@@ -165,9 +172,8 @@ Deno.test("normal medical, lifestyle, symptom education and medication questions
   let calls = 0;
   await withProvider((body) => {
     calls++;
-    const system = body.systemInstruction.parts.map((part) => part.text).join(
-      "\n",
-    );
+    const system = body.messages.filter((item) => item.role === "system")
+      .map((item) => item.content).join("\n");
     ok(
       system.includes(
         "Never independently tell the user to start or stop a prescription",
@@ -200,14 +206,15 @@ Deno.test("Care Book forwards the selected chapter and actual assistant/user tur
     content: "It is commonly used for high blood pressure.",
   }];
   await withProvider((body) => {
-    deepStrictEqual(body.contents.map((turn) => turn.role), [
+    const conversation = body.messages.filter((item) => item.role !== "system");
+    deepStrictEqual(conversation.map((turn) => turn.role), [
       "user",
-      "model",
+      "assistant",
       "user",
     ]);
-    equal(body.contents[0].parts[0].text, history[0].content);
-    equal(body.contents[2].parts[0].text, "Could it cause ankle swelling?");
-    ok(body.systemInstruction.parts[0].text.includes("Selected chapter 8"));
+    equal(conversation[0].content, history[0].content);
+    equal(conversation[2].content, "Could it cause ankle swelling?");
+    ok(body.messages[0].content.includes("Selected chapter 8"));
     return {
       status: "answered",
       answer:
@@ -266,7 +273,7 @@ Deno.test("emergency shortcut distinguishes present danger from education, negat
   );
 });
 
-Deno.test("explicit emergencies bypass Gemini and severe BP retains server-owned urgent guidance", async () => {
+Deno.test("explicit emergencies bypass Groq and severe BP retains server-owned urgent guidance", async () => {
   let providerCalls = 0;
   await withProvider(() => {
     providerCalls++;
@@ -296,7 +303,7 @@ Deno.test("model-identified contextual danger uses reviewed emergency wording", 
     (body) => ({
       status: "emergency_redirect",
       answer: "",
-      ...(body.systemInstruction.parts[0].text.includes("Care Book mode")
+      ...(body.messages[0].content.includes("Care Book mode")
         ? { sources: [] }
         : {}),
     }),

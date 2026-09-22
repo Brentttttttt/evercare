@@ -75,7 +75,9 @@ try {
   ok(typeof session.access_token === "string");
 
   const invoke = async (name: string, body: Record<string, unknown>) => {
-    for (let attempt = 0; attempt < 5; attempt++) {
+    // Each hosted request already has a bounded provider fallback chain.
+    // One whole-request retry is enough to check transient availability.
+    for (let attempt = 0; attempt < 2; attempt++) {
       const response = await request(`${base}/functions/v1/${name}`, {
         method: "POST",
         headers: headers(publicKey!, session.access_token),
@@ -84,10 +86,10 @@ try {
       const data = await response.json();
       if (response.status === 429 && data.code === "AI_DAILY_QUOTA") {
         throw new Error(
-          "Gemini daily quota is exhausted. Stop live testing until the quota resets.",
+          "AI provider daily quotas are exhausted. Stop live testing until they reset.",
         );
       }
-      if ((response.status === 429 || response.status === 503) && attempt < 4) {
+      if ((response.status === 429 || response.status === 503) && attempt < 1) {
         const seconds = Math.min(
           60,
           Math.max(3, Number(response.headers.get("retry-after")) || 15),
@@ -147,6 +149,18 @@ try {
     if (index === 2) ok(/sleep|salt|sodium|activ|exercise/i.test(data.answer));
     if (index >= 3) {
       ok(/caffein|coffee|cup|wait|hour|minute/i.test(data.answer));
+      ok(
+        !/\b(?:likely|probabl[ey]) (?:the )?(?:reason|cause)\b/i.test(
+          data.answer,
+        ),
+      );
+      ok(
+        !/\b(?:snack|meal|food|water)\b[^.!?]{0,100}\b(?:blunt|neutraliz|counteract)\b/i
+          .test(data.answer),
+      );
+      ok(
+        !/enough time[^.!?]{0,100}(?:wearing off|worn off)/i.test(data.answer),
+      );
     }
     console.log(
       JSON.stringify({
@@ -199,6 +213,23 @@ try {
       syntheticAnswer: careFollowup.answer,
     }),
   );
+
+  await pause(3000);
+  const taglish = await invoke("care-book-ai", {
+    selectedChapter: 4,
+    message:
+      "Paano ko matutulungan si lola na maalala ang clinic appointment niya? Simple Tagalog lang please.",
+    history: [],
+  });
+  equal(taglish.status, "answered");
+  ok(/\b(?:ang|ng|mga|niya|lola|para|puwede|pwede)\b/i.test(taglish.answer));
+  console.log(
+    JSON.stringify({
+      feature: "care-book-ai-language",
+      syntheticAnswer: taglish.answer,
+    }),
+  );
+  console.log("PASS: Care Book follow-up and Tagalog language matching");
 
   const emergency = await invoke("health-bp-chat", {
     ...reading,

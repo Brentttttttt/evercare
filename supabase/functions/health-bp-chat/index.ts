@@ -7,7 +7,7 @@ import {
   optionsResponse,
   PublicFunctionError,
   readJsonBody,
-  requestGeminiStructuredJson,
+  requestAiStructuredJson,
   requiredInteger,
   requiredText,
   requireUserId,
@@ -71,7 +71,7 @@ export async function handleRequest(req: Request): Promise<Response> {
     }
 
     enforceCooldown(userId, "health-bp-chat", 2500);
-    const completion = await requestGeminiStructuredJson({
+    const completion = await requestAiStructuredJson({
       schema: answerSchema,
       messages: [
         {
@@ -81,6 +81,7 @@ export async function handleRequest(req: Request): Promise<Response> {
             "You are in Blood Pressure chat. Help with this measurement, follow-up questions, sensible lifestyle changes, general health and medication education, and related caregiving. Greetings are welcome. Mark only clearly unrelated requests off_topic.",
             "Return JSON with status answered, off_topic, or emergency_redirect and an answer. For emergency_redirect the server supplies emergency wording; use an empty answer. Otherwise answer the latest question in your own words, usually 2–5 sentences, expanding up to 250 words only when needed. Do not produce more than 2400 characters.",
             "Use the authoritative current measurement below without inventing readings, trends, symptoms, medicines, or a diagnosis. Needs Attention is a UI status, not an emergency diagnosis. Do not repeat the range or values unless they help answer the newest question. Existing severe-reading guidance remains authoritative.",
+            "For caffeine follow-ups, correct earlier assistant claims if necessary: coffee could contribute but does not establish a cause, and it is not known to especially affect this person's diastolic number. Waiting at least 30 minutes without caffeine is preparation for a routine measurement, NOT proof that caffeine has worn off. At 30–60 minutes caffeine can still affect the reading; do not call that a caffeine-free baseline or say most people's caffeine is wearing off then. For 'how long should I wait', explain that distinction briefly and include quiet rest before rechecking. Never encourage someone to consume caffeine as a diagnostic challenge.",
             "CURRENT BP CONTEXT:",
             JSON.stringify({
               systolic,

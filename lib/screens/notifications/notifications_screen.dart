@@ -8,6 +8,7 @@ import '../../widgets/app_page.dart';
 import '../../widgets/app_skeleton.dart';
 import '../../widgets/empty_state_card.dart';
 import '../../widgets/evercare_backend_scope.dart';
+import '../../widgets/phone_reminder_settings_card.dart';
 import '../../widgets/section_header.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -64,7 +65,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               : const Text('Mark read'),
         ),
       ],
-      child: _buildContent(grouped),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [const PhoneReminderSettingsCard(), _buildContent(grouped)],
+      ),
     );
   }
 

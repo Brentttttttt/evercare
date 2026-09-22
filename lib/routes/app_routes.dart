@@ -92,11 +92,12 @@ abstract final class AppRoutes {
             : const BloodPressureHistoryScreen(),
       bloodPressureTrend => const BloodPressureTrendScreen(),
       manualRecord => const ManualHealthRecordScreen(),
-      medicationDetails => routeSettings.arguments is Medication
-          ? MedicationDetailScreen(
-              medication: routeSettings.arguments! as Medication,
-            )
-          : const MainShell(initialIndex: 2),
+      medicationDetails =>
+        routeSettings.arguments is Medication
+            ? MedicationDetailScreen(
+                medication: routeSettings.arguments! as Medication,
+              )
+            : const MainShell(initialIndex: 2),
       addMedication => AddMedicationScreen(
         medication: routeSettings.arguments is Medication
             ? routeSettings.arguments! as Medication
@@ -106,17 +107,19 @@ abstract final class AppRoutes {
       journals => const MainShell(initialIndex: 4),
       addJournal => const AddJournalEntryScreen(),
       careBook => const MainShell(initialIndex: 5),
-      appointmentDetails => routeSettings.arguments is Appointment
-          ? AppointmentDetailScreen(
-              appointment: routeSettings.arguments! as Appointment,
-            )
-          : const MainShell(initialIndex: 3),
+      appointmentDetails =>
+        routeSettings.arguments is Appointment
+            ? AppointmentDetailScreen(
+                appointment: routeSettings.arguments! as Appointment,
+              )
+            : const MainShell(initialIndex: 3),
       addAppointment => const AddAppointmentScreen(),
-      editAppointment => routeSettings.arguments is Appointment
-          ? EditAppointmentScreen(
-              appointment: routeSettings.arguments! as Appointment,
-            )
-          : const MainShell(initialIndex: 3),
+      editAppointment =>
+        routeSettings.arguments is Appointment
+            ? EditAppointmentScreen(
+                appointment: routeSettings.arguments! as Appointment,
+              )
+            : const MainShell(initialIndex: 3),
       caregiverList => const CaregiverListScreen(),
       caregiverProfile => CaregiverProfileScreen(
         caregiver: routeSettings.arguments is Map<String, String>
@@ -128,7 +131,9 @@ abstract final class AppRoutes {
       emergencyContacts => const EmergencyContactsScreen(),
       medicalInfo => const MedicalInformationScreen(),
       notifications => const NotificationsScreen(),
-      editProfile => const EditProfileScreen(),
+      editProfile => EditProfileScreen(
+        requireSetup: routeSettings.arguments == true,
+      ),
       accessibility => const AccessibilityScreen(),
       settings => const SettingsScreen(),
       helpSupport => const HelpSupportScreen(),

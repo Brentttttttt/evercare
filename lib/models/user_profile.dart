@@ -21,6 +21,12 @@ class UserProfile {
   final String address;
   final String? avatarPath;
 
+  bool get isComplete =>
+      fullName.trim().isNotEmpty &&
+      birthDate != null &&
+      !birthDate!.isAfter(DateTime.now()) &&
+      const {'senior', 'caregiver', 'family_member'}.contains(userType);
+
   factory UserProfile.fromMap(Map<String, dynamic> map, User user) {
     return UserProfile(
       id: user.id,
@@ -39,7 +45,9 @@ class UserProfile {
     return UserProfile(
       id: user.id,
       email: user.email ?? '',
-      fullName: _stringValue(metadata['full_name']),
+      fullName: _stringValue(metadata['full_name']).trim().isNotEmpty
+          ? _stringValue(metadata['full_name'])
+          : _stringValue(metadata['name']),
       phoneNumber: _stringValue(metadata['phone_number']),
       birthDate: _dateValue(metadata['birth_date']),
       userType: _stringValue(metadata['user_type']),
@@ -81,7 +89,7 @@ class UserProfile {
     'full_name': fullName.trim(),
     'phone_number': phoneNumber.trim(),
     'birth_date': birthDate == null ? null : _dateOnly(birthDate!),
-    'user_type': userType,
+    'user_type': userType.isEmpty ? null : userType,
     'address': address.trim(),
     'avatar_path': avatarPath,
   };

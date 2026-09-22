@@ -264,179 +264,227 @@ export type ChatMessage = {
   role: "system" | "user" | "assistant";
   content: string;
 };
-export const GEMINI_MODEL = "gemini-3.8-flash";
+export const GROQ_MODEL = "openai/gpt-oss-120b";
+const GROQ_FALLBACK_MODEL = "openai/gpt-oss-20b";
 const connectionError =
   "EverCare AI couldn't connect right now. Please try again.";
 const invalidOutputError =
   "EverCare AI couldn't generate a reply right now. Please try again.";
 
-export async function requestGeminiStructuredJson({
+/**
+ * Inaagapay's GPT-OSS conversation setup, adapted to authenticated server-side
+ * use. Each target is tried at most once; fallbacks share a 45-second budget.
+ * Keys, provider error bodies, and reasoning never cross the Flutter boundary.
+ */
+export async function requestAiStructuredJson({
   schema,
   messages,
-  maxOutputTokens = 4096,
-  thinkingLevel = "medium",
+  maxOutputTokens = 2048,
+  reasoningEffort = "medium",
 }: {
   schema: Record<string, unknown>;
   messages: ChatMessage[];
   maxOutputTokens?: number;
-  thinkingLevel?: "low" | "medium" | "high";
+  reasoningEffort?: "low" | "medium" | "high";
 }): Promise<Record<string, unknown>> {
-  const apiKey = Deno.env.get("GEMINI_API_KEY")?.trim();
+  const apiKey = Deno.env.get("GROQ_API_KEY")?.trim();
   if (!apiKey) {
-    console.error("Gemini failure: missing server configuration.");
+    console.error("AI failure: missing server configuration.");
     throw new PublicFunctionError(503, connectionError);
   }
-
-  // Keep trusted instructions separate from untrusted user/model turns. No
-  // provider-side stored conversations, paid tools, or provider fallback.
-  const systemParts = messages.filter((message) => message.role === "system")
-    .map((message) => ({ text: message.content }));
-  const contents = messages.filter((message) => message.role !== "system")
-    .map((message) => ({
-      role: message.role === "assistant" ? "model" : "user",
-      parts: [{ text: message.content }],
-    }));
-  const controller = new AbortController();
-  // Covers both the connection and reading the response body.
-  const timeout = setTimeout(() => controller.abort(), 45000);
-  try {
-    const send = () =>
-      fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
+  const attempts = [
+    { provider: "groq", model: GROQ_MODEL, apiKey },
+    { provider: "groq", model: GROQ_FALLBACK_MODEL, apiKey },
+  ];
+  const nvidiaKey = Deno.env.get("NVIDIA_API_KEY")?.trim();
+  if (nvidiaKey) {
+    // NVIDIA retired its 120B endpoint; use the verified available 20B model.
+    attempts.push({
+      provider: "nvidia",
+      model: GROQ_FALLBACK_MODEL,
+      apiKey: nvidiaKey,
+    });
+  }
+  const deadline = Date.now() + 45000;
+  const failures: ProviderFailure[] = [];
+  for (const attempt of attempts) {
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) {
+      failures.push({ status: 503, dailyQuota: false, retryAfterSeconds: 15 });
+      break;
+    }
+    const controller = new AbortController();
+    const isGroq = attempt.provider === "groq";
+    const timeout = setTimeout(
+      () => controller.abort(),
+      isGroq ? Math.min(15000, remaining) : remaining,
+    );
+    try {
+      const response = await fetch(
+        isGroq
+          ? "https://api.groq.com/openai/v1/chat/completions"
+          : "https://integrate.api.nvidia.com/v1/chat/completions",
         {
           method: "POST",
           signal: controller.signal,
           headers: {
-            "x-goog-api-key": apiKey,
+            Authorization: `Bearer ${attempt.apiKey}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            ...(systemParts.length
-              ? { systemInstruction: { parts: systemParts } }
-              : {}),
-            contents,
-            generationConfig: {
-              thinkingConfig: { thinkingLevel },
-              maxOutputTokens,
-              responseMimeType: "application/json",
-              responseJsonSchema: schema,
-            },
+            model: attempt.model,
+            // Do not infer JSON mode from user text. NVIDIA's object mode
+            // needs the schema in trusted instructions as well as validation.
+            messages: isGroq ? messages : [
+              {
+                role: "system",
+                content: `Return only a JSON object matching this schema: ${
+                  JSON.stringify(schema)
+                }`,
+              },
+              ...messages,
+            ],
+            temperature: 0.5,
+            top_p: 0.95,
+            stream: false,
+            reasoning_effort: reasoningEffort,
+            ...(isGroq
+              ? {
+                max_completion_tokens: maxOutputTokens,
+                include_reasoning: false,
+                response_format: {
+                  type: "json_schema",
+                  json_schema: {
+                    name: "evercare_response",
+                    strict: true,
+                    schema,
+                  },
+                },
+              }
+              : {
+                max_tokens: maxOutputTokens,
+                response_format: { type: "json_object" },
+              }),
           }),
         },
       );
-    let response = await send();
-    // A single bounded retry handles transient provider overload. Quota errors
-    // are returned immediately, and both attempts share the same deadline.
-    if ([502, 503, 504].includes(response.status)) {
-      await response.body?.cancel();
-      await new Promise((resolve) => setTimeout(resolve, 750));
-      response = await send();
-    }
-    if (!response.ok) {
-      console.error(`Gemini failure: HTTP ${response.status}.`);
-      if (response.status === 429) {
-        const retry = response.headers.get("retry-after");
-        let seconds = retry && /^\d+$/.test(retry)
-          ? Number(retry)
-          : Math.ceil((Date.parse(retry ?? "") - Date.now()) / 1000);
-        // QuotaFailure distinguishes a project-wide daily limit from a brief
-        // rate limit. Inspect it even when a misleading short Retry-After is
-        // supplied; never forward or log Google's raw error body.
-        let dailyQuotaExceeded = false;
-        try {
-          const errorBody = await response.json();
-          const details = errorBody?.error?.details;
-          if (Array.isArray(details)) {
-            dailyQuotaExceeded = details.some((detail) =>
-              detail?.["@type"] ===
-                "type.googleapis.com/google.rpc.QuotaFailure" &&
-              Array.isArray(detail.violations) &&
-              detail.violations.some((
-                violation: { quotaId?: unknown } | null,
-              ) =>
-                typeof violation?.quotaId === "string" &&
-                /PerDay/i.test(violation.quotaId)
-              )
-            );
-          }
-          if (!Number.isFinite(seconds) || seconds <= 0) {
-            const retryInfo = Array.isArray(details)
-              ? details.find((item) =>
-                item?.["@type"] === "type.googleapis.com/google.rpc.RetryInfo"
-              )
-              : undefined;
-            if (
-              typeof retryInfo?.retryDelay === "string" &&
-              /^\d+(?:\.\d+)?s$/.test(retryInfo.retryDelay)
-            ) {
-              seconds = Math.ceil(Number.parseFloat(retryInfo.retryDelay));
-            }
-          }
-        } catch (_) {
-          /* Keep the generic rate-limit response for an unusable error body. */
-        }
-        if (!response.bodyUsed) await response.body?.cancel();
-        if (dailyQuotaExceeded) {
-          throw new PublicFunctionError(
-            429,
-            "EverCare AI has reached its daily free limit. Please try again after the daily reset.",
-            undefined,
-            "AI_DAILY_QUOTA",
-          );
-        }
-        throw new PublicFunctionError(
-          429,
-          "EverCare AI is receiving a lot of requests right now. Please try again in a moment.",
-          Number.isFinite(seconds) && seconds > 0
-            ? Math.min(seconds, 3600)
-            : 15,
+      if (!response.ok) {
+        console.error(
+          `AI failure: ${attempt.provider} HTTP ${response.status}.`,
         );
+        const failure = await readProviderFailure(response);
+        if (
+          response.status === 429 || response.status >= 500 ||
+          [404, 408, 410, 413].includes(response.status) ||
+          failure.modelOrContextLimit
+        ) {
+          failures.push(failure);
+          continue;
+        }
+        // Do not hide authentication or request-contract errors with retries.
+        throw new PublicFunctionError(503, connectionError);
       }
-      await response.body?.cancel();
-      throw new PublicFunctionError(503, connectionError);
-    }
-    const payload = await response.json();
-    const candidate = payload?.candidates?.[0];
-    if (
-      payload?.promptFeedback?.blockReason || candidate?.finishReason !== "STOP"
-    ) {
+      const payload = await response.json();
+      if (controller.signal.aborted) {
+        throw new DOMException("Timed out", "AbortError");
+      }
+      const choice = payload?.choices?.[0];
+      const message = choice?.message;
+      if (
+        choice?.finish_reason !== "stop" || message?.refusal ||
+        message?.tool_calls?.length || typeof message?.content !== "string"
+      ) {
+        throw new PublicFunctionError(503, invalidOutputError);
+      }
+      // Only final content is eligible. Never fall back to reasoning fields,
+      // repair truncated JSON, or turn provider errors into canned health advice.
+      const parsed = JSON.parse(message.content.trim());
+      if (
+        !matchesSchema(parsed, schema) || parsed == null ||
+        typeof parsed !== "object" || Array.isArray(parsed)
+      ) {
+        throw new PublicFunctionError(503, invalidOutputError);
+      }
+      return parsed as Record<string, unknown>;
+    } catch (error) {
+      if (error instanceof PublicFunctionError) throw error;
+      if (error instanceof SyntaxError && !controller.signal.aborted) {
+        console.error("AI failure: malformed output.");
+        throw new PublicFunctionError(503, invalidOutputError);
+      }
       console.error(
-        "Gemini failure: blocked, incomplete, or missing candidate.",
+        controller.signal.aborted
+          ? "AI failure: attempt timeout."
+          : "AI failure: transport unavailable.",
       );
-      throw new PublicFunctionError(503, invalidOutputError);
+      failures.push({ status: 503, dailyQuota: false, retryAfterSeconds: 15 });
+    } finally {
+      clearTimeout(timeout);
     }
-    const parts = candidate?.content?.parts;
-    if (!Array.isArray(parts)) {
-      throw new PublicFunctionError(503, invalidOutputError);
-    }
-    // Never expose thinking text or thought signatures. Only final text parts
-    // contribute to the structured answer sent to Flutter.
-    const content = parts.filter((part) =>
-      part && part.thought !== true && typeof part.text === "string"
-    )
-      .map((part) => part.text).join("").trim();
-    const parsed = JSON.parse(content);
-    if (
-      !matchesSchema(parsed, schema) || parsed == null ||
-      typeof parsed !== "object" || Array.isArray(parsed)
-    ) {
-      throw new PublicFunctionError(503, invalidOutputError);
-    }
-    return parsed as Record<string, unknown>;
-  } catch (error) {
-    if (error instanceof PublicFunctionError) throw error;
-    console.error(
-      controller.signal.aborted
-        ? "Gemini failure: timeout."
-        : "Gemini failure: transport or malformed response.",
-    );
-    throw new PublicFunctionError(
-      503,
-      error instanceof SyntaxError ? invalidOutputError : connectionError,
-    );
-  } finally {
-    clearTimeout(timeout);
   }
+  if (failures.length && failures.every((failure) => failure.dailyQuota)) {
+    throw new PublicFunctionError(
+      429,
+      "EverCare AI has reached its daily free limit. Please try again after the daily reset.",
+      undefined,
+      "AI_DAILY_QUOTA",
+    );
+  }
+  const lastFailure = failures.at(-1);
+  if (lastFailure?.status === 429) {
+    throw new PublicFunctionError(
+      429,
+      "EverCare AI is receiving a lot of requests right now. Please try again in a moment.",
+      lastFailure.retryAfterSeconds,
+    );
+  }
+  throw new PublicFunctionError(503, connectionError);
+}
+
+type ProviderFailure = {
+  status: number;
+  retryAfterSeconds: number;
+  dailyQuota: boolean;
+  modelOrContextLimit?: boolean;
+};
+
+async function readProviderFailure(
+  response: Response,
+): Promise<ProviderFailure> {
+  let code = "";
+  let message = "";
+  try {
+    const body = await response.json();
+    code = typeof body?.error?.code === "string" ? body.error.code : "";
+    message = typeof body?.error?.message === "string"
+      ? body.error.message
+      : "";
+  } catch (_) {
+    // An unreadable provider error must never be shown to the person chatting.
+  }
+  const retry = response.headers.get("retry-after");
+  const seconds = retry && /^\d+(?:\.\d+)?$/.test(retry)
+    ? Math.ceil(Number(retry))
+    : Math.ceil((Date.parse(retry ?? "") - Date.now()) / 1000);
+  return {
+    status: response.status,
+    retryAfterSeconds: Number.isFinite(seconds) && seconds > 0
+      ? Math.min(seconds, 3600)
+      : 15,
+    dailyQuota: response.status === 429 &&
+      /\b(?:tokens? per day|requests? per day|TPD|RPD)\b/i.test(message),
+    modelOrContextLimit: response.status === 400 && (
+      [
+        "model_not_found",
+        "model_decommissioned",
+        "context_length_exceeded",
+        "request_too_large",
+      ].includes(code) ||
+      /maximum context length|context length exceeded|request too large/i.test(
+        message,
+      )
+    ),
+  };
 }
 
 // Validate the small JSON Schema subset used by our three functions even if

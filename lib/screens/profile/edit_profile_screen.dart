@@ -3,6 +3,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../models/user_profile.dart';
 import '../../repositories/profile_repository.dart';
+import '../../routes/app_routes.dart';
+import '../../services/auth_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_page.dart';
@@ -11,7 +13,9 @@ import '../../widgets/primary_button.dart';
 import '../authentication/auth_widgets.dart';
 
 class EditProfileScreen extends StatefulWidget {
-  const EditProfileScreen({super.key});
+  const EditProfileScreen({super.key, this.requireSetup = false});
+
+  final bool requireSetup;
 
   @override
   State<EditProfileScreen> createState() => _EditProfileScreenState();
@@ -124,11 +128,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Profile changes saved.')));
-      Navigator.pop(context, true);
-    } on AuthException catch (error) {
-      if (mounted) setState(() => _errorMessage = error.message);
-    } on PostgrestException catch (error) {
-      if (mounted) setState(() => _errorMessage = error.message);
+      if (widget.requireSetup) {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRoutes.home,
+          (_) => false,
+        );
+      } else {
+        Navigator.pop(context, true);
+      }
     } catch (_) {
       if (mounted) {
         setState(() {
@@ -143,7 +151,52 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return DetailPage(title: 'Personal Information', child: _buildContent());
+    return PopScope(
+      canPop: !widget.requireSetup,
+      child: DetailPage(
+        title: widget.requireSetup
+            ? 'Complete your profile'
+            : 'Personal Information',
+        child: Column(
+          children: [
+            if (widget.requireSetup) ...[
+              const Text(
+                'Choose how you use EverCare and add your date of birth. Google does not provide these details.',
+              ),
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: _isSaving ? null : _signOut,
+                child: const Text('Use a different account'),
+              ),
+              const SizedBox(height: 12),
+            ],
+            _buildContent(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _signOut() async {
+    final client = _client;
+    if (client == null) return;
+    setState(() => _isSaving = true);
+    try {
+      await AuthService(client).signOut();
+      if (mounted) {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRoutes.login,
+          (_) => false,
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _errorMessage = 'Could not sign out. Please try again.');
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
   Widget _buildContent() {
@@ -272,6 +325,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             icon: Icons.cake_outlined,
             hint: 'Select your date of birth',
             controller: _birthDateController,
+            validator: (_) => widget.requireSetup && _birthDate == null
+                ? 'Select your date of birth.'
+                : null,
             readOnly: true,
             onTap: _isSaving ? null : _pickBirthDate,
             suffix: const Icon(Icons.calendar_month_outlined),
@@ -332,7 +388,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             )
           else
             PrimaryButton(
-              label: 'Save Changes',
+              label: widget.requireSetup ? 'Save and Continue' : 'Save Changes',
               icon: Icons.check_rounded,
               onPressed: _save,
             ),

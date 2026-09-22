@@ -6,8 +6,8 @@ import '../models/blood_pressure_assessment.dart';
 import '../models/bp_monitor_result.dart';
 import '../models/evercare_ai.dart';
 
-/// Calls EverCare's authenticated Edge Functions. The Gemini credential stays
-/// in Supabase Function secrets and is never included in the Flutter app.
+/// Calls EverCare's authenticated Edge Functions. Provider credentials stay
+/// in Supabase Function secrets and are never included in the Flutter app.
 class EverCareAiService {
   const EverCareAiService(this._client);
 
@@ -151,7 +151,7 @@ List<Map<String, String>> everCareAiHistoryPayload(
 ) {
   // Match the Edge Function limits. Keep complete exchanges so a truncated
   // answer cannot lose a qualification or leave an orphaned assistant reply.
-  // The initial UI greeting is display-only; Gemini history starts with a user.
+  // The initial UI greeting is display-only; model history starts with a user.
   final recent = <Map<String, String>>[];
   var totalCharacters = 0;
   for (final turn in history) {
