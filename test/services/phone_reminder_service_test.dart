@@ -542,12 +542,14 @@ void main() {
       await enableWithMedication();
       final initialAlarms = Map<int, String?>.from(driver.alarms);
       final initialCancels = driver.cancelAllCalls;
+      driver.launchPayload = driver.scheduled.first.payload;
       service.dispose();
       source.onLoad = (_, _) async => throw StateError('offline at restart');
       service = PhoneReminderService(
         source: source,
         driver: driver,
         now: () => now,
+        onOpenReminder: opened.add,
       );
       await service.initialize();
 
@@ -559,6 +561,8 @@ void main() {
       expect(driver.alarms, initialAlarms);
       expect(driver.cancelAllCalls, initialCancels);
       expect(service.error, isNotNull);
+      expect(opened.single?.userId, 'user-1');
+      expect(opened.single?.resourceId, 'med-1');
     },
   );
 
@@ -566,6 +570,7 @@ void main() {
     'startup as another account clears restored alarms even when offline',
     () async {
       await enableWithMedication();
+      driver.launchPayload = driver.scheduled.first.payload;
       service.dispose();
       source.userId = 'user-2';
       source.onLoad = (_, _) async => throw StateError('offline at restart');
@@ -573,6 +578,7 @@ void main() {
         source: source,
         driver: driver,
         now: () => now,
+        onOpenReminder: opened.add,
       );
       await service.initialize();
 
@@ -580,6 +586,7 @@ void main() {
       expect(driver.alarms, isEmpty);
       expect(service.scheduledCount, 0);
       expect(service.lastSyncedAt, isNull);
+      expect(opened, isEmpty);
     },
   );
 

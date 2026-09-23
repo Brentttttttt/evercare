@@ -99,9 +99,16 @@ views must not imply that Android phone scheduling is available there.
 ## Verification and physical-device checklist
 
 The dependency resolution, notification XML parsing, and Android
-`:app:processDebugMainManifest` check passed. There was no ADB-connected device
+`:app:processDebugMainManifest` check passed. On 2026-09-23, the full Flutter
+suite passed all 332 tests and `flutter analyze` reported no issues. Reminder
+coverage includes schedule planning, permission/opt-in state, offline startup
+and notification taps, account isolation, edit/delete cancellation, repository
+hooks, and accessible settings controls. There was no ADB-connected device
 during implementation, so actual phone delivery has not yet been verified.
-Automated/build results should be recorded separately from this device check.
+`flutter build apk` succeeded; the release APK is at
+`build/app/outputs/flutter-apk/app-release.apk`. The packaged permissions,
+scheduled/boot receivers, and retained notification icon were also checked.
+These automated/build results are separate from the physical-device check.
 
 On a physical Android phone, verify the following before relying on reminders:
 

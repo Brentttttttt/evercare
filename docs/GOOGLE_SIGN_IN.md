@@ -49,6 +49,10 @@ which can differ from the upload certificate and local debug certificate.
 Re-run the report if your signing configuration changes; fingerprints are public
 identifiers, not private signing keys.
 
+The same signing report also prints SHA-256. The Android OAuth client used here
+requires SHA-1; this integration does not require Firebase/SHA-256 registration.
+Use the actual reported SHA-256 if another Google service explicitly requests it.
+
 The app passes the Web client ID programmatically, so `google-services.json`,
 Firebase Auth, a Google Services Gradle plugin, and `GET_ACCOUNTS` permission are
 not required for this integration. See the official
@@ -184,8 +188,15 @@ sent to Supabase. Older tutorials using a `GoogleSignIn()` constructor and
 ## Verification status
 
 Package resolution, the Gradle signing report, and Android AAR compatibility
-checks passed with the existing Flutter 3.44.6 / Dart 3.12.2 toolchain. Actual
-Google account selection and Supabase session creation require
+checks passed with the existing Flutter 3.44.6 / Dart 3.12.2 toolchain. On
+2026-09-23, `flutter analyze` reported no issues and the full Flutter test suite
+passed all 332 tests. These include native-flow service contract tests, safe
+cancellation/errors, existing-profile preservation, conflict-safe creation,
+required setup, logout, and both authentication screens. `flutter build apk`
+also succeeded; the release APK is at `build/app/outputs/flutter-apk/app-release.apk`.
+It uses the existing debug signing configuration and has no Google client ID
+embedded until rebuilt with the configuration above. Actual Google account
+selection and Supabase session creation require
 valid project credentials and an Android device with Google Play services. No
 device was connected during this setup work, so live Google sign-in has not been
 verified. A successful build or mocked test is not proof that hosted OAuth

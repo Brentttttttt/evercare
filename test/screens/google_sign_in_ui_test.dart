@@ -197,37 +197,44 @@ void main() {
     ) async {
       var profileRequests = 0;
       RouteSettings? destination;
-      final client = SupabaseClient(
-        'https://example.test',
-        'synthetic-public-key',
-        authOptions: const AuthClientOptions(autoRefreshToken: false),
-        httpClient: MockClient((request) async {
-          if (request.url.path == '/auth/v1/token') {
-            return http.Response(
-              jsonEncode(_syntheticSession(linkedGoogle: state != 'email')),
-              200,
-              headers: {'content-type': 'application/json'},
-            );
-          }
-          if (request.url.path == '/rest/v1/profiles') {
-            profileRequests++;
-            return http.Response(
-              jsonEncode(
-                state == 'google unavailable'
-                    ? {'message': 'private provider details'}
-                    : {
-                        'id': 'test-user',
-                        'full_name': 'Test Person',
-                        'user_type': null,
-                      },
-              ),
-              state == 'google unavailable' ? 503 : 200,
-              headers: {'content-type': 'application/json'},
-            );
-          }
-          return http.Response('{}', 404);
-        }),
-      );
+      late SupabaseClient client;
+      // Construct the SDK in the real async zone too: its JSON worker starts
+      // during construction and must not wait on the widget test's fake clock.
+      await tester.runAsync(() async {
+        client = SupabaseClient(
+          'https://example.test',
+          'synthetic-public-key',
+          authOptions: const AuthClientOptions(autoRefreshToken: false),
+          httpClient: MockClient((request) async {
+            if (request.url.path == '/auth/v1/token') {
+              return http.Response(
+                jsonEncode(_syntheticSession(linkedGoogle: state != 'email')),
+                200,
+                headers: {'content-type': 'application/json'},
+                request: request,
+              );
+            }
+            if (request.url.path == '/rest/v1/profiles') {
+              profileRequests++;
+              return http.Response(
+                jsonEncode(
+                  state == 'google unavailable'
+                      ? {'message': 'private provider details'}
+                      : {
+                          'id': 'test-user',
+                          'full_name': 'Test Person',
+                          'user_type': null,
+                        },
+                ),
+                state == 'google unavailable' ? 403 : 200,
+                headers: {'content-type': 'application/json'},
+                request: request,
+              );
+            }
+            return http.Response('{}', 404);
+          }),
+        );
+      });
       addTearDown(() => tester.runAsync(client.dispose));
       await pumpAuthScreen(
         tester,
