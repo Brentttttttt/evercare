@@ -10,7 +10,9 @@ import '../../theme/app_text_styles.dart';
 import '../../widgets/app_page.dart';
 import '../../widgets/app_skeleton.dart';
 import '../../widgets/evercare_backend_scope.dart';
+import '../../widgets/profile_avatar.dart';
 import '../../widgets/section_header.dart';
+import 'logout_action_tile.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key, this.scrollController});
@@ -151,73 +153,59 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     onAction: _retryProfile,
                   );
                 }
-                return _ProfileSummaryCard(
-                  profile: snapshot.data!,
-                  onEdit: _openEditProfile,
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _ProfileSummaryCard(
+                      profile: snapshot.data!,
+                      onEdit: _openEditProfile,
+                    ),
+                    const SizedBox(height: 26),
+                    const SectionHeader(
+                      title: 'Personal details',
+                      subtitle: 'Your information, in one place.',
+                    ),
+                    const SizedBox(height: 12),
+                    _PersonalDetailsCard(profile: snapshot.data!),
+                  ],
                 );
               },
             ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 26),
           const SectionHeader(
-            title: 'Personal care',
-            subtitle: 'Keep your identity and care information up to date.',
+            title: 'Your account',
+            subtitle: 'Keep your profile and contact details up to date.',
           ),
           const SizedBox(height: 10),
           AppCard(
             padding: const EdgeInsets.symmetric(vertical: 5),
-            child: _ProfileMenuGroup(
-              children: [
-                _ProfileMenuItem(
-                  icon: Icons.badge_outlined,
-                  color: AppColors.blue,
-                  label: 'Personal Information',
-                  onTap: isSignedIn ? _openEditProfile : null,
-                ),
-                _ProfileMenuItem(
-                  icon: Icons.medical_information_outlined,
-                  color: AppColors.primaryGreen,
-                  label: 'Medical Information',
-                  onTap: isSignedIn
-                      ? () =>
-                            Navigator.pushNamed(context, AppRoutes.medicalInfo)
-                      : null,
-                ),
-              ],
+            child: _ProfileMenuItem(
+              icon: Icons.badge_outlined,
+              color: AppColors.primaryGreen,
+              label: 'Personal Information',
+              subtitle: 'Name, birthday, photo and contact details',
+              onTap: isSignedIn ? _openEditProfile : null,
             ),
           ),
           const SizedBox(height: 22),
           const SectionHeader(
-            title: 'Safety and sharing',
-            subtitle: 'Manage emergency details and trusted people.',
+            title: 'Emergency support',
+            subtitle: 'Keep help close when you need it.',
           ),
           const SizedBox(height: 10),
           AppCard(
             padding: const EdgeInsets.symmetric(vertical: 5),
-            child: _ProfileMenuGroup(
-              children: [
-                _ProfileMenuItem(
-                  icon: Icons.contact_emergency_outlined,
-                  color: AppColors.danger,
-                  label: 'Emergency Contacts',
-                  onTap: isSignedIn
-                      ? () => Navigator.pushNamed(
-                          context,
-                          AppRoutes.emergencyContacts,
-                        )
-                      : null,
-                ),
-                _ProfileMenuItem(
-                  icon: Icons.family_restroom_rounded,
-                  color: AppColors.purple,
-                  label: 'Family and Caregivers',
-                  onTap: isSignedIn
-                      ? () => Navigator.pushNamed(
-                          context,
-                          AppRoutes.caregiverList,
-                        )
-                      : null,
-                ),
-              ],
+            child: _ProfileMenuItem(
+              icon: Icons.contact_emergency_outlined,
+              color: AppColors.danger,
+              label: 'Emergency Contacts',
+              subtitle: 'The people to reach when you need help',
+              onTap: isSignedIn
+                  ? () => Navigator.pushNamed(
+                      context,
+                      AppRoutes.emergencyContacts,
+                    )
+                  : null,
             ),
           ),
           const SizedBox(height: 22),
@@ -234,6 +222,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   icon: Icons.accessibility_new_rounded,
                   color: AppColors.blue,
                   label: 'Accessibility',
+                  subtitle: 'Text size and a more comfortable view',
                   onTap: () =>
                       Navigator.pushNamed(context, AppRoutes.accessibility),
                 ),
@@ -241,12 +230,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   icon: Icons.settings_outlined,
                   color: AppColors.secondaryText,
                   label: 'Settings',
+                  subtitle: 'Phone reminders and app preferences',
                   onTap: () => Navigator.pushNamed(context, AppRoutes.settings),
                 ),
                 _ProfileMenuItem(
                   icon: Icons.help_outline_rounded,
                   color: AppColors.warning,
                   label: 'Help and Support',
+                  subtitle: 'Find guidance for using EverCare',
                   onTap: () =>
                       Navigator.pushNamed(context, AppRoutes.helpSupport),
                 ),
@@ -254,6 +245,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   icon: Icons.info_outline_rounded,
                   color: AppColors.primaryGreen,
                   label: 'About EverCare',
+                  subtitle: 'Get to know your care companion',
                   onTap: () => Navigator.pushNamed(context, AppRoutes.about),
                 ),
               ],
@@ -261,36 +253,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           if (isSignedIn) ...[
             const SizedBox(height: 14),
-            AppCard(
-              onTap: _isSigningOut ? null : _confirmLogout,
-              child: Row(
-                children: [
-                  if (_isSigningOut)
-                    const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2.5),
-                    )
-                  else
-                    const Icon(Icons.logout_rounded, color: AppColors.danger),
-                  const SizedBox(width: 14),
-                  const Expanded(
-                    child: Text(
-                      'Log Out',
-                      style: TextStyle(
-                        color: AppColors.danger,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  const Icon(
-                    Icons.chevron_right_rounded,
-                    color: AppColors.danger,
-                  ),
-                ],
-              ),
-            ),
+            LogoutActionTile(onTap: _confirmLogout, isLoading: _isSigningOut),
           ],
         ],
       ),
@@ -306,102 +269,232 @@ class _ProfileSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final age = profile.ageOn(DateTime.now());
-    final details = <String>[
-      if (age != null) '$age years old',
-      if (profile.userTypeLabel.isNotEmpty) profile.userTypeLabel,
-    ];
-    return AppCard(
-      child: Column(
-        children: [
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(5),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [AppColors.primaryContainer, AppColors.accent],
-                  ),
-                ),
-                child: CircleAvatar(
-                  radius: 44,
-                  backgroundColor: AppColors.card,
-                  child: profile.initials.isEmpty
-                      ? const Icon(
-                          Icons.person_outline_rounded,
-                          size: 40,
-                          color: AppColors.darkGreen,
-                        )
-                      : Text(
-                          profile.initials,
-                          style: const TextStyle(
-                            color: AppColors.darkGreen,
-                            fontSize: 24,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                ),
-              ),
-              Positioned(
-                right: -5,
-                bottom: -3,
-                child: IconButton.filled(
-                  visualDensity: VisualDensity.compact,
-                  tooltip: 'Edit profile',
-                  onPressed: onEdit,
-                  icon: const Icon(Icons.edit_outlined, size: 18),
-                ),
-              ),
-            ],
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.darkGreen, AppColors.primaryGreen],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.darkGreen.withValues(alpha: .12),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
           ),
-          const SizedBox(height: 16),
-          Text(
-            profile.fullName.isEmpty
-                ? 'Profile name not added'
-                : profile.fullName,
-            textAlign: TextAlign.center,
-            style: AppTextStyles.sectionTitle,
-          ),
-          const SizedBox(height: 5),
-          Text(
-            details.isEmpty
-                ? 'Profile details not added yet'
-                : details.join(' · '),
-            textAlign: TextAlign.center,
-            style: AppTextStyles.bodyMuted,
-          ),
-          const SizedBox(height: 16),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              color: AppColors.secondary,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
               children: [
-                _ContactLine(
-                  icon: Icons.mail_outline_rounded,
-                  value: profile.email.isEmpty
-                      ? 'Account email unavailable'
-                      : profile.email,
+                const Icon(
+                  Icons.favorite_outline_rounded,
+                  color: Color(0xFFD6EFE0),
+                  size: 20,
                 ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8),
-                  child: Divider(),
-                ),
-                _ContactLine(
-                  icon: Icons.phone_outlined,
-                  value: profile.phoneNumber.isEmpty
-                      ? 'Phone number not added'
-                      : profile.phoneNumber,
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'YOUR EVERCARE PROFILE',
+                    style: AppTextStyles.eyebrow.copyWith(
+                      color: const Color(0xFFD6EFE0),
+                      letterSpacing: 1.1,
+                    ),
+                  ),
                 ),
               ],
             ),
+            const SizedBox(height: 26),
+            Center(
+              child: _EditableProfileAvatar(profile: profile, onEdit: onEdit),
+            ),
+            const SizedBox(height: 18),
+            Text(
+              profile.fullName.trim().isEmpty
+                  ? 'Your EverCare profile'
+                  : profile.fullName,
+              textAlign: TextAlign.center,
+              style: AppTextStyles.pageTitle.copyWith(
+                color: Colors.white,
+                fontSize: 28,
+                height: 1.2,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 7,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: .13),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.white.withValues(alpha: .2)),
+                ),
+                child: Text(
+                  profile.userTypeLabel.isEmpty
+                      ? 'Care role not added'
+                      : profile.userTypeLabel,
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.label.copyWith(color: Colors.white),
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              profile.email.trim().isEmpty
+                  ? 'Account email unavailable'
+                  : profile.email,
+              textAlign: TextAlign.center,
+              style: AppTextStyles.bodyMuted.copyWith(
+                color: const Color(0xFFE2F3E9),
+              ),
+            ),
+            const SizedBox(height: 24),
+            FilledButton(
+              onPressed: onEdit,
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: AppColors.darkGreen,
+                minimumSize: const Size(48, 52),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.edit_outlined, size: 20),
+                  const SizedBox(width: 10),
+                  Flexible(
+                    child: Text(
+                      'Edit profile',
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.cardTitle.copyWith(
+                        color: AppColors.darkGreen,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EditableProfileAvatar extends StatelessWidget {
+  const _EditableProfileAvatar({required this.profile, required this.onEdit});
+
+  final UserProfile profile;
+  final VoidCallback onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      key: const ValueKey('profile-photo-edit'),
+      button: true,
+      label: 'Change profile photo',
+      hint: 'Opens Edit Profile to choose and crop a photo.',
+      onTap: onEdit,
+      excludeSemantics: true,
+      child: Tooltip(
+        message: 'Change profile photo',
+        child: Material(
+          color: Colors.white.withValues(alpha: .15),
+          shape: CircleBorder(
+            side: BorderSide(color: Colors.white.withValues(alpha: .35)),
+          ),
+          child: InkWell(
+            onTap: onEdit,
+            customBorder: const CircleBorder(),
+            excludeFromSemantics: true,
+            child: Padding(
+              padding: const EdgeInsets.all(7),
+              child: Stack(
+                children: [
+                  ProfileAvatar(profile: profile, size: 104),
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppColors.primaryGreen,
+                          width: 2,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.add_a_photo_outlined,
+                        color: AppColors.darkGreen,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PersonalDetailsCard extends StatelessWidget {
+  const _PersonalDetailsCard({required this.profile});
+
+  final UserProfile profile;
+
+  @override
+  Widget build(BuildContext context) {
+    final birthDate = profile.birthDate;
+    final age = profile.ageOn(DateTime.now());
+    final birthday = birthDate == null
+        ? 'Not added yet'
+        : MaterialLocalizations.of(context).formatCompactDate(birthDate);
+    return AppCard(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: Column(
+        children: [
+          _PersonalDetail(
+            icon: Icons.cake_outlined,
+            label: 'Date of birth',
+            value: birthday,
+            note: age == null ? null : '$age years old',
+          ),
+          const Divider(height: 1),
+          _PersonalDetail(
+            icon: Icons.phone_outlined,
+            label: 'Phone number',
+            value: profile.phoneNumber.trim().isEmpty
+                ? 'Not added yet'
+                : profile.phoneNumber,
+          ),
+          const Divider(height: 1),
+          _PersonalDetail(
+            icon: Icons.home_outlined,
+            label: 'Address',
+            value: profile.address.trim().isEmpty
+                ? 'Not added yet'
+                : profile.address,
           ),
         ],
       ),
@@ -409,27 +502,52 @@ class _ProfileSummaryCard extends StatelessWidget {
   }
 }
 
-class _ContactLine extends StatelessWidget {
-  const _ContactLine({required this.icon, required this.value});
+class _PersonalDetail extends StatelessWidget {
+  const _PersonalDetail({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.note,
+  });
 
   final IconData icon;
+  final String label;
   final String value;
+  final String? note;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(icon, size: 17, color: AppColors.darkGreen),
-        const SizedBox(width: 7),
-        Flexible(
-          child: Text(
-            value,
-            textAlign: TextAlign.center,
-            style: AppTextStyles.bodyMuted,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppColors.accent,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: AppColors.darkGreen, size: 21),
           ),
-        ),
-      ],
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: AppTextStyles.label),
+                const SizedBox(height: 5),
+                Text(value, style: AppTextStyles.body),
+                if (note != null) ...[
+                  const SizedBox(height: 4),
+                  Text(note!, style: AppTextStyles.bodyMuted),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -483,44 +601,75 @@ class _ProfileMenuItem extends StatelessWidget {
     required this.icon,
     required this.color,
     required this.label,
+    required this.subtitle,
     required this.onTap,
   });
 
   final IconData icon;
   final Color color;
   final String label;
+  final String subtitle;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      minTileHeight: 64,
+    return Semantics(
+      button: true,
       enabled: onTap != null,
-      leading: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: onTap == null ? color.withValues(alpha: .42) : color,
-          borderRadius: BorderRadius.circular(11),
-          boxShadow: onTap == null
-              ? null
-              : [
-                  BoxShadow(
-                    color: color.withValues(alpha: .1),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
+      child: InkWell(
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 76),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+            child: Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: onTap == null ? .04 : .09),
+                    borderRadius: BorderRadius.circular(13),
                   ),
-                ],
+                  child: Icon(
+                    icon,
+                    color: onTap == null ? AppColors.mutedForeground : color,
+                    size: 23,
+                  ),
+                ),
+                const SizedBox(width: 13),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        style: AppTextStyles.cardTitle.copyWith(
+                          fontSize: 16,
+                          color: onTap == null
+                              ? AppColors.mutedForeground
+                              : AppColors.foreground,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: AppTextStyles.small.copyWith(fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: AppColors.secondaryText,
+                  size: 20,
+                ),
+              ],
+            ),
+          ),
         ),
-        child: Icon(icon, color: Colors.white, size: 22),
       ),
-      title: Text(label, style: Theme.of(context).textTheme.titleSmall),
-      trailing: const Icon(
-        Icons.arrow_forward_ios_rounded,
-        color: AppColors.secondaryText,
-        size: 16,
-      ),
-      onTap: onTap,
     );
   }
 }

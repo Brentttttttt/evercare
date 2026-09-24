@@ -36,6 +36,12 @@
         android:label="EverCare"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <!-- Native, user-controlled profile-photo cropping. -->
+        <activity
+            android:name="com.yalantis.ucrop.UCropActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
         <!-- Android delivers these reminders without a running Flutter process. -->
         <receiver
             android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"

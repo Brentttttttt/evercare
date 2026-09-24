@@ -74,7 +74,27 @@ void main() {
         }),
       );
       expect(find.byType(GoogleSignInSection), findsOneWidget);
-      expect(find.text('OR'), findsOneWidget);
+      expect(find.text('or continue with'), findsOneWidget);
+      final dividerLines = find.descendant(
+        of: find.byType(GoogleSignInSection),
+        matching: find.byType(Divider),
+      );
+      expect(dividerLines, findsNWidgets(2));
+      expect(
+        (tester.getCenter(dividerLines.first).dx +
+                tester.getCenter(dividerLines.last).dx) /
+            2,
+        closeTo(tester.getCenter(find.byType(GoogleSignInSection)).dx, .5),
+      );
+      final googleIcon = find.descendant(
+        of: find.byType(GoogleSignInSection),
+        matching: find.byType(Image),
+      );
+      expect(googleIcon, findsOneWidget);
+      expect(
+        (tester.widget<Image>(googleIcon).image as AssetImage).assetName,
+        'assets/images/google_g.png',
+      );
       expect(find.text('Continue with Google'), findsOneWidget);
       expect(
         tester.getTopLeft(find.text('Continue with Google')).dy,
@@ -83,6 +103,13 @@ void main() {
       await tapGoogle(tester);
       expect(calls, 1);
       expect(find.text('Signing in with Google…'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(GoogleSignInSection),
+          matching: find.byType(CircularProgressIndicator),
+        ),
+        findsOneWidget,
+      );
       expect(find.textContaining('is required.'), findsNothing);
       expect(find.text('Select your date of birth.'), findsNothing);
       for (final field in tester.widgetList<TextFormField>(

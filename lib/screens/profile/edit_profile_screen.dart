@@ -1,21 +1,32 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../models/user_profile.dart';
+import '../../models/profile_photo.dart';
 import '../../repositories/profile_repository.dart';
 import '../../routes/app_routes.dart';
 import '../../services/auth_service.dart';
+import '../../services/profile_photo_picker.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_page.dart';
 import '../../widgets/evercare_backend_scope.dart';
 import '../../widgets/primary_button.dart';
 import '../authentication/auth_widgets.dart';
+import 'profile_photo_card.dart';
 
 class EditProfileScreen extends StatefulWidget {
-  const EditProfileScreen({super.key, this.requireSetup = false});
+  const EditProfileScreen({
+    super.key,
+    this.requireSetup = false,
+    this.photoPicker,
+  });
 
   final bool requireSetup;
+  final ProfilePhotoPicker? photoPicker;
 
   @override
   State<EditProfileScreen> createState() => _EditProfileScreenState();
@@ -37,6 +48,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   bool _scopeChecked = false;
   bool _isSaving = false;
   String? _errorMessage;
+  String? _photoError;
+  ProfilePhotoUpload? _pendingPhoto;
+  bool _isPickingPhoto = false;
+  int _pickGeneration = 0;
+  bool get _isBusy => _isSaving || _isPickingPhoto;
+  late final ProfilePhotoPicker _photoPicker =
+      widget.photoPicker ??
+      DeviceProfilePhotoPicker(
+        currentUserId: () => _client?.auth.currentUser?.id,
+      );
 
   @override
   void didChangeDependencies() {
@@ -49,6 +70,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _profileFuture = nextClient == null || nextClient.auth.currentUser == null
         ? null
         : ProfileRepository(nextClient).fetchCurrentProfile();
+    if (nextClient?.auth.currentUser case final user?) {
+      unawaited(_recoverPhoto(user.id));
+    }
   }
 
   @override
@@ -98,6 +122,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _save() async {
+    if (_isBusy) return;
     FocusManager.instance.primaryFocus?.unfocus();
     final formIsValid = _formKey.currentState?.validate() ?? false;
     if (!formIsValid || _userType.isEmpty) {
@@ -123,6 +148,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           userType: _userType,
           address: _addressController.text,
         ),
+        photo: _pendingPhoto,
       );
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -137,6 +163,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       } else {
         Navigator.pop(context, true);
       }
+    } on ProfilePhotoFailure catch (error) {
+      if (mounted) setState(() => _photoError = error.message);
     } catch (_) {
       if (mounted) {
         setState(() {
@@ -152,20 +180,22 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: !widget.requireSetup,
+      canPop: !widget.requireSetup && !_isBusy,
       child: DetailPage(
-        title: widget.requireSetup
-            ? 'Complete your profile'
-            : 'Personal Information',
+        title: widget.requireSetup ? 'Complete your profile' : 'Edit Profile',
         child: Column(
           children: [
             if (widget.requireSetup) ...[
-              const Text(
-                'Choose how you use EverCare and add your date of birth. Google does not provide these details.',
+              const AppCard(
+                color: AppColors.accent,
+                child: Text(
+                  'Welcome to EverCare. Add your date of birth and choose how you use the app. A profile photo is optional.',
+                  style: AppTextStyles.body,
+                ),
               ),
               const SizedBox(height: 12),
               TextButton(
-                onPressed: _isSaving ? null : _signOut,
+                onPressed: _isBusy ? null : _signOut,
                 child: const Text('Use a different account'),
               ),
               const SizedBox(height: 12),
@@ -178,6 +208,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _signOut() async {
+    if (_isBusy) return;
     final client = _client;
     if (client == null) return;
     setState(() => _isSaving = true);
@@ -196,6 +227,123 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  Future<void> _recoverPhoto(String userId) async {
+    final generation = ++_pickGeneration;
+    // Recovery can now open an interactive cropper. Keep other picker/save
+    // actions disabled until it returns, just like a fresh selection.
+    _isPickingPhoto = true;
+    try {
+      final photo = await _photoPicker.recoverLostPhoto();
+      if (!mounted ||
+          generation != _pickGeneration ||
+          _client?.auth.currentUser?.id != userId ||
+          photo == null) {
+        return;
+      }
+      setState(() => _pendingPhoto = photo);
+    } on ProfilePhotoFailure catch (error) {
+      if (mounted &&
+          generation == _pickGeneration &&
+          _client?.auth.currentUser?.id == userId) {
+        setState(() => _photoError = error.message);
+      }
+    } catch (_) {
+      // A missing recovered selection must not prevent profile completion.
+    } finally {
+      if (mounted && generation == _pickGeneration) {
+        setState(() => _isPickingPhoto = false);
+      }
+    }
+  }
+
+  Future<void> _choosePhoto() async {
+    if (_isBusy) return;
+    final userId = _client?.auth.currentUser?.id;
+    if (userId == null) return;
+    FocusManager.instance.primaryFocus?.unfocus();
+    final source = await showModalBottomSheet<ProfilePhotoSource>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetContext) => SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'Your profile photo',
+                style: AppTextStyles.sectionTitle,
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Choose a picture, adjust the crop, then check your preview before saving.',
+                style: AppTextStyles.bodyMuted,
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                minTileHeight: 64,
+                leading: const Icon(
+                  Icons.photo_library_outlined,
+                  color: AppColors.primary,
+                ),
+                title: const Text('Choose from Gallery'),
+                onTap: () =>
+                    Navigator.pop(sheetContext, ProfilePhotoSource.gallery),
+              ),
+              if (!kIsWeb &&
+                  (defaultTargetPlatform == TargetPlatform.android ||
+                      defaultTargetPlatform == TargetPlatform.iOS))
+                ListTile(
+                  minTileHeight: 64,
+                  leading: const Icon(
+                    Icons.camera_alt_outlined,
+                    color: AppColors.primary,
+                  ),
+                  title: const Text('Take Photo'),
+                  onTap: () =>
+                      Navigator.pop(sheetContext, ProfilePhotoSource.camera),
+                ),
+              TextButton(
+                onPressed: () => Navigator.pop(sheetContext),
+                child: const Text('Cancel'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (!mounted || source == null || _client?.auth.currentUser?.id != userId) {
+      return;
+    }
+    _pickGeneration++;
+    setState(() {
+      _isPickingPhoto = true;
+      _photoError = null;
+    });
+    try {
+      final photo = await _photoPicker.pick(source);
+      if (!mounted ||
+          _client?.auth.currentUser?.id != userId ||
+          photo == null) {
+        return;
+      }
+      setState(() => _pendingPhoto = photo);
+    } on ProfilePhotoFailure catch (error) {
+      if (mounted) setState(() => _photoError = error.message);
+    } catch (_) {
+      if (mounted) {
+        setState(
+          () => _photoError =
+              'The photo could not be selected. Please try again.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isPickingPhoto = false);
     }
   }
 
@@ -259,139 +407,152 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return Form(
       key: _formKey,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          CircleAvatar(
-            radius: 48,
-            backgroundColor: AppColors.lightGreen,
-            child: profile.initials.isEmpty
-                ? const Icon(
-                    Icons.person_outline_rounded,
-                    size: 42,
-                    color: AppColors.darkGreen,
-                  )
-                : Text(
-                    profile.initials,
-                    style: const TextStyle(
-                      color: AppColors.darkGreen,
-                      fontSize: 24,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            'Profile photos are not enabled yet.',
-            style: AppTextStyles.bodyMuted,
+          ProfilePhotoCard(
+            profile: profile,
+            preview: _pendingPhoto?.bytes,
+            busy: _isBusy,
+            error: _photoError,
+            onChoose: _choosePhoto,
+            onDiscard: () => setState(() {
+              _pendingPhoto = null;
+              _photoError = null;
+            }),
           ),
           const SizedBox(height: 20),
-          AppTextField(
-            label: 'Full name',
+          ProfileFormSection(
+            title: 'About you',
+            description: 'The details that make your care more personal.',
             icon: Icons.person_outline_rounded,
-            controller: _fullNameController,
-            validator: (value) => validateRequiredText(value, 'Full name'),
-            textInputAction: TextInputAction.next,
-            autofillHints: const [AutofillHints.name],
-            enabled: !_isSaving,
-          ),
-          AppTextField(
-            label: 'Account email',
-            icon: Icons.email_outlined,
-            controller: _emailController,
-            keyboardType: TextInputType.emailAddress,
-            readOnly: true,
-            enabled: !_isSaving,
-          ),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Padding(
-              padding: const EdgeInsets.only(left: 4, bottom: 14),
-              child: Text(
-                'Account email changes require a separate verified flow.',
-                style: AppTextStyles.small,
+            children: [
+              AppTextField(
+                label: 'Full name',
+                icon: Icons.person_outline_rounded,
+                controller: _fullNameController,
+                validator: (value) => validateRequiredText(value, 'Full name'),
+                textInputAction: TextInputAction.next,
+                autofillHints: const [AutofillHints.name],
+                enabled: !_isBusy,
               ),
-            ),
-          ),
-          AppTextField(
-            label: 'Phone number',
-            icon: Icons.phone_outlined,
-            controller: _phoneController,
-            keyboardType: TextInputType.phone,
-            textInputAction: TextInputAction.next,
-            autofillHints: const [AutofillHints.telephoneNumber],
-            enabled: !_isSaving,
-          ),
-          AppTextField(
-            label: 'Date of birth',
-            icon: Icons.cake_outlined,
-            hint: 'Select your date of birth',
-            controller: _birthDateController,
-            validator: (_) => widget.requireSetup && _birthDate == null
-                ? 'Select your date of birth.'
-                : null,
-            readOnly: true,
-            onTap: _isSaving ? null : _pickBirthDate,
-            suffix: const Icon(Icons.calendar_month_outlined),
-            enabled: !_isSaving,
-          ),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text('I am a', style: AppTextStyles.cardTitle),
-          ),
-          const SizedBox(height: 10),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: userTypes.entries
-                  .map(
-                    (entry) => ChoiceChip(
-                      label: Text(entry.value),
+              AppTextField(
+                label: 'Date of birth',
+                icon: Icons.cake_outlined,
+                hint: 'Select your date of birth',
+                controller: _birthDateController,
+                validator: (_) => widget.requireSetup && _birthDate == null
+                    ? 'Select your date of birth.'
+                    : null,
+                readOnly: true,
+                onTap: _isBusy ? null : _pickBirthDate,
+                suffix: const Icon(Icons.calendar_month_outlined),
+                enabled: !_isBusy,
+              ),
+              const Text(
+                'How do you use EverCare?',
+                style: AppTextStyles.cardTitle,
+              ),
+              const SizedBox(height: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (final entry in userTypes.entries)
+                    AuthRoleOption(
+                      label: entry.value,
                       selected: _userType == entry.key,
-                      selectedColor: AppColors.lightGreen,
-                      onSelected: _isSaving
+                      description: switch (entry.key) {
+                        'senior' => 'Manage my health and daily care',
+                        'caregiver' => 'Support someone with their care',
+                        _ => 'Stay involved in a loved one’s wellbeing',
+                      },
+                      onSelected: _isBusy
                           ? null
-                          : (_) => setState(() => _userType = entry.key),
+                          : () => setState(() => _userType = entry.key),
                     ),
-                  )
-                  .toList(),
-            ),
-          ),
-          const SizedBox(height: 18),
-          AppTextField(
-            label: 'Address',
-            icon: Icons.home_outlined,
-            controller: _addressController,
-            maxLines: 2,
-            keyboardType: TextInputType.streetAddress,
-            textInputAction: TextInputAction.newline,
-            autofillHints: const [AutofillHints.fullStreetAddress],
-            enabled: !_isSaving,
-          ),
-          if (_errorMessage != null) ...[
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(13),
-              decoration: BoxDecoration(
-                color: AppColors.danger.withValues(alpha: .08),
-                borderRadius: BorderRadius.circular(14),
+                ],
               ),
-              child: Text(_errorMessage!, style: AppTextStyles.bodyMuted),
+            ],
+          ),
+          const SizedBox(height: 20),
+          ProfileFormSection(
+            title: 'Contact details',
+            description: 'Keep your information up to date.',
+            icon: Icons.contact_page_outlined,
+            children: [
+              AppTextField(
+                label: 'Account email',
+                icon: Icons.email_outlined,
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                readOnly: true,
+                enabled: !_isBusy,
+              ),
+              const Padding(
+                padding: EdgeInsets.only(bottom: 20),
+                child: Text(
+                  'Your sign-in email is protected. Changing it requires a separate verification.',
+                  style: AppTextStyles.bodyMuted,
+                ),
+              ),
+              AppTextField(
+                label: 'Phone number',
+                hint: 'Optional',
+                icon: Icons.phone_outlined,
+                controller: _phoneController,
+                keyboardType: TextInputType.phone,
+                textInputAction: TextInputAction.next,
+                autofillHints: const [AutofillHints.telephoneNumber],
+                enabled: !_isBusy,
+              ),
+              AppTextField(
+                label: 'Address',
+                hint: 'Optional',
+                icon: Icons.home_outlined,
+                controller: _addressController,
+                maxLines: 2,
+                keyboardType: TextInputType.streetAddress,
+                textInputAction: TextInputAction.newline,
+                autofillHints: const [AutofillHints.fullStreetAddress],
+                enabled: !_isBusy,
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          if (_errorMessage != null) ...[
+            Semantics(
+              liveRegion: true,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.destructiveContainer,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  _errorMessage!,
+                  style: AppTextStyles.body.copyWith(
+                    color: AppColors.destructiveContainerForeground,
+                  ),
+                ),
+              ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 16),
           ],
-          const SizedBox(height: 4),
-          if (_isSaving)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
-              child: CircularProgressIndicator(),
-            )
-          else
-            PrimaryButton(
-              label: widget.requireSetup ? 'Save and Continue' : 'Save Changes',
-              icon: Icons.check_rounded,
-              onPressed: _save,
-            ),
+          PrimaryButton(
+            label: widget.requireSetup ? 'Save and Continue' : 'Save Changes',
+            loadingLabel: _pendingPhoto == null
+                ? 'Saving changes…'
+                : 'Saving photo & profile…',
+            isLoading: _isSaving,
+            icon: Icons.check_rounded,
+            onPressed: _isBusy ? null : _save,
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Your changes are saved securely to your EverCare account.',
+            textAlign: TextAlign.center,
+            style: AppTextStyles.bodyMuted,
+          ),
         ],
       ),
     );

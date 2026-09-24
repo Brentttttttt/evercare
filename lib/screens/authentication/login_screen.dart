@@ -4,7 +4,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../routes/app_routes.dart';
 import '../../services/auth_service.dart';
 import '../../theme/app_colors.dart';
-import '../../theme/app_text_styles.dart';
 import '../../widgets/evercare_backend_scope.dart';
 import '../../widgets/primary_button.dart';
 import 'auth_widgets.dart';
@@ -129,7 +128,7 @@ class _LoginScreenState extends State<LoginScreen> {
       key: _formKey,
       child: AuthPage(
         title: 'Welcome back',
-        subtitle: 'Log in to continue caring for your health.',
+        subtitle: 'Your care, all in one place.',
         children: [
           AppTextField(
             label: 'Email address',
@@ -153,8 +152,10 @@ class _LoginScreenState extends State<LoginScreen> {
             autofillHints: const [AutofillHints.password],
             enabled: !_isBusy,
             onFieldSubmitted: (_) => _logIn(),
+            bottomSpacing: 0,
             suffix: IconButton(
               tooltip: _obscurePassword ? 'Show password' : 'Hide password',
+              style: IconButton.styleFrom(minimumSize: const Size(48, 48)),
               onPressed: _isBusy
                   ? null
                   : () => setState(() => _obscurePassword = !_obscurePassword),
@@ -168,6 +169,14 @@ class _LoginScreenState extends State<LoginScreen> {
           Align(
             alignment: Alignment.centerRight,
             child: TextButton(
+              style: TextButton.styleFrom(
+                minimumSize: const Size(48, 48),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 4,
+                  vertical: 10,
+                ),
+                foregroundColor: AppColors.darkGreen,
+              ),
               onPressed: _isBusy
                   ? null
                   : () =>
@@ -177,77 +186,30 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           if (_errorMessage != null) ...[
             const SizedBox(height: 6),
-            _AuthError(message: _errorMessage!),
+            AuthErrorMessage(message: _errorMessage!),
           ],
-          const SizedBox(height: 20),
+          const SizedBox(height: 8),
           PrimaryButton(
             label: 'Log In',
             loadingLabel: 'Logging In…',
             isLoading: _isSubmitting,
-            icon: Icons.login_rounded,
+            backgroundColor: AppColors.darkGreen,
             onPressed: _isBusy ? null : _logIn,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 18),
           GoogleSignInSection(
             onPressed: _isBusy ? null : _continueWithGoogle,
             isLoading: _isGoogleSubmitting,
             errorMessage: _googleErrorMessage,
           ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              const Expanded(child: Divider()),
-              Flexible(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Text(
-                    'New to EverCare?',
-                    textAlign: TextAlign.center,
-                    style: AppTextStyles.bodyMuted,
-                  ),
-                ),
-              ),
-              const Expanded(child: Divider()),
-            ],
-          ),
-          const SizedBox(height: 18),
-          OutlinedButton(
+          const SizedBox(height: 8),
+          AuthAccountLink(
+            prompt: 'New to EverCare?',
+            action: 'Create an Account',
             onPressed: _isBusy
                 ? null
                 : () => Navigator.pushNamed(context, AppRoutes.registration),
-            child: const Text('Create an Account'),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AuthError extends StatelessWidget {
-  const _AuthError({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(13),
-      decoration: BoxDecoration(
-        color: AppColors.danger.withValues(alpha: .08),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.danger.withValues(alpha: .25)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(
-            Icons.error_outline_rounded,
-            color: AppColors.danger,
-            size: 20,
-          ),
-          const SizedBox(width: 9),
-          Expanded(child: Text(message, style: AppTextStyles.bodyMuted)),
         ],
       ),
     );

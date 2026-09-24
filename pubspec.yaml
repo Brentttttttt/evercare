@@ -16,6 +16,7 @@ dependencies:
   geolocator: ^14.0.3
   google_sign_in: 7.2.0
   http: 1.6.0
+  image_cropper: 12.2.1
   image_picker: ^1.2.2
   latlong2: 0.10.1
   path_provider: ^2.1.6
@@ -33,9 +34,18 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  fonts:
+    - family: GoogleSansAuth
+      fonts:
+        - asset: assets/fonts/google_sans_auth_medium.ttf
+          weight: 500
   assets:
     - assets/logo/evercare_app_icon.png
     - assets/images/
+    - assets/images/auth_background.png
+    - assets/images/onboarding/
+    - assets/fonts/GoogleSans-OFL.txt
+    - assets/fonts/GoogleSans-TRADEMARKS.md
     - assets/health/bp_levels/
     - assets/ai_mascot/
     - assets/care_book/caregivers-book.pdf

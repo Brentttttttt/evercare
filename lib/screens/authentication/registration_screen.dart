@@ -181,15 +181,14 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       key: _formKey,
       child: AuthPage(
         title: 'Create your account',
-        subtitle:
-            'Tell us a little about yourself to personalize the experience.',
+        subtitle: 'A little about you. A better way to care.',
         children: [
           const _RegistrationSection(
             icon: Icons.person_outline_rounded,
             title: 'About you',
             description: 'Your basic profile and role in care.',
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 14),
           AppTextField(
             label: 'Full name',
             icon: Icons.person_outline_rounded,
@@ -232,31 +231,28 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           ),
           const Text('I am a', style: AppTextStyles.cardTitle),
           const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: userTypes.entries
-                .map(
-                  (entry) => ChoiceChip(
-                    label: Text(entry.value),
-                    selected: _userType == entry.key,
-                    selectedColor: AppColors.lightGreen,
-                    onSelected: _isBusy
-                        ? null
-                        : (_) => setState(() => _userType = entry.key),
-                  ),
-                )
-                .toList(),
-          ),
-          const SizedBox(height: 24),
+          for (final entry in userTypes.entries)
+            AuthRoleOption(
+              label: entry.value,
+              description: switch (entry.key) {
+                'senior' => 'Manage your own health and daily care.',
+                'caregiver' => 'Support someone with their everyday care.',
+                _ => "Stay involved in a loved one's care.",
+              },
+              selected: _userType == entry.key,
+              onSelected: _isBusy
+                  ? null
+                  : () => setState(() => _userType = entry.key),
+            ),
+          const SizedBox(height: 12),
           const Divider(),
-          const SizedBox(height: 22),
+          const SizedBox(height: 18),
           const _RegistrationSection(
             icon: Icons.shield_outlined,
             title: 'Account security',
             description: 'Use at least 8 characters for your password.',
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 14),
           AppTextField(
             label: 'Password',
             icon: Icons.lock_outline_rounded,
@@ -275,6 +271,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             },
             suffix: IconButton(
               tooltip: _obscurePassword ? 'Show password' : 'Hide password',
+              style: IconButton.styleFrom(minimumSize: const Size(48, 48)),
               onPressed: _isBusy
                   ? null
                   : () => setState(() => _obscurePassword = !_obscurePassword),
@@ -301,6 +298,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               return validateRequiredText(value, 'Password confirmation');
             },
             suffix: IconButton(
+              style: IconButton.styleFrom(minimumSize: const Size(48, 48)),
               tooltip: _obscureConfirmation
                   ? 'Show confirmation'
                   : 'Hide confirmation',
@@ -317,7 +315,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             ),
           ),
           if (_errorMessage != null) ...[
-            _RegistrationError(message: _errorMessage!),
+            AuthErrorMessage(message: _errorMessage!),
             const SizedBox(height: 12),
           ],
           const SizedBox(height: 6),
@@ -325,21 +323,20 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             label: 'Create Account',
             loadingLabel: 'Creating Account…',
             isLoading: _isSubmitting,
-            icon: Icons.arrow_forward_rounded,
+            backgroundColor: AppColors.darkGreen,
             onPressed: _isBusy ? null : _register,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 18),
           GoogleSignInSection(
             onPressed: _isBusy ? null : _continueWithGoogle,
             isLoading: _isGoogleSubmitting,
             errorMessage: _googleErrorMessage,
           ),
-          const SizedBox(height: 12),
-          Center(
-            child: TextButton(
-              onPressed: _isBusy ? null : () => Navigator.pop(context),
-              child: const Text('Already have an account? Log In'),
-            ),
+          const SizedBox(height: 8),
+          AuthAccountLink(
+            prompt: 'Already have an account?',
+            action: 'Log In',
+            onPressed: _isBusy ? null : () => Navigator.pop(context),
           ),
         ],
       ),
@@ -391,26 +388,6 @@ class _RegistrationSection extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _RegistrationError extends StatelessWidget {
-  const _RegistrationError({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(13),
-      decoration: BoxDecoration(
-        color: AppColors.danger.withValues(alpha: .08),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.danger.withValues(alpha: .25)),
-      ),
-      child: Text(message, style: AppTextStyles.bodyMuted),
     );
   }
 }

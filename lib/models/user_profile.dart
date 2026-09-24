@@ -10,6 +10,8 @@ class UserProfile {
     required this.userType,
     required this.address,
     required this.avatarPath,
+    this.avatarUrl,
+    this.googleAvatarUrl,
   });
 
   final String id;
@@ -20,6 +22,12 @@ class UserProfile {
   final String userType;
   final String address;
   final String? avatarPath;
+
+  /// Short-lived private Storage URL. Never persisted in the profiles table.
+  final String? avatarUrl;
+
+  /// Optional, validated Google metadata; never replaces a chosen avatar path.
+  final String? googleAvatarUrl;
 
   bool get isComplete =>
       fullName.trim().isNotEmpty &&
@@ -37,6 +45,7 @@ class UserProfile {
       userType: _stringValue(map['user_type']),
       address: _stringValue(map['address']),
       avatarPath: _nullableStringValue(map['avatar_path']),
+      googleAvatarUrl: _googlePhoto(user),
     );
   }
 
@@ -53,6 +62,7 @@ class UserProfile {
       userType: _stringValue(metadata['user_type']),
       address: _stringValue(metadata['address']),
       avatarPath: _nullableStringValue(metadata['avatar_path']),
+      googleAvatarUrl: _googlePhoto(user),
     );
   }
 
@@ -102,6 +112,7 @@ class UserProfile {
     String? userType,
     String? address,
     String? avatarPath,
+    String? avatarUrl,
   }) {
     return UserProfile(
       id: id,
@@ -112,10 +123,41 @@ class UserProfile {
       userType: userType ?? this.userType,
       address: address ?? this.address,
       avatarPath: avatarPath ?? this.avatarPath,
+      avatarUrl:
+          avatarUrl ??
+          (avatarPath != null && avatarPath != this.avatarPath
+              ? null
+              : this.avatarUrl),
+      googleAvatarUrl: googleAvatarUrl,
     );
   }
 
   static String _stringValue(Object? value) => value is String ? value : '';
+
+  static String? _googlePhoto(User user) {
+    final providers = user.appMetadata['providers'];
+    final isGoogle =
+        user.appMetadata['provider'] == 'google' ||
+        (providers is List && providers.contains('google')) ||
+        (user.identities?.any((identity) => identity.provider == 'google') ??
+            false);
+    if (!isGoogle) return null;
+    final metadata = user.userMetadata ?? const <String, dynamic>{};
+    for (final value in [metadata['avatar_url'], metadata['picture']]) {
+      if (value is! String || value.length > 2048) continue;
+      final uri = Uri.tryParse(value);
+      // Do not make image requests to arbitrary user-controlled hosts.
+      if (uri != null &&
+          uri.scheme == 'https' &&
+          uri.userInfo.isEmpty &&
+          (!uri.hasPort || uri.port == 443) &&
+          (uri.host == 'googleusercontent.com' ||
+              uri.host.endsWith('.googleusercontent.com'))) {
+        return uri.toString();
+      }
+    }
+    return null;
+  }
 
   static String? _nullableStringValue(Object? value) {
     if (value is! String || value.trim().isEmpty) return null;
